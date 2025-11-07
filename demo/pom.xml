@@ -20,6 +20,8 @@
         <java.version>21</java.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <springdoc.version>2.6.0</springdoc.version>
+        <lombok.version>1.18.34</lombok.version>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
     </properties>
 
     <dependencies>
@@ -45,14 +47,19 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <!-- версия управляется Spring Boot -->
         </dependency>
 
-        <!-- Flyway миграции -->
+        <!-- Flyway -->
+        <!-- Flyway -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
 
         <!-- OpenAPI/Swagger UI -->
         <dependency>
@@ -61,7 +68,7 @@
             <version>${springdoc.version}</version>
         </dependency>
 
-        <!-- MapStruct (маппинг DTO) -->
+        <!-- MapStruct -->
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
@@ -78,6 +85,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
             <optional>true</optional>
         </dependency>
 
@@ -92,7 +100,6 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Интеграционные тесты с реальной БД в контейнере -->
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
@@ -107,15 +114,16 @@
 
     <build>
         <plugins>
-            <!-- Компилятор под Java 21 + аннотационные процессоры (Lombok/MapStruct) -->
+            <!-- Компилятор + аннотационные процессоры -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.1</version>
                 <configuration>
-                    <release>${java.version}</release>
+                    <release>${maven.compiler.release}</release>
                     <annotationProcessorPaths>
                         <path>
-                            <groupId>org.project lombok</groupId>
+                            <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
                         </path>
@@ -134,15 +142,4 @@
             </plugin>
         </plugins>
     </build>
-
-    <dependencyManagement>
-        <dependencies>
-            <!-- чтобы maven-compiler-plugin знал версию lombok в annotationProcessorPaths -->
-            <dependency>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok</artifactId>
-                <version>1.18.34</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 </project>
