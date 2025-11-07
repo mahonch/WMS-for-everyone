@@ -4,35 +4,55 @@ import com.example.demo.entity.*;
 import com.example.demo.entity.enums.DocStatus;
 import com.example.demo.exception.DocumentAlreadyCommittedException;
 import com.example.demo.exception.NotFoundException;
-import com.example.demo.repository.*;
+import com.example.demo.repository.BatchRepository;
+import com.example.demo.repository.LocationRepository;
+import com.example.demo.repository.ReceiptItemRepository;
+import com.example.demo.repository.ReceiptRepository;
+import jakarta.persistence.Column;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+
 public class ReceiptService {
+
     private final ReceiptRepository receiptRepository;
     private final ReceiptItemRepository receiptItemRepository;
     private final BatchRepository batchRepository;
     private final LocationRepository locationRepository;
     private final StockService stockService;
     private final AuditService auditService;
-
+    private final EntityManager em;
+    private Instant createdAt;
     /**
-     * Провести приёмку: создаёт партии по позициям и кладёт товар на указанную локацию.
-     * @param receiptId документ к проведению (должен быть DRAFT)
+     * Провести приёмку: создаёт партии по позициям (если не заданы) и кладёт товар на указанную локацию.
+     * Операция идемпотентна: повторный вызов для уже проведённого документа завершится исключением.
+     *
+     * @param receiptId    документ к проведению (должен быть DRAFT)
      * @param toLocationId локация размещения
-     * @param actor пользователь, выполняющий действие
+     * @param actor        пользователь (для аудита), может быть null на dev-этапе
      */
-    @Transactional
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public void commit(Long receiptId, Long toLocationId, User actor) {
         Receipt receipt = receiptRepository.findById(receiptId)
                 .orElseThrow(() -> new NotFoundException("Receipt not found: " + receiptId));
-        if (receipt.getStatus() == DocStatus.COMMITTED)
+
+        // Жёсткая блокировка заголовка на время коммита (защита от параллельных коммитов)
+        em.lock(receipt, LockModeType.PESSIMISTIC_WRITE);
+
+        if (receipt.getStatus() == DocStatus.COMMITTED) {
             throw new DocumentAlreadyCommittedException("Receipt already committed");
+        }
 
         Location loc = locationRepository.findById(toLocationId)
                 .orElseThrow(() -> new NotFoundException("Location not found: " + toLocationId));
@@ -40,27 +60,32 @@ public class ReceiptService {
         BigDecimal total = BigDecimal.ZERO;
 
         for (ReceiptItem it : receipt.getItems()) {
-            // создаём партию под позицию
-            Batch batch = Batch.builder()
-                    .product(it.getProduct())
-                    .supplier(receipt.getSupplier())
-                    .buyPrice(it.getPrice())
-                    .quantity(it.getQty())
-                    .availableQty(0) // увеличим через stockService.increase
-                    .build();
-            batch = batchRepository.save(batch);
+            // Если партия не задана — создаём новую под позицию
+            Batch batch = it.getBatch();
+            if (batch == null) {
+                batch = Batch.builder()
+                        .product(it.getProduct())
+                        .supplier(receipt.getSupplier())
+                        .buyPrice(it.getPrice())
+                        .receivedAt(receipt.getCreatedAt() != null ? receipt.getCreatedAt() : LocalDateTime.from(it.getCreatedAt()))
+                        // quantity/availableQty при желании можно хранить на Batch как "паспортные" поля,
+                        // но фактический остаток ведём в Stock.
+                        .build();
+                batch = batchRepository.save(batch);
 
-            // привязываем партию к строке
-            it.setBatch(batch);
-            receiptItemRepository.save(it);
+                it.setBatch(batch);
+                receiptItemRepository.save(it);
+            }
 
-            // кладём на склад (увеличиваем stock и availableQty)
+            // Кладём на склад (увеличиваем Stock и, если реализовано, availableQty в Batch)
             stockService.increase(it.getProduct(), batch, loc, it.getQty());
 
-            // считаем сумму
-            total = total.add(it.getPrice().multiply(BigDecimal.valueOf(it.getQty())));
+            // Сумма по документу
+            BigDecimal lineSum = it.getPrice().multiply(BigDecimal.valueOf(it.getQty()));
+            total = total.add(lineSum);
         }
 
+        // Снэпшот "до" (для аудита)
         var before = Receipt.builder()
                 .id(receipt.getId())
                 .number(receipt.getNumber())

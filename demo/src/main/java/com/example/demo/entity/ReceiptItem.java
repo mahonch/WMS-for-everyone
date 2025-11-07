@@ -2,8 +2,11 @@ package com.example.demo.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "receipt_items")
@@ -30,4 +33,9 @@ public class ReceiptItem {
 
     @Column(nullable = false)
     private BigDecimal price;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private Instant createdAt;
+
 }

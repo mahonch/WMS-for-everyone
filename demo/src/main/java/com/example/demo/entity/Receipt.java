@@ -20,6 +20,7 @@ public class Receipt {
     @Column(nullable = false, unique = true)
     private String number;
 
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 

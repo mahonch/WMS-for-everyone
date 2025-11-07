@@ -26,4 +26,6 @@ public class StockId implements Serializable {
     public int hashCode() {
         return Objects.hash(productId, locationId, batchId);
     }
+
+
 }
