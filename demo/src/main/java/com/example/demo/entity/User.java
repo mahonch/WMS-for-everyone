@@ -9,7 +9,10 @@ import java.util.Set;
 
 @Entity
 @Table(name = "users")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -17,22 +20,16 @@ public class User {
     @Column(nullable = false, unique = true)
     private String username;
 
-    @Column(unique = true)
-    private String email;
-
-    @Column(name = "password_hash", nullable = false)
-    private String passwordHash;
-
     @Column(nullable = false)
-    private String status = "ACTIVE";
+    private String password;   // <-- может быть у тебя называется иначе
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt = Instant.now();
+    private Boolean active;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))
-    @Builder.Default
-    private Set<Role> roles = new HashSet<>();
+    private Set<Role> roles;
 }
+
+
