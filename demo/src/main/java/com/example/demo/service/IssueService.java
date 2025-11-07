@@ -29,7 +29,7 @@ public class IssueService {
     private final StockRepository stockRepository;
     private final StockService stockService;
     private final AuditService auditService;
-    
+
     @Transactional
     public void commit(Long issueId, Long fromLocationId, User actor) {
         Issue issue = issueRepository.findById(issueId)
