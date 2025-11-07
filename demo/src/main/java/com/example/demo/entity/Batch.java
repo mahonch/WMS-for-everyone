@@ -2,17 +2,21 @@ package com.example.demo.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "batches")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Batch {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(optional = false)
@@ -30,11 +34,15 @@ public class Batch {
     private BigDecimal buyPrice = BigDecimal.ZERO;
 
     @Column(nullable = false)
-    private Integer quantity;          // изначально принято
+    private Integer quantity; // изначально принято
 
     @Column(name = "available_qty", nullable = false)
-    private Integer availableQty;      // доступно (для списания)
+    private Integer availableQty; // доступно (для списания)
 
     @Column(name = "expiry_date")
     private LocalDate expiryDate;
+
+    @ManyToOne
+    @JoinColumn(name = "location_id")
+    private Location location; // <-- вот добавленное поле
 }

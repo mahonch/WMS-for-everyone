@@ -1,10 +1,9 @@
 -- Типы документа
 DO $$ BEGIN
-IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'doc_status') THEN
-CREATE TYPE doc_status AS ENUM ('DRAFT','COMMITTED');
-END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'doc_status') THEN
+        CREATE TYPE doc_status AS ENUM ('DRAFT','COMMITTED');
+    END IF;
 END $$;
-
 
 -- Партии
 CREATE TABLE batches (
@@ -18,7 +17,6 @@ CREATE TABLE batches (
                          expiry_date DATE
 );
 
-
 -- Приёмка
 CREATE TABLE receipts (
                           id BIGSERIAL PRIMARY KEY,
@@ -30,7 +28,6 @@ CREATE TABLE receipts (
                           status doc_status NOT NULL DEFAULT 'DRAFT'
 );
 
-
 CREATE TABLE receipt_items (
                                id BIGSERIAL PRIMARY KEY,
                                receipt_id BIGINT NOT NULL REFERENCES receipts(id) ON DELETE CASCADE,
@@ -39,7 +36,6 @@ CREATE TABLE receipt_items (
                                qty INT NOT NULL CHECK (qty > 0),
                                price NUMERIC(12,2) NOT NULL CHECK (price >= 0)
 );
-
 
 -- Выдача/списание
 CREATE TABLE issues (
@@ -51,7 +47,6 @@ CREATE TABLE issues (
                         status doc_status NOT NULL DEFAULT 'DRAFT'
 );
 
-
 CREATE TABLE issue_items (
                              id BIGSERIAL PRIMARY KEY,
                              issue_id BIGINT NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
@@ -60,4 +55,3 @@ CREATE TABLE issue_items (
                              qty INT NOT NULL CHECK (qty > 0),
                              cost_price NUMERIC(12,2) NOT NULL DEFAULT 0
 );
-

@@ -1,9 +1,8 @@
 DO $$ BEGIN
-IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'location_type') THEN
-CREATE TYPE location_type AS ENUM ('ZONE','RACK','SHELF','BIN');
-END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'location_type') THEN
+        CREATE TYPE location_type AS ENUM ('ZONE','RACK','SHELF','BIN');
+    END IF;
 END $$;
-
 
 CREATE TABLE warehouses (
                             id BIGSERIAL PRIMARY KEY,
@@ -13,7 +12,6 @@ CREATE TABLE warehouses (
                             is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
-
 CREATE TABLE locations (
                            id BIGSERIAL PRIMARY KEY,
                            warehouse_id BIGINT NOT NULL REFERENCES warehouses(id) ON DELETE CASCADE,
@@ -22,7 +20,6 @@ CREATE TABLE locations (
                            parent_id BIGINT REFERENCES locations(id) ON DELETE SET NULL,
                            type location_type NOT NULL DEFAULT 'BIN'
 );
-
 
 -- Остатки по локациям и партиям (партийность опциональна)
 CREATE TABLE stock (
