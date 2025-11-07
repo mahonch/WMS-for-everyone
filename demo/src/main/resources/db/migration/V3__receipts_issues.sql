@@ -60,3 +60,4 @@ CREATE TABLE issue_items (
                              qty INT NOT NULL CHECK (qty > 0),
                              cost_price NUMERIC(12,2) NOT NULL DEFAULT 0
 );
+
