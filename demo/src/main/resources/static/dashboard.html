@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>WMS — Главная</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="/css/app.css" rel="stylesheet">
+</head>
+<body>
+<header class="topbar">
+    <div class="brand">WMS</div>
+    <nav class="nav">
+        <a href="/dashboard.html" class="active">Главная</a>
+        <a href="/pages/receipts.html">Приёмка</a>
+        <a href="/pages/issues.html">Списание</a>
+        <a href="/pages/transfers.html">Перемещения</a>
+        <a href="/pages/scan.html">Сканер</a>
+    </nav>
+    <div class="user">
+        <span id="usernameLabel">—</span>
+        <button id="logoutBtn" class="btn">Выйти</button>
+    </div>
+</header>
+
+<main class="container">
+    <section id="alerts"></section>
+
+    <section class="cards">
+        <div class="card">
+            <h3>Товары</h3>
+            <div class="metric" id="metricProducts">—</div>
+        </div>
+        <div class="card">
+            <h3>Партии</h3>
+            <div class="metric" id="metricBatches">—</div>
+        </div>
+        <div class="card">
+            <h3>Локации</h3>
+            <div class="metric" id="metricLocations">—</div>
+        </div>
+    </section>
+
+    <section class="grid">
+        <div class="panel">
+            <h3>Быстрые действия</h3>
+            <div class="actions">
+                <a class="btn" href="/pages/receipts.html">Новая приёмка</a>
+                <a class="btn" href="/pages/issues.html">Новое списание</a>
+                <a class="btn" href="/pages/transfers.html">Новое перемещение</a>
+                <a class="btn" href="/pages/scan.html">Сканировать QR</a>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Последние изменения</h3>
+            <ul id="recentList" class="list">
+                <li class="muted">Здесь будет список последних операций…</li>
+            </ul>
+        </div>
+    </section>
+</main>
+
+<script src="/js/dashboard.js"></script>
+</body>
+</html>

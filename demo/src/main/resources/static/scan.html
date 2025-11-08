@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>WMS — Сканер</title>
+    <link rel="stylesheet" href="css/styles.css"/>
+    <script defer src="app.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body>
+<header class="header">
+    <div class="inner">
+        <div style="font-weight:600">WMS</div>
+        <nav class="nav">
+            <a href="index.html">Вход</a>
+            <a href="scan.html" class="active">Сканер</a>
+            <a href="labels.html">Этикетки</a>
+        </nav>
+        <div class="row" style="margin-left:auto;">
+            <span class="badge" title="API base URL">API</span>
+            <code id="apiUrl" class="muted"></code>
+            <button class="btn" id="logout" style="margin-left:8px;">Выйти</button>
+        </div>
+    </div>
+</header>
+
+<div class="container grid grid-2">
+    <div class="card">
+        <h2 class="title">Камера</h2>
+        <div id="reader" style="width:100%;"></div>
+        <div id="camErr" class="err" style="display:none;"></div>
+        <p class="muted" style="font-size:13px;">Для работы камеры нужен HTTPS или localhost.</p>
+    </div>
+
+    <div class="card">
+        <h2 class="title">Результат</h2>
+        <div id="empty" class="muted">Наведите камеру на QR-код…</div>
+        <div id="res" style="display:none;">
+            <div><b>Тип:</b> <span id="r_type"></span></div>
+            <div><b>ID:</b> <span id="r_id"></span></div>
+            <div id="r_prod_row" style="display:none;"><b>Товар:</b> <span id="r_prod"></span></div>
+            <div id="r_qty_row" style="display:none;"><b>Доступно:</b> <span id="r_qty"></span></div>
+            <div id="r_loc_row" style="display:none;"><b>Локация:</b> <span id="r_loc"></span></div>
+            <div id="r_exp_row" style="display:none;"><b>Годен до:</b> <span id="r_exp"></span></div>
+        </div>
+        <div id="apiErr" class="err" style="display:none;"></div>
+    </div>
+</div>
+
+<script>
+    App.setActiveNav();
+    // защита: если нет токена → на логин
+    if (!App.getToken()) location.href = "index.html";
+
+    byId("apiUrl").textContent = App.API_URL;
+    byId("logout").addEventListener("click", ()=> { App.setToken(); location.href="index.html"; });
+
+    // запуск html5-qrcode
+    const readerElemId = "reader";
+    let scanner;
+
+    function showResult(data) {
+        byId("empty").style.display = "none";
+        byId("res").style.display = "block";
+        byId("apiErr").style.display = "none";
+
+        byId("r_prod_row").style.display = "none";
+        byId("r_qty_row").style.display = "none";
+        byId("r_loc_row").style.display = "none";
+        byId("r_exp_row").style.display = "none";
+
+        byId("r_type").textContent = data.type;
+        byId("r_id").textContent = data.id;
+        if (data.productName) { byId("r_prod").textContent = data.productName; byId("r_prod_row").style.display = "block"; }
+        if (data.availableQty != null) { byId("r_qty").textContent = data.availableQty; byId("r_qty_row").style.display = "block"; }
+        if (data.locationCode) { byId("r_loc").textContent = data.locationCode; byId("r_loc_row").style.display = "block"; }
+        if (data.expiryDate) { byId("r_exp").textContent = data.expiryDate; byId("r_exp_row").style.display = "block"; }
+    }
+
+    async function onScanSuccess(decodedText) {
+        // ожидаем JSON вида {"t":"batch","id":123}
+        try {
+            const resp = await App.apiFetch("/scan", {
+                method: "POST",
+                body: JSON.stringify({ data: decodedText })
+            });
+            showResult(resp);
+        } catch (e) {
+            byId("apiErr").textContent = e.message || "Ошибка обработки на сервере";
+            byId("apiErr").style.display = "block";
+        }
+    }
+
+    function onScanFailure(err) {
+        // шум ошибок подавляем
+    }
+
+    async function startScanner() {
+        try {
+            const width = Math.min(600, document.querySelector(".card").clientWidth - 32);
+            scanner = new Html5Qrcode(readerElemId);
+            await scanner.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: width - 40, height: width - 40 } },
+                onScanSuccess,
+                onScanFailure
+            );
+        } catch (e) {
+            byId("camErr").textContent = e.message || "Не удалось открыть камеру";
+            byId("camErr").style.display = "block";
+        }
+    }
+    startScanner();
+
+    window.addEventListener("beforeunload", ()=> { try { scanner && scanner.stop(); } catch(e){} });
+</script>
+</body>
+</html>
