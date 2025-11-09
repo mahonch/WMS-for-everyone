@@ -64,3 +64,25 @@ async function apiGet(url) {
         pushAlert('error', e.message || 'Не удалось загрузить метрики');
     }
 })();
+(function showAdminIfNeeded() {
+    const btn = document.getElementById('adminBtn');
+    if (!btn) return;
+
+    // пытаемся взять роль из localStorage (её кладём при логине)
+    let roleLS = (localStorage.getItem('role') || '').toUpperCase();
+
+    // если в LS нет роли — попробуем достать её из JWT (claim "role")
+    if (!roleLS) {
+        try {
+            const token = localStorage.getItem('token');
+            if (token) {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                roleLS = (payload.role || '').toUpperCase();
+            }
+        } catch (_) { /*ignore*/ }
+    }
+
+    // допускаем форматы "ADMIN" и "ROLE_ADMIN"
+    const isAdmin = roleLS.includes('ADMIN');
+    if (isAdmin) btn.classList.remove('hidden');
+})();

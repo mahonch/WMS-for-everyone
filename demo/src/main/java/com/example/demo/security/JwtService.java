@@ -28,6 +28,11 @@ public class JwtService {
     }
 
     public String generateAccess(String username, String role) {
+        // гарантируем наличие префикса ROLE_
+        if (!role.startsWith("ROLE_")) {
+            role = "ROLE_" + role;
+        }
+
         return Jwts.builder()
                 .setSubject(username)
                 .addClaims(Map.of("role", role))
@@ -36,6 +41,7 @@ public class JwtService {
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
+
 
     public String generateRefresh(String username) {
         return Jwts.builder()

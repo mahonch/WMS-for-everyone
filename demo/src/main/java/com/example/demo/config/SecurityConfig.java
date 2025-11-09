@@ -32,40 +32,36 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(reg -> reg
-                        // 0) Общие статические ресурсы (classpath:/static, /public, /resources, /META-INF/resources)
+                        // статика и публичные страницы
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
-
-                        // 1) Явные файлы фронта
-                        .requestMatchers("/", "/index.html",
-                                "/dashboard.html", "/dashboard.html",
-                                "/scan.html", "/labels.html",
-                                "/favicon.ico").permitAll()
-
-                        // 2) Папки фронта (НЕ использовать /**/*.css и т.п.)
+                        .requestMatchers("/", "/index.html", "/dashboard.html", "/scan.html", "/labels.html", "/favicon.ico").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/assets/**", "/webjars/**").permitAll()
 
-                        // 3) Swagger / OpenAPI
+                        // swagger
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
-                        // 4) Страница ошибок
+                        // ошибки
                         .requestMatchers("/error").permitAll()
 
-                        // 5) Аутентификация
+                        // аутентификация
                         .requestMatchers("/api/auth/**").permitAll()
 
-                        // 6) Публичные API, нужные без логина (если нужно)
+                        // публичные api (если нужно)
                         .requestMatchers(HttpMethod.POST, "/api/scan").permitAll()
                         .requestMatchers(HttpMethod.GET,  "/api/qr/**").permitAll()
 
-                        // 7) Остальные GET по API – читают роли:
+                        // 🔐 АДМИН-ПАНЕЛЬ — только ADMIN (ставим до общих правил!)
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // остальные GET по API — чтение доступно этим ролям
                         .requestMatchers(HttpMethod.GET, "/api/**")
                         .hasAnyRole("ADMIN","MANAGER","STOREKEEPER","GUEST")
 
-                        // 8) Складские операции – роли ADMIN | STOREKEEPER
+                        // операций по складу — ADMIN | STOREKEEPER
                         .requestMatchers("/api/receipts/**", "/api/issues/**", "/api/transfers/**")
                         .hasAnyRole("ADMIN","STOREKEEPER")
 
-                        // 9) Всё остальное — только ADMIN
+                        // всё остальное — только ADMIN
                         .anyRequest().hasRole("ADMIN")
                 )
                 .formLogin(form -> form.disable())
