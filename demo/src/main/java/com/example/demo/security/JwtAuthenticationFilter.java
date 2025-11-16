@@ -31,7 +31,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/index.html", "/dashboard.html", "/scan.html", "/labels.html",
             "/admin.html",
             "/favicon.ico", "/error",
-            "/css/", "/js/", "/images/", "/assets/", "/webjars/",
+            "/css/", "/js/", "/images/", "/assets/", "/webjars/","/pages/issues.html",
             "/v3/api-docs/", "/swagger-ui/",
             "/api/auth/",          // login / refresh
             "/api/auth/me","/pages","/pages/receipts.html"         // информация о себе

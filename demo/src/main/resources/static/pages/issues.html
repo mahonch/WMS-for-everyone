@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Списания — WMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="/css/app.css" rel="stylesheet">
+
+    <!-- auth helper -->
+    <script src="/js/auth-debug.js"></script>
+</head>
+
+<body>
+
+<header class="topbar">
+    <div class="brand">WMS</div>
+    <nav class="nav">
+        <a href="/dashboard.html">Главная</a>
+        <a href="/pages/receipts.html">Приёмка</a>
+        <a href="/pages/issues.html" class="active">Списание</a>
+        <a href="/pages/transfers.html">Перемещения</a>
+        <a href="/pages/scan.html">Сканер</a>
+    </nav>
+
+    <div class="user">
+        <span id="usernameLabel">—</span>
+        <button id="logoutBtn" class="btn">Выйти</button>
+    </div>
+</header>
+
+<main class="container">
+
+    <section id="alerts"></section>
+
+    <section class="panel">
+        <h3>Списания</h3>
+
+        <div class="actions">
+            <button class="btn" id="btnCreate">Новое списание</button>
+        </div>
+
+        <table class="table" id="issuesTable">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Номер</th>
+                <th>Статус</th>
+                <th>Создал</th>
+                <th>Причина</th>
+                <th>Дата</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </section>
+
+    <!-- ====== ДЕТАЛЬНО ====== -->
+    <section id="detailPanel" class="panel" style="display:none">
+        <h3>Списание <span id="d_number"></span></h3>
+
+        <div class="grid2">
+            <div><b>ID:</b> <span id="d_id">—</span></div>
+            <div><b>Статус:</b> <span id="d_status">—</span></div>
+            <div><b>Создал:</b> <span id="d_createdBy">—</span></div>
+            <div><b>Причина:</b> <span id="d_reason">—</span></div>
+            <div><b>Дата:</b> <span id="d_date">—</span></div>
+        </div>
+
+        <h4>Позиции</h4>
+        <table class="table" id="itemsTable">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Товар</th>
+                <th>Партия</th>
+                <th>Кол-во</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div class="actions">
+            <button class="btn" id="btnAddItem">Добавить позицию</button>
+            <button class="btn btn-success" id="btnCommit">Провести</button>
+            <button class="btn btn-danger" id="btnDeleteDraft">Удалить черновик</button>
+            <button class="btn btn-secondary" id="btnCloseDetail">Закрыть</button>
+        </div>
+    </section>
+
+</main>
+
+<script src="/js/issues.js"></script>
+
+</body>
+</html>

@@ -43,4 +43,6 @@ public class Receipt {
     @OneToMany(mappedBy = "receipt", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ReceiptItem> items = new ArrayList<>();
+
+
 }

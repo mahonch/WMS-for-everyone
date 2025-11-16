@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.audit.AuditSnapshot;
 import com.example.demo.entity.*;
 import com.example.demo.entity.enums.DocStatus;
 import com.example.demo.exception.DocumentAlreadyCommittedException;
@@ -8,22 +9,18 @@ import com.example.demo.repository.BatchRepository;
 import com.example.demo.repository.LocationRepository;
 import com.example.demo.repository.ReceiptItemRepository;
 import com.example.demo.repository.ReceiptRepository;
-import jakarta.persistence.Column;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-
 public class ReceiptService {
 
     private final ReceiptRepository receiptRepository;
@@ -33,16 +30,38 @@ public class ReceiptService {
     private final StockService stockService;
     private final AuditService auditService;
     private final EntityManager em;
-    private Instant createdAt;
 
-    /**
-     * Провести приёмку: создаёт партии по позициям (если не заданы) и кладёт товар на указанную локацию.
-     * Операция идемпотентна: повторный вызов для уже проведённого документа завершится исключением.
-     *
-     * @param receiptId    документ к проведению (должен быть DRAFT)
-     * @param toLocationId локация размещения
-     * @param actor        пользователь (для аудита), может быть null на dev-этапе
-     */
+    // --------------------------------------------------------------------
+    // SNAPSHOT BUILDER — JSON SAFE, no recursion
+    // --------------------------------------------------------------------
+
+    private AuditSnapshot snapshot(Receipt r) {
+
+        List<AuditSnapshot.Item> items = r.getItems().stream()
+                .map(i -> new AuditSnapshot.Item(
+                        i.getId(),
+                        i.getProduct().getId(),
+                        i.getBatch() != null ? i.getBatch().getId() : null,
+                        i.getQty(),
+                        i.getPrice().toPlainString()
+                ))
+                .toList();
+
+        return new AuditSnapshot(
+                r.getId(),
+                r.getNumber(),
+                r.getStatus().name(),
+                r.getCreatedAt(),
+                r.getCreatedBy() != null ? r.getCreatedBy().getUsername() : null,
+                r.getSupplier() != null ? r.getSupplier().getName() : null,
+                items
+        );
+    }
+
+    // --------------------------------------------------------------------
+    // COMMIT
+    // --------------------------------------------------------------------
+
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     public void commit(Long receiptId, Long toLocationId, User actor) {
 
@@ -51,12 +70,14 @@ public class ReceiptService {
 
         em.lock(receipt, LockModeType.PESSIMISTIC_WRITE);
 
-        if (receipt.getStatus() == DocStatus.COMMITTED) {
+        if (receipt.getStatus() == DocStatus.COMMITTED)
             throw new DocumentAlreadyCommittedException("Receipt already committed");
-        }
 
         Location loc = locationRepository.findById(toLocationId)
                 .orElseThrow(() -> new NotFoundException("Location not found: " + toLocationId));
+
+        // BEFORE snapshot
+        AuditSnapshot before = snapshot(receipt);
 
         BigDecimal total = BigDecimal.ZERO;
 
@@ -64,6 +85,7 @@ public class ReceiptService {
 
             Batch batch = it.getBatch();
 
+            // ---------------- CREATE NEW BATCH IF MISSING ----------------
             if (batch == null) {
                 batch = Batch.builder()
                         .product(it.getProduct())
@@ -72,36 +94,31 @@ public class ReceiptService {
                         .receivedAt(receipt.getCreatedAt())
                         .quantity(it.getQty())
                         .availableQty(it.getQty())
+                        .location(loc)
                         .build();
 
                 batch = batchRepository.save(batch);
-
-                // прикрепляем локацию
-                batch.setLocation(loc);
-                batchRepository.save(batch);
 
                 it.setBatch(batch);
                 receiptItemRepository.save(it);
             }
 
-            // кладём товар
+            // ---------------- PUT TO STOCK ----------------
             stockService.increase(it.getProduct(), batch, loc, it.getQty());
 
-            BigDecimal lineSum = it.getPrice().multiply(BigDecimal.valueOf(it.getQty()));
-            total = total.add(lineSum);
+            total = total.add(
+                    it.getPrice().multiply(BigDecimal.valueOf(it.getQty()))
+            );
         }
-
-        var before = Receipt.builder()
-                .id(receipt.getId())
-                .number(receipt.getNumber())
-                .status(receipt.getStatus())
-                .totalSum(receipt.getTotalSum())
-                .build();
 
         receipt.setTotalSum(total);
         receipt.setStatus(DocStatus.COMMITTED);
+
         receiptRepository.save(receipt);
 
-        auditService.log(actor, "RECEIPT_COMMIT", "Receipt", receipt.getId(), before, receipt);
+        // AFTER snapshot
+        AuditSnapshot after = snapshot(receipt);
+
+        auditService.log(actor, "RECEIPT_COMMIT", "Receipt", receipt.getId(), before, after);
     }
 }

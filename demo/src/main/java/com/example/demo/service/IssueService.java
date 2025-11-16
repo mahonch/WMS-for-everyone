@@ -1,15 +1,12 @@
 package com.example.demo.service;
 
+import com.example.demo.audit.AuditSnapshot;
 import com.example.demo.entity.*;
 import com.example.demo.entity.enums.DocStatus;
 import com.example.demo.exception.DocumentAlreadyCommittedException;
 import com.example.demo.exception.NegativeStockException;
 import com.example.demo.exception.NotFoundException;
-import com.example.demo.repository.BatchRepository;
-import com.example.demo.repository.IssueItemRepository;
-import com.example.demo.repository.IssueRepository;
-import com.example.demo.repository.LocationRepository;
-import com.example.demo.repository.StockRepository;
+import com.example.demo.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,48 +29,48 @@ public class IssueService {
 
     @Transactional
     public void commit(Long issueId, Long fromLocationId, User actor) {
+
         Issue issue = issueRepository.findById(issueId)
                 .orElseThrow(() -> new NotFoundException("Issue not found: " + issueId));
+
         if (issue.getStatus() == DocStatus.COMMITTED)
             throw new DocumentAlreadyCommittedException("Issue already committed");
 
         Location loc = locationRepository.findById(fromLocationId)
                 .orElseThrow(() -> new NotFoundException("Location not found: " + fromLocationId));
 
-        var before = Issue.builder()
-                .id(issue.getId())
-                .number(issue.getNumber())
-                .status(issue.getStatus())
-                .build();
+        // ---------- BEFORE SNAPSHOT ----------
+        AuditSnapshot before = snapshot(issue);
 
-        // Собираем новые позиции, которые появятся при разбиении строк по партиям
+        // список новых строк при разбиении по FIFO
         List<IssueItem> itemsToAppend = new ArrayList<>();
 
-        // Идём по исходным строкам
+        // разбираем позиции
         for (Iterator<IssueItem> itIter = issue.getItems().iterator(); itIter.hasNext(); ) {
             IssueItem it = itIter.next();
 
-            // Если партия указана — списываем как раньше
+            // Если партия известна → просто списываем
             if (it.getBatch() != null) {
+
                 Batch batch = batchRepository.findById(it.getBatch().getId())
                         .orElseThrow(() -> new NotFoundException("Batch not found: " + it.getBatch().getId()));
+
                 stockService.decrease(it.getProduct(), batch, loc, it.getQty());
                 it.setCostPrice(batch.getBuyPrice());
+
                 continue;
             }
 
-            // === Автоподбор FIFO по партиям в этой локации ===
+            // -------- AUTO FIFO --------
             int need = it.getQty();
             var fifoStocks = stockRepository.findFifoStocks(it.getProduct(), loc);
 
             if (fifoStocks.isEmpty()) {
-                throw new NegativeStockException("Нет доступных партий для продукта " + it.getProduct().getSku()
-                        + " на локации " + loc.getCode());
+                throw new NegativeStockException("No stocks found for product " +
+                        it.getProduct().getSku() + " at location " + loc.getCode());
             }
 
-            // будем заполнять текущую строку первой найденной партией,
-            // остаток (если нужен) разнесём в новые строки
-            boolean firstAllocationDone = false;
+            boolean firstUsed = false;
 
             for (Stock s : fifoStocks) {
                 if (need <= 0) break;
@@ -83,18 +80,15 @@ public class IssueService {
 
                 int take = Math.min(available, need);
 
-                // списываем со склада + уменьшаем availableQty партии (внутри StockService)
                 stockService.decrease(it.getProduct(), s.getBatch(), loc, take);
 
-                if (!firstAllocationDone) {
-                    // текущую строку "привяжем" к первой партии и установим списанное количество
+                if (!firstUsed) {
                     it.setBatch(s.getBatch());
                     it.setQty(take);
                     it.setCostPrice(s.getBatch().getBuyPrice());
                     issueItemRepository.save(it);
-                    firstAllocationDone = true;
+                    firstUsed = true;
                 } else {
-                    // добавляем новую строку под следующую партию
                     IssueItem extra = IssueItem.builder()
                             .issue(issue)
                             .product(it.getProduct())
@@ -102,6 +96,7 @@ public class IssueService {
                             .qty(take)
                             .costPrice(s.getBatch().getBuyPrice())
                             .build();
+
                     itemsToAppend.add(extra);
                 }
 
@@ -109,21 +104,51 @@ public class IssueService {
             }
 
             if (need > 0) {
-                // В сумме по FIFO-партиям не хватило количества — откатываемся исключением
-                throw new NegativeStockException("Недостаточно остатков для продукта "
-                        + it.getProduct().getSku() + " на локации " + loc.getCode());
+                throw new NegativeStockException("Not enough stocks for product " +
+                        it.getProduct().getSku() + " at location " + loc.getCode());
             }
         }
 
-        // Присоединяем добавленные строки (если были разбиения)
+        // добавляем новые строки
         if (!itemsToAppend.isEmpty()) {
             issue.getItems().addAll(itemsToAppend);
             issueItemRepository.saveAll(itemsToAppend);
         }
 
+        // ---------- COMMIT ----------
         issue.setStatus(DocStatus.COMMITTED);
         issueRepository.save(issue);
 
-        auditService.log(actor, "ISSUE_COMMIT", "Issue", issue.getId(), before, issue);
+        // ---------- AFTER SNAPSHOT ----------
+        AuditSnapshot after = snapshot(issue);
+
+        auditService.log(actor, "ISSUE_COMMIT", "Issue", issue.getId(), before, after);
+    }
+
+
+    // ---------------------------------------------
+    // SNAPSHOT BUILDER — JSON SAFE
+    // ---------------------------------------------
+    private AuditSnapshot snapshot(Issue issue) {
+
+        List<AuditSnapshot.Item> itemSnapshots = issue.getItems().stream()
+                .map(it -> new AuditSnapshot.Item(
+                        it.getId(),
+                        it.getProduct().getId(),
+                        it.getBatch() != null ? it.getBatch().getId() : null,
+                        it.getQty(),
+                        it.getCostPrice() != null ? it.getCostPrice().toPlainString() : "0"
+                ))
+                .toList();
+
+        return new AuditSnapshot(
+                issue.getId(),
+                issue.getNumber(),
+                issue.getStatus().name(),
+                issue.getCreatedAt(),
+                issue.getCreatedBy() != null ? issue.getCreatedBy().getUsername() : null,
+                issue.getReason(),
+                itemSnapshots
+        );
     }
 }

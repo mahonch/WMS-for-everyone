@@ -3,12 +3,15 @@ package com.example.demo.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "issue_items")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class IssueItem {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(optional = false)
@@ -26,7 +29,6 @@ public class IssueItem {
     @Column(nullable = false)
     private Integer qty;
 
-    // фиксируем себестоимость для отчётности
     @Column(name = "cost_price", nullable = false)
-    private java.math.BigDecimal costPrice = java.math.BigDecimal.ZERO;
+    private BigDecimal costPrice = BigDecimal.ZERO;
 }

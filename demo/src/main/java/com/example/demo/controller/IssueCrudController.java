@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -29,19 +31,22 @@ public class IssueCrudController {
     @GetMapping
     public Page<IssueDtos.View> list(@RequestParam(defaultValue = "0") int page,
                                      @RequestParam(defaultValue = "20") int size) {
+
         return issueRepository.findAll(PageRequest.of(page, size, Sort.by("id").descending()))
                 .map(this::toView);
     }
 
     @GetMapping("/{id}")
     public IssueDtos.View get(@PathVariable Long id) {
-        Issue doc = issueRepository.findById(id).orElseThrow(() -> new NotFoundException("Issue not found"));
+        Issue doc = issueRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Issue not found"));
         return toView(doc);
     }
 
     @PostMapping
     @Transactional
     public IssueDtos.View create(@Valid @RequestBody IssueDtos.Create dto) {
+
         User createdBy = userRepository.findById(dto.createdById())
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
@@ -55,57 +60,97 @@ public class IssueCrudController {
                 .reason(dto.reason())
                 .status(DocStatus.DRAFT)
                 .build();
-        doc = issueRepository.save(doc);
+
+        issueRepository.save(doc);
 
         if (dto.items() != null) {
             for (IssueDtos.ItemCreate ic : dto.items()) {
+
                 Product p = productRepository.findById(ic.productId())
                         .orElseThrow(() -> new NotFoundException("Product not found: " + ic.productId()));
+
                 Batch b = ic.batchId() == null ? null :
                         batchRepository.findById(ic.batchId())
                                 .orElseThrow(() -> new NotFoundException("Batch not found: " + ic.batchId()));
+
+                BigDecimal cost = b != null ? b.getBuyPrice() : BigDecimal.ZERO;
+
                 IssueItem item = IssueItem.builder()
-                        .issue(doc).product(p).batch(b).qty(ic.qty())
+                        .issue(doc)
+                        .product(p)
+                        .batch(b)
+                        .qty(ic.qty())
+                        .costPrice(cost)
                         .build();
+
                 issueItemRepository.save(item);
                 doc.getItems().add(item);
             }
         }
+
         return toView(doc);
     }
 
     @PostMapping("/{id}/items")
     @Transactional
-    public IssueDtos.ViewItem addItem(@PathVariable Long id, @Valid @RequestBody IssueDtos.ItemCreate dto) {
+    public IssueDtos.ViewItem addItem(@PathVariable Long id,
+                                      @Valid @RequestBody IssueDtos.ItemCreate dto) {
+
         Issue doc = mustBeDraft(id);
+
         Product p = productRepository.findById(dto.productId())
                 .orElseThrow(() -> new NotFoundException("Product not found: " + dto.productId()));
+
         Batch b = dto.batchId() == null ? null :
                 batchRepository.findById(dto.batchId())
                         .orElseThrow(() -> new NotFoundException("Batch not found: " + dto.batchId()));
+
+        BigDecimal cost = b != null ? b.getBuyPrice() : BigDecimal.ZERO;
+
         IssueItem item = IssueItem.builder()
-                .issue(doc).product(p).batch(b).qty(dto.qty())
+                .issue(doc)
+                .product(p)
+                .batch(b)
+                .qty(dto.qty())
+                .costPrice(cost)
                 .build();
+
         item = issueItemRepository.save(item);
         doc.getItems().add(item);
-        return new IssueDtos.ViewItem(item.getId(), p.getId(), b != null ? b.getId() : null, item.getQty(), item.getCostPrice());
+
+        return new IssueDtos.ViewItem(item.getId(), p.getId(),
+                b != null ? b.getId() : null, item.getQty(), item.getCostPrice());
     }
 
     @PutMapping("/{id}/items/{itemId}")
     @Transactional
-    public IssueDtos.ViewItem updateItem(@PathVariable Long id, @PathVariable Long itemId, @Valid @RequestBody IssueDtos.ItemUpdate dto) {
+    public IssueDtos.ViewItem updateItem(@PathVariable Long id,
+                                         @PathVariable Long itemId,
+                                         @Valid @RequestBody IssueDtos.ItemUpdate dto) {
+
         Issue doc = mustBeDraft(id);
-        IssueItem item = issueItemRepository.findById(itemId).orElseThrow(() -> new NotFoundException("Issue item not found"));
+
+        IssueItem item = issueItemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Issue item not found"));
+
         Product p = productRepository.findById(dto.productId())
                 .orElseThrow(() -> new NotFoundException("Product not found: " + dto.productId()));
+
         Batch b = dto.batchId() == null ? null :
                 batchRepository.findById(dto.batchId())
                         .orElseThrow(() -> new NotFoundException("Batch not found: " + dto.batchId()));
+
+        BigDecimal cost = b != null ? b.getBuyPrice() : BigDecimal.ZERO;
+
         item.setProduct(p);
         item.setBatch(b);
         item.setQty(dto.qty());
-        item = issueItemRepository.save(item);
-        return new IssueDtos.ViewItem(item.getId(), p.getId(), b != null ? b.getId() : null, item.getQty(), item.getCostPrice());
+        item.setCostPrice(cost);
+
+        issueItemRepository.save(item);
+
+        return new IssueDtos.ViewItem(item.getId(), p.getId(),
+                b != null ? b.getId() : null, item.getQty(), item.getCostPrice());
     }
 
     @DeleteMapping("/{id}/items/{itemId}")
@@ -119,30 +164,43 @@ public class IssueCrudController {
     @Transactional
     public void deleteDraft(@PathVariable Long id) {
         Issue doc = mustBeDraft(id);
+
         for (var it : List.copyOf(doc.getItems())) {
             issueItemRepository.deleteById(it.getId());
         }
+
         issueRepository.deleteById(doc.getId());
     }
 
     private IssueDtos.View toView(Issue d) {
-        return new IssueDtos.View(
-                d.getId(), d.getNumber(), d.getStatus().name(),
-                d.getCreatedBy() != null ? d.getCreatedBy().getId() : null,
-                d.getReason(), d.getCreatedAt(),
+
+        List<IssueDtos.ViewItem> itemViews =
                 d.getItems().stream().map(i -> new IssueDtos.ViewItem(
                         i.getId(),
                         i.getProduct().getId(),
                         i.getBatch() != null ? i.getBatch().getId() : null,
                         i.getQty(),
                         i.getCostPrice()
-                )).toList()
+                )).toList();
+
+        return new IssueDtos.View(
+                d.getId(),
+                d.getNumber(),
+                d.getStatus().name(),
+                d.getCreatedBy() != null ? d.getCreatedBy().getId() : null,
+                d.getReason(),
+                d.getCreatedAt(),
+                itemViews
         );
     }
 
     private Issue mustBeDraft(Long id) {
-        Issue d = issueRepository.findById(id).orElseThrow(() -> new NotFoundException("Issue not found"));
-        if (d.getStatus() != DocStatus.DRAFT) throw new IllegalStateException("Only DRAFT can be modified");
+        Issue d = issueRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Issue not found"));
+
+        if (d.getStatus() != DocStatus.DRAFT)
+            throw new IllegalStateException("Only DRAFT can be modified");
+
         return d;
     }
 }
