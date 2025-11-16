@@ -9,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -25,14 +26,17 @@ public class AdminUserService {
     }
 
     @Transactional
-    public User create(String username, String rawPassword, String roleCode) {
+    public User create(String username, String rawPassword, String roleCode, String email) {
         var role = roles.findByCode(roleCode).orElseThrow();
+
         var u = User.builder()
                 .username(username)
-                .password(encoder.encode(rawPassword))
+                .email(email)
+                .passwordHash(encoder.encode(rawPassword))
                 .active(true)
                 .roles(Set.of(role))
                 .build();
+
         return users.save(u);
     }
 
@@ -40,7 +44,13 @@ public class AdminUserService {
     public User updateRole(Long userId, String roleCode) {
         var u = users.findById(userId).orElseThrow();
         var role = roles.findByCode(roleCode).orElseThrow();
-        u.setRoles(Set.of(role));
+
+        // ✔ сброс ролей
+        u.getRoles().clear();
+
+        // ✔ установка новой
+        u.getRoles().add(role);
+
         return users.save(u);
     }
 
@@ -52,7 +62,9 @@ public class AdminUserService {
     }
 
     @Transactional
-    public void delete(Long userId) {
-        users.deleteById(userId);
+    public void safeDelete(Long userId) {
+        var u = users.findById(userId).orElseThrow();
+        u.setActive(false);
+        users.save(u);
     }
 }

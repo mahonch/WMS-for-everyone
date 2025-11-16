@@ -31,7 +31,7 @@ public class DataInitializer implements CommandLineRunner {
             var adminRole = roleRepository.findByCode("ADMIN").orElseThrow();
             User u = User.builder()
                     .username("admin")
-                    .password(passwordEncoder.encode("1111"))
+                    .passwordHash(passwordEncoder.encode("1111"))
                     .active(true)
                     .roles(Set.of(adminRole))
                     .build();

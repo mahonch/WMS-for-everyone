@@ -28,44 +28,46 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // фронт работает без cookies → CSRF отключаем
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
                 .authorizeHttpRequests(reg -> reg
-                        // статика и публичные страницы
+
+                        // статика
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
-                        .requestMatchers("/", "/index.html", "/dashboard.html", "/scan.html", "/labels.html", "/favicon.ico").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/assets/**", "/webjars/**").permitAll()
+
+                        // публичные страницы
+                        .requestMatchers("/", "/index.html", "/dashboard.html", "/scan.html",
+                                "/labels.html", "/admin.html", "/favicon.ico").permitAll()
 
                         // swagger
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
-                        // ошибки
-                        .requestMatchers("/error").permitAll()
-
-                        // аутентификация
+                        // authentication
                         .requestMatchers("/api/auth/**").permitAll()
 
-                        // публичные api (если нужно)
+                        // публичные API
+                        .requestMatchers("/api/qr/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/scan").permitAll()
-                        .requestMatchers(HttpMethod.GET,  "/api/qr/**").permitAll()
 
-                        // 🔐 АДМИН-ПАНЕЛЬ — только ADMIN (ставим до общих правил!)
+                        // admin API
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                        // остальные GET по API — чтение доступно этим ролям
+                        // GET /api/**
                         .requestMatchers(HttpMethod.GET, "/api/**")
-                        .hasAnyRole("ADMIN","MANAGER","STOREKEEPER","GUEST")
+                        .hasAnyRole("ADMIN", "MANAGER", "STOREKEEPER", "GUEST")
 
-                        // операций по складу — ADMIN | STOREKEEPER
+                        // складские документы
                         .requestMatchers("/api/receipts/**", "/api/issues/**", "/api/transfers/**")
-                        .hasAnyRole("ADMIN","STOREKEEPER")
+                        .hasAnyRole("ADMIN", "STOREKEEPER")
 
                         // всё остальное — только ADMIN
                         .anyRequest().hasRole("ADMIN")
                 )
-                .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable())
+
+                .formLogin(f -> f.disable())
+                .httpBasic(h -> h.disable())
                 .authenticationProvider(authProvider())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

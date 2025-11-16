@@ -1,8 +1,15 @@
-// если нет токена — отправляем на логин
+// /js/dashboard.js
+
 const token = localStorage.getItem('token');
 if (!token) {
+    console.warn('[DASHBOARD] Нет токена, редирект на /index.html');
     window.location.href = '/index.html';
 }
+
+// общий дебаг авторизации
+debugAuthContext('DASHBOARD').then(() => {
+    console.log('[DASHBOARD] debugAuthContext завершён');
+});
 
 // алерты
 const alerts = document.getElementById('alerts');
@@ -22,6 +29,7 @@ if (uLabel) uLabel.textContent = localStorage.getItem('username') || 'польз
 const logoutBtn = document.getElementById('logoutBtn');
 if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
+        console.log('[DASHBOARD] Logout clicked');
         localStorage.removeItem('token');
         localStorage.removeItem('refresh');
         localStorage.removeItem('username');
@@ -30,13 +38,20 @@ if (logoutBtn) {
     });
 }
 
-// универсальный GET с Bearer
+// универсальный GET с Bearer + лог
 async function apiGet(url) {
+    const t = localStorage.getItem('token') || '';
+    console.log('[DASHBOARD][apiGet] →', url, { tokenPresent: !!t, tokenShort: t ? t.substring(0, 20) + '...' : null });
+
     const res = await fetch(url, {
-        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        headers: { 'Authorization': 'Bearer ' + t }
     });
     let data = null;
-    try { data = await res.json(); } catch (_) {}
+    try { data = await res.json(); } catch (_) {
+        console.warn('[DASHBOARD][apiGet] Не удалось распарсить JSON');
+    }
+    console.log('[DASHBOARD][apiGet] ←', url, 'status =', res.status, 'body =', data);
+
     if (!res.ok) {
         const msg = (data && (data.message || data.error)) || `Ошибка запроса (${res.status})`;
         throw new Error(msg);
@@ -61,28 +76,29 @@ async function apiGet(url) {
         document.getElementById('metricBatches').textContent   = b;
         document.getElementById('metricLocations').textContent = l;
     } catch (e) {
+        console.error('[DASHBOARD] load metrics error', e);
         pushAlert('error', e.message || 'Не удалось загрузить метрики');
     }
 })();
+
+// показать кнопку админа при ADMIN
 (function showAdminIfNeeded() {
     const btn = document.getElementById('adminBtn');
     if (!btn) return;
 
-    // пытаемся взять роль из localStorage (её кладём при логине)
     let roleLS = (localStorage.getItem('role') || '').toUpperCase();
+    let jwtRole = '';
 
-    // если в LS нет роли — попробуем достать её из JWT (claim "role")
-    if (!roleLS) {
-        try {
-            const token = localStorage.getItem('token');
-            if (token) {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                roleLS = (payload.role || '').toUpperCase();
-            }
-        } catch (_) { /*ignore*/ }
-    }
+    try {
+        const t = localStorage.getItem('token');
+        if (t) {
+            const payload = JSON.parse(atob(t.split('.')[1]));
+            jwtRole = (payload.role || '').toUpperCase();
+        }
+    } catch (_) {}
 
-    // допускаем форматы "ADMIN" и "ROLE_ADMIN"
-    const isAdmin = roleLS.includes('ADMIN');
+    console.log('[DASHBOARD] showAdminIfNeeded roles:', { roleLS, jwtRole });
+
+    const isAdmin = roleLS.includes('ADMIN') || jwtRole.includes('ADMIN');
     if (isAdmin) btn.classList.remove('hidden');
 })();

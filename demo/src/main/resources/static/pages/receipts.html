@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Приёмки — WMS</title>
+
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="/js/auth-debug.js"></script>
+    <script defer src="/js/receipts.js"></script>
+
+    <style>
+        .toolbar {
+            display:flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            align-items:center;
+        }
+        .toolbar button {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        table {
+            width:100%;
+            border-collapse: collapse;
+        }
+        table th, table td {
+            border:1px solid #ccc;
+            padding:6px 8px;
+        }
+        table th { background:#eee; }
+        .alert { padding:8px; margin-top:10px; border-radius:4px; }
+        .alert.error { background:#ffdddd; border:1px solid #ff8888; }
+        .alert.success { background:#ddffdd; border:1px solid #88cc88; }
+        #modal {
+            position:fixed;
+            left:0; top:0; right:0; bottom:0;
+            background:rgba(0,0,0,0.5);
+            display:none;
+            justify-content:center;
+            align-items:center;
+        }
+        #modalContent {
+            background:white;
+            padding:20px;
+            width: 600px;
+            border-radius:6px;
+        }
+        #closeModal { float:right; cursor:pointer; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h2>Приёмки</h2>
+    <div>Пользователь: <span id="usernameLabel"></span></div>
+    <button id="logoutBtn">Выйти</button>
+</header>
+
+<div id="alerts"></div>
+
+<div class="toolbar">
+    <div>
+        <button id="btnCreate">+ Новая приёмка</button>
+    </div>
+</div>
+
+<table id="receiptsTable">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Номер</th>
+        <th>Дата</th>
+        <th>Создал</th>
+        <th>Поставщик</th>
+        <th>Сумма</th>
+        <th>Статус</th>
+        <th>Действия</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<!-- Модальное окно -->
+<div id="modal">
+    <div id="modalContent">
+        <span id="closeModal">✖</span>
+
+        <h3 id="modalTitle">Приёмка</h3>
+
+        <div id="modalBody">Загрузка…</div>
+
+        <div style="margin-top:12px; text-align:right">
+            <button id="btnDelete" style="background:#d9534f; color:white; display:none;">Удалить</button>
+            <button id="btnCommit" style="background:#5cb85c; color:white; display:none;">Провести</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

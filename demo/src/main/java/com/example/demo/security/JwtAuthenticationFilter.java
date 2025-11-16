@@ -24,22 +24,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
 
-    // список URL, которые фильтр не трогает
+    /**
+     * ❗ УБРАНО "/" — иначе фильтр НЕ РАБОТАЕТ НИКОГДА
+     */
     private static final List<String> SKIP_PATHS = List.of(
-            "/", "/index.html", "/dashboard.html", "/scan.html", "/labels.html",
-            "/error", "/favicon.ico",
+            "/index.html", "/dashboard.html", "/scan.html", "/labels.html",
+            "/admin.html",
+            "/favicon.ico", "/error",
             "/css/", "/js/", "/images/", "/assets/", "/webjars/",
-            "/v3/api-docs/", "/swagger-ui/", "/api/auth/"
+            "/v3/api-docs/", "/swagger-ui/",
+            "/api/auth/",          // login / refresh
+            "/api/auth/me"         // информация о себе
     );
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String uri = request.getRequestURI();
+
         for (String prefix : SKIP_PATHS) {
             if (uri.equals(prefix) || uri.startsWith(prefix)) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -50,31 +57,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        // нет токена — пропускаем
         if (header == null || !header.startsWith("Bearer ")) {
             chain.doFilter(request, response);
             return;
         }
 
         final String token = header.substring(7);
+
         try {
             String username = jwtService.getUsername(token);
+
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
                 var auth = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities()
                 );
+
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
+
             chain.doFilter(request, response);
+
         } catch (JwtException ex) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"invalid_token\"}");
-        } catch (Exception ex) {
-            SecurityContextHolder.clearContext();
-            chain.doFilter(request, response);
         }
     }
 }

@@ -25,7 +25,7 @@ public class AdminUserController {
 
     @PostMapping
     public UserDto create(@RequestBody CreateUserReq req) {
-        var u = service.create(req.username, req.password, req.roleCode);
+        var u = service.create(req.username, req.password, req.roleCode, req.email);
         return UserDto.of(u);
     }
 
@@ -35,27 +35,37 @@ public class AdminUserController {
         return UserDto.of(u);
     }
 
-    @PutMapping("/{id}/active")
-    public UserDto changeActive(@PathVariable Long id, @RequestBody ChangeActiveReq req) {
-        var u = service.setActive(id, req.active);
+    @PutMapping("/{id}/status")
+    public UserDto changeStatus(@PathVariable Long id, @RequestBody ChangeStatusReq req) {
+        var u = service.setActive(id, req.status.equals("ACTIVE"));
         return UserDto.of(u);
     }
 
     @DeleteMapping("/{id}")
     public Map<String, Object> delete(@PathVariable Long id) {
-        service.delete(id);
+        service.safeDelete(id);
         return Map.of("ok", true);
     }
 
-    // DTOs
-    @Data public static class CreateUserReq { String username; String password; String roleCode; }
+    // DTO ----------------------------------------------------------------
+
+    @Data
+    public static class CreateUserReq {
+        String username;
+        String password;
+        String roleCode;
+        String email;
+    }
+
     @Data public static class ChangeRoleReq { String roleCode; }
-    @Data public static class ChangeActiveReq { boolean active; }
+
+    @Data public static class ChangeStatusReq { String status; }
 
     @Data
     public static class UserDto {
         Long id;
         String username;
+        String email;
         boolean active;
         String role;
 
@@ -63,6 +73,7 @@ public class AdminUserController {
             var dto = new UserDto();
             dto.id = u.getId();
             dto.username = u.getUsername();
+            dto.email = u.getEmail();
             dto.active = Boolean.TRUE.equals(u.getActive());
             dto.role = u.getRoles().isEmpty()
                     ? "GUEST"
