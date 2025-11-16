@@ -35,11 +35,11 @@ public class SecurityConfig {
 
                         // статика
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/assets/**", "/webjars/**").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**","/api/batches","/api/receipts/**", "/assets/**", "/webjars/**", "/api/audit/recent", "/api/audit/**").permitAll()
 
                         // публичные страницы
                         .requestMatchers("/", "/index.html", "/dashboard.html", "/scan.html",
-                                "/labels.html", "/admin.html", "/favicon.ico").permitAll()
+                                "/labels.html", "/admin.html", "/favicon.ico", "/pages","/pages/receipts.html").permitAll()
 
                         // swagger
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()

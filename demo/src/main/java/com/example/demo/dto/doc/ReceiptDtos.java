@@ -27,13 +27,22 @@ public class ReceiptDtos {
     ) {}
 
     public record View(
-            Long id, String number, String status,
-            Long supplierId, Long createdBy,
-            LocalDateTime createdAt, BigDecimal totalSum,
+            Long id,
+            String number,
+            String status,
+            Long supplierId,
+            Long createdBy,
+            String createdByName,       // <---- ДОБАВИЛ
+            LocalDateTime createdAt,
+            BigDecimal totalSum,
             List<ViewItem> items
     ) {}
 
     public record ViewItem(
-            Long id, Long productId, Integer qty, BigDecimal price, Long batchId
+            Long id,
+            Long productId,
+            Integer qty,
+            BigDecimal price,
+            Long batchId
     ) {}
 }

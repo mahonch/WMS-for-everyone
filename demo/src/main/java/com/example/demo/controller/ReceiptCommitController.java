@@ -9,13 +9,13 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/receipts")
 @RequiredArgsConstructor
-public class ReceiptController {
+public class ReceiptCommitController {
 
     private final ReceiptService receiptService;
 
     @PostMapping("/{id}/commit")
-    public ResponseEntity<?> commit(@PathVariable Long id, @RequestBody ReceiptCommitRequest body) {
-        // На этапе dev аудита достаточно, actor = null (в AuditLog actor_id будет NULL)
+    public ResponseEntity<?> commit(@PathVariable Long id,
+                                    @RequestBody ReceiptCommitRequest body) {
         receiptService.commit(id, body.toLocationId(), null);
         return ResponseEntity.ok().build();
     }

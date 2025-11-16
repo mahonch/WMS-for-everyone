@@ -15,9 +15,10 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 
 @RestController
-@RequestMapping("/api/receipts")
+@RequestMapping("/api/receipts/search")
 @RequiredArgsConstructor
 public class ReceiptSearchController {
+
 
     private final ReceiptRepository receiptRepository;
 
@@ -40,8 +41,10 @@ public class ReceiptSearchController {
         if (p.dateFrom() != null || p.dateTo() != null) {
             spec = spec.and((root, q, cb) -> {
                 var path = root.get("createdAt");
-                if (p.dateFrom() != null && p.dateTo() != null) return cb.between(root.<LocalDateTime>get("createdAt"), p.dateFrom(), p.dateTo());
-                if (p.dateFrom() != null) return cb.greaterThanOrEqualTo(root.<LocalDateTime>get("createdAt"), p.dateFrom());
+                if (p.dateFrom() != null && p.dateTo() != null)
+                    return cb.between(root.<LocalDateTime>get("createdAt"), p.dateFrom(), p.dateTo());
+                if (p.dateFrom() != null)
+                    return cb.greaterThanOrEqualTo(root.<LocalDateTime>get("createdAt"), p.dateFrom());
                 return cb.lessThanOrEqualTo(root.<LocalDateTime>get("createdAt"), p.dateTo());
             });
         }
@@ -61,10 +64,18 @@ public class ReceiptSearchController {
 
     private ReceiptDtos.View toView(Receipt r) {
         return new ReceiptDtos.View(
-                r.getId(), r.getNumber(), r.getStatus().name(),
+                r.getId(),
+                r.getNumber(),
+                r.getStatus().name(),
+
                 r.getSupplier() != null ? r.getSupplier().getId() : null,
+
                 r.getCreatedBy() != null ? r.getCreatedBy().getId() : null,
-                r.getCreatedAt(), r.getTotalSum(),
+                r.getCreatedBy() != null ? r.getCreatedBy().getUsername() : null,
+
+                r.getCreatedAt(),
+                r.getTotalSum(),
+
                 r.getItems().stream().map(i -> new ReceiptDtos.ViewItem(
                         i.getId(),
                         i.getProduct().getId(),

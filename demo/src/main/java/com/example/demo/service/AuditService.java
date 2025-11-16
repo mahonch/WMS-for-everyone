@@ -11,20 +11,25 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class AuditService {
+
     private final AuditLogRepository auditLogRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public void log(User actor, String action, String entity, Long entityId, Object before, Object after) {
+    public void log(User actor, String action, String entity,
+                    Long entityId, Object before, Object after) {
+
         JsonNode beforeJson = toJson(before);
-        JsonNode afterJson  = toJson(after);
+        JsonNode afterJson = toJson(after);
+
         AuditLog log = AuditLog.builder()
                 .actor(actor)
                 .action(action)
                 .entity(entity)
                 .entityId(entityId)
-                .beforeJson(beforeJson)
-                .afterJson(afterJson)
+                .beforeJson(beforeJson != null ? beforeJson.toString() : null)
+                .afterJson(afterJson != null ? afterJson.toString() : null)
                 .build();
+
         auditLogRepository.save(log);
     }
 

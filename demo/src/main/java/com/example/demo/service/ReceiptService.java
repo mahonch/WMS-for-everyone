@@ -34,6 +34,7 @@ public class ReceiptService {
     private final AuditService auditService;
     private final EntityManager em;
     private Instant createdAt;
+
     /**
      * Провести приёмку: создаёт партии по позициям (если не заданы) и кладёт товар на указанную локацию.
      * Операция идемпотентна: повторный вызов для уже проведённого документа завершится исключением.
@@ -44,10 +45,10 @@ public class ReceiptService {
      */
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     public void commit(Long receiptId, Long toLocationId, User actor) {
+
         Receipt receipt = receiptRepository.findById(receiptId)
                 .orElseThrow(() -> new NotFoundException("Receipt not found: " + receiptId));
 
-        // Жёсткая блокировка заголовка на время коммита (защита от параллельных коммитов)
         em.lock(receipt, LockModeType.PESSIMISTIC_WRITE);
 
         if (receipt.getStatus() == DocStatus.COMMITTED) {
@@ -60,32 +61,36 @@ public class ReceiptService {
         BigDecimal total = BigDecimal.ZERO;
 
         for (ReceiptItem it : receipt.getItems()) {
-            // Если партия не задана — создаём новую под позицию
+
             Batch batch = it.getBatch();
+
             if (batch == null) {
                 batch = Batch.builder()
                         .product(it.getProduct())
                         .supplier(receipt.getSupplier())
                         .buyPrice(it.getPrice())
-                        .receivedAt(receipt.getCreatedAt() != null ? receipt.getCreatedAt() : LocalDateTime.from(it.getCreatedAt()))
-                        // quantity/availableQty при желании можно хранить на Batch как "паспортные" поля,
-                        // но фактический остаток ведём в Stock.
+                        .receivedAt(receipt.getCreatedAt())
+                        .quantity(it.getQty())
+                        .availableQty(it.getQty())
                         .build();
+
                 batch = batchRepository.save(batch);
+
+                // прикрепляем локацию
+                batch.setLocation(loc);
+                batchRepository.save(batch);
 
                 it.setBatch(batch);
                 receiptItemRepository.save(it);
             }
 
-            // Кладём на склад (увеличиваем Stock и, если реализовано, availableQty в Batch)
+            // кладём товар
             stockService.increase(it.getProduct(), batch, loc, it.getQty());
 
-            // Сумма по документу
             BigDecimal lineSum = it.getPrice().multiply(BigDecimal.valueOf(it.getQty()));
             total = total.add(lineSum);
         }
 
-        // Снэпшот "до" (для аудита)
         var before = Receipt.builder()
                 .id(receipt.getId())
                 .number(receipt.getNumber())
