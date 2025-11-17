@@ -7,11 +7,10 @@ import java.util.List;
 public class TransferDtos {
 
     public record Create(
+            @NotNull Long createdById,
             @NotNull Long fromLocationId,
             @NotNull Long toLocationId,
-            Long createdById,
-            String number,
-            List<ItemCreate> items
+            String number
     ) {}
 
     public record ItemCreate(
@@ -20,20 +19,21 @@ public class TransferDtos {
             @NotNull @Min(1) Integer qty
     ) {}
 
-    public record ItemUpdate(
-            @NotNull Long productId,
-            @NotNull Long batchId,
-            @NotNull @Min(1) Integer qty
-    ) {}
-
     public record View(
-            Long id, String number, String status,
-            Long fromLocationId, Long toLocationId, Long createdBy,
+            Long id,
+            String number,
+            String status,
+            Long createdBy,
+            Long fromLocation,
+            Long toLocation,
             LocalDateTime createdAt,
             List<ViewItem> items
     ) {}
 
     public record ViewItem(
-            Long id, Long productId, Long batchId, Integer qty
+            Long id,
+            Long productId,
+            Long batchId,
+            Integer qty
     ) {}
 }

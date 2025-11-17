@@ -11,33 +11,75 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
 public interface StockRepository extends JpaRepository<Stock, StockId> {
 
-    List<Stock> findByLocation(Location location);
+    // ---------------- BASIC FINDERS ----------------
 
+    List<Stock> findByLocation(Location location);
     List<Stock> findByProduct(Product product);
 
-    Optional<Stock> findByProductAndLocationAndBatch(Product product, Location location, Batch batch);
+    Optional<Stock> findByProductAndLocationAndBatch(Product product,
+                                                     Location location,
+                                                     Batch batch);
 
-    /**
-     * FIFO-выборка для списаний: только позитивные остатки; блокируем строки на запись,
-     * чтобы параллельные операции не "съели" один и тот же остаток.
-     */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("""
-        select s
-        from Stock s
-        where s.product = :product
-          and s.location = :location
-          and s.qty > 0
-        order by s.batch.receivedAt asc, s.batch.id asc
-    """)
-    List<Stock> findFifoStocks(@Param("product") Product product,
-                               @Param("location") Location location);
     List<Stock> findByProduct_Id(Long productId);
     List<Stock> findByLocation_Id(Long locationId);
     List<Stock> findByProductIdAndLocationId(Long productId, Long locationId);
+
+
+    // ---------------- FIFO for ISSUE ----------------
+
+    /**
+     * FIFO-выборка для списаний (Issue):
+     * выбираем партии по дате поступления, только с qty > 0,
+     * блокируем OPTIMISTIC_WRITE/PESSIMISTIC_WRITE, чтобы не было параллельных гонок.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT s
+        FROM Stock s
+        WHERE s.product = :product
+          AND s.location = :location
+          AND s.qty > 0
+        ORDER BY s.batch.receivedAt ASC, s.batch.id ASC
+    """)
+    List<Stock> findFifoStocks(@Param("product") Product product,
+                               @Param("location") Location location);
+
+
+    // ---------------- LOCATION AGGREGATES ----------------
+
+    /**
+     * Количество уникальных товаров на локации
+     */
+    @Query("""
+        SELECT COUNT(DISTINCT s.product.id)
+        FROM Stock s
+        WHERE s.location.id = :locationId
+    """)
+    Long countProductsByLocation(@Param("locationId") Long locationId);
+
+    /**
+     * Общий запас (сумма qty по всем партиям)
+     */
+    @Query("""
+        SELECT COALESCE(SUM(s.qty), 0)
+        FROM Stock s
+        WHERE s.location.id = :locationId
+    """)
+    Long sumQtyByLocation(@Param("locationId") Long locationId);
+
+    /**
+     * Общая стоимость запасов (qty × batch.buyPrice)
+     */
+    @Query("""
+        SELECT COALESCE(SUM(s.qty * s.batch.buyPrice), 0)
+        FROM Stock s
+        WHERE s.location.id = :locationId
+    """)
+    BigDecimal sumValueByLocation(@Param("locationId") Long locationId);
 }

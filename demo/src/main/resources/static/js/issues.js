@@ -1,147 +1,164 @@
-console.log('[ISSUES] init...');
+import { Modal } from "./modal.js";
 
-debugAuthContext('ISSUES_PAGE').then(() => startPage());
+console.log("[ISSUES] init...");
+
+debugAuthContext("ISSUES_PAGE").then(() => startPage());
 
 let token = null;
 let currentIssue = null;
 
-/* ------------ START PAGE ------------ */
+/* ------------------- START PAGE ------------------- */
+
 function startPage() {
-    token = localStorage.getItem('token');
-    if (!token) return window.location.href = '/index.html';
+    token = localStorage.getItem("token");
+    if (!token) return (window.location.href = "/index.html");
 
-    document.getElementById('usernameLabel').textContent =
-        localStorage.getItem('username') || 'user';
+    document.getElementById("usernameLabel").textContent =
+        localStorage.getItem("username") || "user";
 
-    document.getElementById('logoutBtn').onclick = () => {
+    document.getElementById("logoutBtn").onclick = () => {
         localStorage.clear();
-        window.location.href = '/index.html';
+        window.location.href = "/index.html";
     };
 
     bindEvents();
     loadIssues();
 }
 
-/* ------------ ALERTS ------------ */
-const alerts = document.getElementById('alerts');
+/* ------------------- ALERTS ------------------- */
+
+const alerts = document.getElementById("alerts");
+
 function alertBox(type, text) {
-    const el = document.createElement('div');
+    const el = document.createElement("div");
     el.className = `alert ${type}`;
     el.textContent = text;
     alerts.appendChild(el);
     setTimeout(() => el.remove(), 4000);
 }
 
-/* ------------ API WRAPPER ------------ */
+/* ------------------- API WRAPPER ------------------- */
+
 async function api(method, url, body) {
     const res = await fetch(url, {
         method,
         headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json'
+            Authorization: "Bearer " + token,
+            "Content-Type": "application/json",
         },
-        body: body ? JSON.stringify(body) : undefined
+        body: body ? JSON.stringify(body) : undefined,
     });
 
     let json = null;
-    try { json = await res.json(); } catch {}
+    try {
+        json = await res.json();
+    } catch {}
 
     if (!res.ok) {
-        const msg = json?.message || json?.error || ('Ошибка ' + res.status);
+        const msg = json?.message || json?.error || "Ошибка " + res.status;
         throw new Error(msg);
     }
+
     return json;
 }
 
-/* ------------ LOAD LIST ------------ */
+/* ------------------- LOAD LIST ------------------- */
+
 async function loadIssues() {
-    const page = await api('GET', '/api/issues?page=0&size=200');
-    const tb = document.querySelector('#issuesTable tbody');
-    tb.innerHTML = '';
+    const page = await api("GET", "/api/issues?page=0&size=200");
+    const tb = document.querySelector("#issuesTable tbody");
+    tb.innerHTML = "";
 
     for (const d of page.content) {
-
-        // отображаем USERNAME
         const createdByLabel =
-            window.authUsersCache?.[d.createdBy] ??
-            d.createdBy;
+            window.authUsersCache?.[d.createdBy] ?? d.createdBy;
 
-        const tr = document.createElement('tr');
+        const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${d.id}</td>
             <td>${d.number}</td>
             <td>${d.status}</td>
             <td>${createdByLabel}</td>
-            <td>${d.reason ?? ''}</td>
-            <td>${d.createdAt ?? ''}</td>
+            <td>${d.reason ?? ""}</td>
+            <td>${d.createdAt ?? ""}</td>
             <td><button class="btn btn-secondary openBtn" data-id="${d.id}">Открыть</button></td>
         `;
         tb.appendChild(tr);
     }
 }
 
-/* ------------ EVENTS ------------ */
+/* ------------------- EVENTS ------------------- */
+
 function bindEvents() {
+    document
+        .querySelector("#issuesTable")
+        .addEventListener("click", async (e) => {
+            const btn = e.target.closest(".openBtn");
+            if (!btn) return;
 
-    // открыть документ
-    document.querySelector('#issuesTable').addEventListener('click', async e => {
-        const btn = e.target.closest('.openBtn');
-        if (!btn) return;
-        const id = btn.dataset.id;
-        const d = await api('GET', `/api/issues/${id}`);
-        showDetail(d);
+            const d = await api("GET", `/api/issues/${btn.dataset.id}`);
+            showDetail(d);
+        });
+
+    document.getElementById("btnCreate").onclick = createIssue;
+    document.getElementById("btnAddItem").onclick = addItemModal;
+    document.getElementById("btnCommit").onclick = commitIssue;
+    document.getElementById("btnDeleteDraft").onclick = deleteDraft;
+    document.getElementById("btnCloseDetail").onclick = hideIssueDetailModal;
+    document.getElementById("detailOverlay").addEventListener("click", e => {
+        if (e.target.id === "detailOverlay") hideIssueDetailModal();
     });
 
-    // создать документ
-    document.getElementById('btnCreate').onclick = async () => {
-        const createdById = Number(localStorage.getItem('userId') || 1);
-        const reason = prompt('Причина списания?') || null;
 
-        const dto = { createdById, reason, items: [] };
-        const d = await api('POST', '/api/issues', dto);
-        alertBox('success', 'Создан черновик ' + d.number);
-        await loadIssues();
-    };
 
-    document.getElementById('btnCloseDetail').onclick =
-        () => document.getElementById('detailPanel').style.display = 'none';
 
-    document.getElementById('btnDeleteDraft').onclick = deleteDraft;
-    document.getElementById('btnAddItem').onclick = addItem;
-    document.getElementById('btnCommit').onclick = commitIssue;
-
-    // удаление позиции
-    document.querySelector('#itemsTable').addEventListener('click', async e => {
-        const btn = e.target.closest('.delItemBtn');
-        if (!btn) return;
-
-        if (currentIssue.status !== 'DRAFT')
-            return alertBox('error', 'Можно удалить только DRAFT');
-
-        if (!confirm('Удалить позицию?')) return;
-
-        await api('DELETE',
-            `/api/issues/${currentIssue.id}/items/${btn.dataset.id}`);
-
-        const d = await api('GET', `/api/issues/${currentIssue.id}`);
-        showDetail(d);
-    });
+    document
+        .querySelector("#itemsTable")
+        .addEventListener("click", deleteItemClick);
 }
 
-/* ------------ SHOW DETAIL ------------ */
+/* ------------------- CREATE ISSUE ------------------- */
+
+async function createIssue() {
+    const reason = await new Promise((resolve) => {
+        Modal.open(
+            `
+            <label>Причина списания</label>
+            <input name="reason" placeholder="Например: бой, срок годности">
+        `,
+            {
+                width: "400px",
+                onOk: (d) => resolve(d.reason || null),
+                onCancel: () => resolve(null),
+            }
+        );
+    });
+
+    if (reason === null) return;
+
+    const createdById = Number(localStorage.getItem("userId") || 1);
+
+    const dto = { createdById, reason, items: [] };
+
+    const iss = await api("POST", "/api/issues", dto);
+    alertBox("info", `Создан черновик ${iss.number}`);
+    loadIssues();
+}
+
+/* ------------------- SHOW DETAIL ------------------- */
+
 function showDetail(d) {
     currentIssue = d;
 
-    document.getElementById('detailPanel').style.display = 'block';
+    // открыть модалку
+    showIssueDetailModal();
+
     document.getElementById('d_id').textContent = d.id;
     document.getElementById('d_number').textContent = d.number;
     document.getElementById('d_status').textContent = d.status;
-
     document.getElementById('d_reason').textContent = d.reason ?? '-';
-
     document.getElementById('d_createdBy').textContent =
         window.authUsersCache?.[d.createdBy] ?? d.createdBy;
-
     document.getElementById('d_date').textContent = d.createdAt ?? '-';
 
     const tb = document.querySelector('#itemsTable tbody');
@@ -164,74 +181,140 @@ function showDetail(d) {
     }
 }
 
-/* ------------ ACTIONS ------------ */
 
-async function deleteDraft() {
-    if (currentIssue.status !== 'DRAFT')
-        return alertBox('error', 'Удалять можно только DRAFT');
+/* ------------------- DELETE ITEM ------------------- */
 
-    if (!confirm('Удалить документ?')) return;
+async function deleteItemClick(e) {
+    const btn = e.target.closest(".delItemBtn");
+    if (!btn) return;
 
-    await api('DELETE', `/api/issues/${currentIssue.id}`);
-    alertBox('success', 'Удалено');
+    if (currentIssue.status !== "DRAFT")
+        return alertBox("error", "Удалять можно только DRAFT");
 
-    document.getElementById('detailPanel').style.display = 'none';
-    await loadIssues();
-}
-async function loadBatchesForProduct(productId) {
-    return await api('GET', `/api/batches/by-product/${productId}`);
-}
+    if (!confirm("Удалить позицию?")) return;
 
-async function addItem() {
-    if (!currentIssue) return;
+    await api("DELETE", `/api/issues/${currentIssue.id}/items/${btn.dataset.id}`);
 
-    const productId = prompt('ID товара?');
-    if (!productId) return;
-
-    const batches = await loadBatchesForProduct(productId);
-
-    if (batches.length === 0) {
-        alert('Нет доступных партий для товара');
-        return;
-    }
-
-    // Формируем список партий
-    let s = "Выберите ID партии:\n\n";
-    for (const b of batches) {
-        s += `ID ${b.id} — Доступно: ${b.availableQty}, Цена: ${b.buyPrice}, Локация: ${b.location?.name ?? ''}\n`;
-    }
-
-    const batchId = prompt(s);
-    if (!batchId) return;
-
-    const qty = prompt('Количество?');
-    if (!qty) return;
-
-    await api('POST', `/api/issues/${currentIssue.id}/items`, {
-        productId: Number(productId),
-        batchId: Number(batchId),
-        qty: Number(qty)
-    });
-
-    const updated = await api('GET', `/api/issues/${currentIssue.id}`);
+    const updated = await api("GET", `/api/issues/${currentIssue.id}`);
     showDetail(updated);
 }
 
+/* ------------------- ADD ITEM (MODAL) ------------------- */
 
-async function commitIssue() {
-    if (currentIssue.status !== 'DRAFT')
-        return alertBox('error', 'Уже проведён');
+async function addItemModal() {
+    if (!currentIssue || currentIssue.status !== "DRAFT")
+        return alertBox("error", "Редактировать можно только DRAFT");
 
-    const fromLocationId = prompt('ID локации списания?');
-    if (!fromLocationId) return;
+    const productsPage = await api("GET", "/api/products?page=0&size=200");
 
-    await api(
-        'POST',
-        `/api/issues/${currentIssue.id}/commit`,
-        { fromLocationId: Number(fromLocationId) }
+    let productOptions = productsPage.content
+        .map((p) => `<option value="${p.id}">${p.name} (${p.sku})</option>`)
+        .join("");
+
+    Modal.open(
+        `
+        <label>Товар</label>
+        <select name="productId" id="m_product">
+            <option value="">Выберите...</option>
+            ${productOptions}
+        </select>
+
+        <label>Партия</label>
+        <select name="batchId" id="m_batch">
+            <option value="">Выберите товар...</option>
+        </select>
+
+        <label>Количество</label>
+        <input type="number" name="qty" min="1" placeholder="Кол-во">
+    `,
+        {
+            width: "450px",
+            onOk: async (d) => {
+                if (!d.productId || !d.batchId || !d.qty)
+                    return alertBox("error", "Заполните все поля");
+
+                await api("POST", `/api/issues/${currentIssue.id}/items`, {
+                    productId: Number(d.productId),
+                    batchId: Number(d.batchId),
+                    qty: Number(d.qty),
+                });
+
+                const updated = await api("GET", `/api/issues/${currentIssue.id}`);
+                showDetail(updated);
+            },
+        }
     );
 
-    alertBox('success', 'Проведено');
-    document.getElementById('detailPanel').style.display = 'none';
-    await loadIssues();
+    const productSel = document.getElementById("m_product");
+    const batchSel = document.getElementById("m_batch");
+
+    productSel.onchange = async () => {
+        batchSel.innerHTML = `<option>Загрузка...</option>`;
+
+        const batches = await api("GET", `/api/batches/by-product/${productSel.value}`);
+
+        batchSel.innerHTML = batches
+            .map(
+                (b) =>
+                    `<option value="${b.id}">Партия #${b.id} — Остаток ${b.availableQty}</option>`
+            )
+            .join("");
+    };
+}
+
+/* ------------------- COMMIT ------------------- */
+
+async function commitIssue() {
+    if (currentIssue.status !== "DRAFT")
+        return alertBox("error", "Документ уже проведён");
+
+    // выбор локации через модалку
+    Modal.open(
+        `
+        <label>ID локации списания</label>
+        <input name="locId" type="number" placeholder="Например: 1">
+    `,
+        {
+            width: "350px",
+            onOk: async (d) => {
+                if (!d.locId) return alertBox("error", "Укажите локацию");
+
+                await api(
+                    "POST",
+                    `/api/issues/${currentIssue.id}/commit`,
+                    { fromLocationId: Number(d.locId) }
+                );
+
+                alertBox("info", "Проведено");
+
+                document.getElementById("detailPanel").classList.add("hidden");
+                loadIssues();
+            },
+        }
+    );
+}
+
+function showIssueDetailModal() {
+    document.getElementById("detailOverlay").classList.remove("hidden");
+}
+
+function hideIssueDetailModal() {
+    document.getElementById("detailOverlay").classList.add("hidden");
+}
+
+
+
+async function deleteDraft() {
+    if (currentIssue.status !== "DRAFT")
+        return alertBox("error", "Удалять можно только DRAFT");
+
+    if (!confirm("Удалить документ?")) return;
+
+    await api("DELETE", `/api/issues/${currentIssue.id}`);
+
+    alertBox("info", "Удалено");
+
+    document.getElementById("detailPanel").classList.add("hidden");
+
+    loadIssues();
 }

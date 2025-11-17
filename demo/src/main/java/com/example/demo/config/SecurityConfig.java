@@ -35,7 +35,7 @@ public class SecurityConfig {
 
                         // статика
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
-                        .requestMatchers("/css/**", "/js/**", "/images/**","/api/batches","/api/batches/**","/api/receipts/**","/pages/transfers.html", "/assets/**", "/webjars/**", "/api/audit/recent", "/api/audit/**").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**","/api/batches","/api/batches/**","/pages/locations.html","/api/receipts/**","/pages/transfers.html", "/assets/**", "/webjars/**", "/api/audit/recent", "/api/audit/**").permitAll()
 
                         // публичные страницы
                         .requestMatchers("/", "/index.html", "/dashboard.html", "/scan.html",

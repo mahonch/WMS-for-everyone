@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>WMS — Склады</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="/css/app.css" rel="stylesheet">
+</head>
+<body>
+
+<header class="topbar">
+    <div class="brand">WMS</div>
+    <nav class="nav">
+        <a href="/dashboard.html">Главная</a>
+        <a href="/pages/receipts.html">Приёмка</a>
+        <a href="/pages/issues.html">Списание</a>
+        <a href="/pages/transfers.html">Перемещения</a>
+        <a href="/pages/scan.html">Сканер</a>
+        <a href="/pages/locations.html" class="active">Склады</a>
+    </nav>
+    <div class="user">
+        <span id="usernameLabel">—</span>
+        <button id="logoutBtn" class="btn">Выйти</button>
+    </div>
+</header>
+
+<main class="container">
+
+    <section id="alerts"></section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <h2>Склады</h2>
+            <button id="createBtn" class="btn">Создать склад</button>
+        </div>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Код</th>
+                <th>Название</th>
+                <th style="width:160px;">Действия</th>
+            </tr>
+            </thead>
+            <tbody id="locTable">
+            <tr><td colspan="4" class="muted">Загрузка…</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+</main>
+
+<!-- -------- МОДАЛЬНОЕ ОКНО -------- -->
+<div id="infoModal" class="modal hidden">
+    <div class="modal-content">
+        <h3 id="modalTitle">Информация</h3>
+        <div id="modalBody">Загрузка…</div>
+
+        <div class="modal-actions">
+            <button class="btn" id="btnReceipt">📦 Приёмка сюда</button>
+            <button class="btn" id="btnIssue">🗑️ Списание отсюда</button>
+            <button class="btn" id="btnTransferFrom">↗ Перемещение из склада</button>
+            <button class="btn" id="btnTransferTo">↘ Перемещение в склад</button>
+            <button class="btn btn-secondary" id="modalClose">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<script src="/js/auth-debug.js"></script>
+<script src="/js/locations.js"></script>
+
+</body>
+</html>

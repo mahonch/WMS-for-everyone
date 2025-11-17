@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/transfers")
 @RequiredArgsConstructor
-public class TransferController {
+public class TransferCommitController {
 
     private final TransferService transferService;
 

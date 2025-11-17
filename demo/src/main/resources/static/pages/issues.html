@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="/css/app.css" rel="stylesheet">
 
-    <!-- auth helper -->
     <script src="/js/auth-debug.js"></script>
+    <script type="module" src="/js/issues.js"></script>
 </head>
 
 <body>
@@ -55,43 +55,47 @@
         </table>
     </section>
 
-    <!-- ====== ДЕТАЛЬНО ====== -->
-    <section id="detailPanel" class="panel" style="display:none">
-        <h3>Списание <span id="d_number"></span></h3>
+    <!-- ПАНЕЛЬ ДЕТАЛЕЙ -->
+    <!-- ====== ПАНЕЛЬ ДЕТАЛЕЙ (как модалка) ====== -->
+    <div id="detailOverlay" class="overlay hidden">
+        <section id="detailPanel" class="panel modal-panel">
 
-        <div class="grid2">
-            <div><b>ID:</b> <span id="d_id">—</span></div>
-            <div><b>Статус:</b> <span id="d_status">—</span></div>
-            <div><b>Создал:</b> <span id="d_createdBy">—</span></div>
-            <div><b>Причина:</b> <span id="d_reason">—</span></div>
-            <div><b>Дата:</b> <span id="d_date">—</span></div>
-        </div>
+            <h3>Списание <span id="d_number"></span></h3>
 
-        <h4>Позиции</h4>
-        <table class="table" id="itemsTable">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Товар</th>
-                <th>Партия</th>
-                <th>Кол-во</th>
-                <th></th>
-            </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+            <div class="grid2">
+                <div><b>ID:</b> <span id="d_id">—</span></div>
+                <div><b>Статус:</b> <span id="d_status">—</span></div>
+                <div><b>Создал:</b> <span id="d_createdBy">—</span></div>
+                <div><b>Причина:</b> <span id="d_reason">—</span></div>
+                <div><b>Дата:</b> <span id="d_date">—</span></div>
+            </div>
 
-        <div class="actions">
-            <button class="btn" id="btnAddItem">Добавить позицию</button>
-            <button class="btn btn-success" id="btnCommit">Провести</button>
-            <button class="btn btn-danger" id="btnDeleteDraft">Удалить черновик</button>
-            <button class="btn btn-secondary" id="btnCloseDetail">Закрыть</button>
-        </div>
-    </section>
+            <h4>Позиции</h4>
+            <table class="table" id="itemsTable">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Товар</th>
+                    <th>Партия</th>
+                    <th>Кол-во</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <div class="actions">
+                <button class="btn" id="btnAddItem">Добавить позицию</button>
+                <button class="btn btn-success" id="btnCommit">Провести</button>
+                <button class="btn btn-danger" id="btnDeleteDraft">Удалить черновик</button>
+                <button class="btn btn-secondary" id="btnCloseDetail">Закрыть</button>
+            </div>
+
+        </section>
+    </div>
+
 
 </main>
-
-<script src="/js/issues.js"></script>
 
 </body>
 </html>

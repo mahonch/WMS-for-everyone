@@ -2,68 +2,98 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.warehouse.LocationDto;
 import com.example.demo.entity.Location;
-import com.example.demo.entity.Warehouse;
 import com.example.demo.exception.NotFoundException;
 import com.example.demo.repository.LocationRepository;
-import com.example.demo.repository.WarehouseRepository;
+import com.example.demo.repository.StockRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
 import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/locations")
 @RequiredArgsConstructor
 public class LocationController {
+
     private final LocationRepository locationRepository;
-    private final WarehouseRepository warehouseRepository;
+    private final StockRepository stockRepository;
 
+    // ---------- LIST ----------
     @GetMapping
-    public Page<LocationDto> list(@RequestParam(defaultValue = "0") int page,
-                                  @RequestParam(defaultValue = "20") int size) {
-        return locationRepository.findAll(PageRequest.of(page, size, Sort.by("id").descending()))
-                .map(l -> new LocationDto(
-                        l.getId(),
-                        l.getWarehouse().getId(),
-                        l.getCode(),
-                        l.getName(),
-                        l.getParent() != null ? l.getParent().getId() : null,
-                        l.getType()
-                ));
+    public List<LocationDto.View> list() {
+        return locationRepository.findAll()
+                .stream()
+                .map(this::toViewWithStats)
+                .toList();
     }
 
+    // ---------- GET ----------
+    @GetMapping("/{id}")
+    public LocationDto.View get(@PathVariable Long id) {
+        Location l = locationRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Location not found"));
+        return toViewWithStats(l);
+    }
+
+    // ---------- CREATE ----------
     @PostMapping
-    public LocationDto create(@Valid @RequestBody LocationDto dto) {
-        Warehouse w = warehouseRepository.findById(dto.warehouseId())
-                .orElseThrow(() -> new NotFoundException("Warehouse not found"));
-        Location parent = dto.parentId() == null ? null :
-                locationRepository.findById(dto.parentId())
-                        .orElseThrow(() -> new NotFoundException("Parent location not found"));
-        Location l = Location.builder()
-                .warehouse(w).code(dto.code()).name(dto.name()).parent(parent).type(dto.type())
+    public LocationDto.View create(@Valid @RequestBody LocationDto.Create dto) {
+        Location loc = Location.builder()
+                .code(dto.code())
+                .name(dto.name())
                 .build();
-        l = locationRepository.save(l);
-        return new LocationDto(l.getId(), l.getWarehouse().getId(), l.getCode(), l.getName(),
-                l.getParent() != null ? l.getParent().getId() : null, l.getType());
+
+        loc = locationRepository.save(loc);
+
+        return new LocationDto.View(
+                loc.getId(),
+                loc.getCode(),
+                loc.getName(),
+                0L,
+                0L,
+                BigDecimal.ZERO
+        );
     }
 
+    // ---------- UPDATE ----------
     @PutMapping("/{id}")
-    public LocationDto update(@PathVariable Long id, @Valid @RequestBody LocationDto dto) {
-        Location l = locationRepository.findById(id).orElseThrow(() -> new NotFoundException("Location not found"));
-        Warehouse w = warehouseRepository.findById(dto.warehouseId())
-                .orElseThrow(() -> new NotFoundException("Warehouse not found"));
-        l.setWarehouse(w);
-        l.setCode(dto.code());
-        l.setName(dto.name());
-        l.setType(dto.type());
-        l.setParent(dto.parentId() == null ? null :
-                locationRepository.findById(dto.parentId())
-                        .orElseThrow(() -> new NotFoundException("Parent location not found")));
-        l = locationRepository.save(l);
-        return new LocationDto(l.getId(), l.getWarehouse().getId(), l.getCode(), l.getName(),
-                l.getParent() != null ? l.getParent().getId() : null, l.getType());
+    public LocationDto.View update(@PathVariable Long id,
+                                   @Valid @RequestBody LocationDto.Update dto) {
+
+        Location loc = locationRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Location not found"));
+
+        loc.setCode(dto.code());
+        loc.setName(dto.name());
+        loc = locationRepository.save(loc);
+
+        return toViewWithStats(loc);
     }
 
+    // ---------- DELETE ----------
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) { locationRepository.deleteById(id); }
+    public void delete(@PathVariable Long id) {
+        locationRepository.deleteById(id);
+    }
+
+    // ---------- PRIVATE HELPERS ----------
+
+    private LocationDto.View toViewWithStats(Location l) {
+        Long locationId = l.getId();
+
+        Long products = stockRepository.countProductsByLocation(locationId);
+        Long qty = stockRepository.sumQtyByLocation(locationId);
+        BigDecimal value = stockRepository.sumValueByLocation(locationId);
+
+        return new LocationDto.View(
+                l.getId(),
+                l.getCode(),
+                l.getName(),
+                products != null ? products : 0L,
+                qty != null ? qty : 0L,
+                value != null ? value : BigDecimal.ZERO
+        );
+    }
 }

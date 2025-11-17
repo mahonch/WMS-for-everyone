@@ -22,16 +22,16 @@ public class Transfer {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     @JoinColumn(name = "created_by")
     private User createdBy;
 
-    @ManyToOne
-    @JoinColumn(name = "from_location_id")
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "from_location")
     private Location fromLocation;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "to_location_id")
+    @JoinColumn(name = "to_location")
     private Location toLocation;
 
     @Enumerated(EnumType.STRING)
@@ -41,4 +41,6 @@ public class Transfer {
     @OneToMany(mappedBy = "transfer", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<TransferItem> items = new ArrayList<>();
+
+
 }
