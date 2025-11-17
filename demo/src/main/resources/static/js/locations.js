@@ -1,14 +1,13 @@
-/* =======================
-   LOCATIONS PAGE
-   ======================= */
+import { Modal } from "./modal.js";
 
 console.log("[LOCATIONS] init...");
 
-/* ---------- AUTH ---------- */
+/* ----------------------- AUTH ----------------------- */
 
 debugAuthContext("LOCATIONS_PAGE").then(() => startPage());
 
 let token = null;
+let currentLoc = null;
 
 function startPage() {
     token = localStorage.getItem("token");
@@ -26,139 +25,174 @@ function startPage() {
     loadLocations();
 }
 
-/* ---------- API ---------- */
+/* ----------------------- ALERTS ----------------------- */
 
-async function api(url, method = "GET", body) {
+const alerts = document.getElementById("alerts");
+
+function alertBox(type, text) {
+    const div = document.createElement("div");
+    div.className = `alert ${type}`;
+    div.textContent = text;
+    alerts.appendChild(div);
+    setTimeout(() => div.remove(), 4000);
+}
+
+/* ----------------------- API ----------------------- */
+
+async function api(method, url, body) {
     const res = await fetch(url, {
         method,
         headers: {
-            "Authorization": "Bearer " + token,
-            "Content-Type": "application/json"
+            Authorization: "Bearer " + token,
+            "Content-Type": "application/json",
         },
-        body: body ? JSON.stringify(body) : undefined
+        body: body ? JSON.stringify(body) : undefined,
     });
 
-    let txt = await res.text();
-    if (!res.ok) throw new Error(txt);
+    let json = null;
+    try { json = await res.json(); } catch {}
 
-    try { return JSON.parse(txt); }
-    catch { return txt; }
+    if (!res.ok) {
+        const msg = json?.message || json?.error || ("Ошибка " + res.status);
+        throw new Error(msg);
+    }
+    return json;
 }
 
-/* ---------- LOAD LIST ---------- */
+/* ----------------------- LOAD LIST ----------------------- */
 
 async function loadLocations() {
-    const tbody = document.getElementById("locTable");
-    tbody.innerHTML = `<tr><td colspan="4" class="muted">Загрузка...</td></tr>`;
+    const grid = document.getElementById("locGrid");
+    grid.innerHTML = `<div class="muted" style="padding:1rem;">Загрузка...</div>`;
 
-    const list = await api("/api/locations");
+    const list = await api("GET", "/api/locations");
 
-    tbody.innerHTML = "";
+    grid.innerHTML = "";
 
-    list.forEach(loc => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${loc.id}</td>
-            <td>${loc.code}</td>
-            <td>${loc.name}</td>
-            <td>
-                <button class="btn btn-secondary" onclick="openInfo(${loc.id})">ℹ️</button>
-                <button class="btn btn-secondary" onclick="editLocation(${loc.id})">✏️</button>
-                <button class="btn btn-danger" onclick="deleteLocation(${loc.id})">🗑️</button>
-            </td>
+    for (const loc of list) {
+        const card = document.createElement("div");
+        card.className = "location-card";
+
+        card.innerHTML = `
+            <div class="loc-title">${loc.code}</div>
+            <div class="loc-sub">${loc.name}</div>
+
+            <div><b>SKU:</b> ${loc.totalProducts ?? 0}</div>
+            <div><b>Кол-во:</b> ${loc.totalQty ?? 0}</div>
+            <div><b>Сумма:</b> ${loc.totalValue ?? 0} ₽</div>
+
+            <div class="loc-actions">
+                <button class="btn btn-secondary" data-info="${loc.id}">ℹ️</button>
+                <button class="btn btn-secondary" data-edit="${loc.id}">✏️</button>
+                <button class="btn btn-danger" data-del="${loc.id}">🗑️</button>
+            </div>
         `;
-        tbody.appendChild(tr);
+
+        grid.appendChild(card);
+    }
+}
+
+/* ----------------------- EVENTS ----------------------- */
+
+function bindEvents() {
+
+    document.getElementById("btnCreate").onclick = createLocation;
+
+    document.getElementById("locGrid").onclick = e => {
+        const btn = e.target;
+
+        if (btn.dataset.info) return openInfo(btn.dataset.info);
+        if (btn.dataset.edit) return editLocation(btn.dataset.edit);
+        if (btn.dataset.del) return deleteLocation(btn.dataset.del);
+    };
+
+    document.getElementById("btnCloseDetail").onclick = hideDetail;
+    document.getElementById("detailOverlay").onclick = e => {
+        if (e.target.id === "detailOverlay") hideDetail();
+    };
+}
+
+/* ----------------------- CREATE ----------------------- */
+
+function createLocation() {
+    Modal.open(`
+        <label>Код</label>
+        <input name="code">
+
+        <label>Название</label>
+        <input name="name">
+    `, {
+        width: "400px",
+        onOk: async d => {
+            if (!d.code || !d.name)
+                return alertBox("error", "Заполните все поля");
+
+            await api("POST", "/api/locations", d);
+            alertBox("info", "Создан склад");
+            loadLocations();
+        }
     });
 }
 
-/* ---------- CREATE LOCATION ---------- */
-
-async function createLocation() {
-    const code = prompt("Введите код:");
-    if (!code) return;
-
-    const name = prompt("Введите название:");
-    if (!name) return;
-
-    await api("/api/locations", "POST", { code, name });
-    loadLocations();
-}
-
-/* ---------- EDIT LOCATION ---------- */
+/* ----------------------- EDIT ----------------------- */
 
 async function editLocation(id) {
-    const loc = await api(`/api/locations/${id}`);
+    const loc = await api("GET", `/api/locations/${id}`);
 
-    const code = prompt("Новый код:", loc.code);
-    if (!code) return;
+    Modal.open(`
+        <label>Код</label>
+        <input name="code" value="${loc.code}">
 
-    const name = prompt("Новое название:", loc.name);
-    if (!name) return;
-
-    await api(`/api/locations/${id}`, "PUT", { code, name });
-    loadLocations();
+        <label>Название</label>
+        <input name="name" value="${loc.name}">
+    `, {
+        width: "400px",
+        onOk: async d => {
+            await api("PUT", `/api/locations/${id}`, d);
+            alertBox("info", "Обновлено");
+            loadLocations();
+        }
+    });
 }
 
-/* ---------- DELETE LOCATION ---------- */
+/* ----------------------- DELETE ----------------------- */
 
 async function deleteLocation(id) {
     if (!confirm("Удалить склад?")) return;
 
-    await api(`/api/locations/${id}`, "DELETE");
+    await api("DELETE", `/api/locations/${id}`);
+    alertBox("info", "Удалено");
     loadLocations();
 }
 
-/* ===================================================
-   МОДАЛКА ИНФО
-   =================================================== */
-
-const modal = document.getElementById("infoModal");
-const modalTitle = document.getElementById("modalTitle");
-const modalBody = document.getElementById("modalBody");
-document.getElementById("modalClose").onclick = () => modal.classList.add("hidden");
-
-let CURRENT_LOCATION = null;
-
-/* ---------- OPEN INFO MODAL ---------- */
+/* ----------------------- DETAIL MODAL ----------------------- */
 
 async function openInfo(id) {
-    CURRENT_LOCATION = id;
-    modal.classList.remove("hidden");
-    modalBody.innerHTML = "Загрузка...";
+    const r = await api("GET", `/api/locations/${id}`);
+    currentLoc = r;
 
-    const loc = await api(`/api/locations/${id}`);
+    const ov = document.getElementById("detailOverlay");
+    ov.classList.remove("hidden");
 
-    modalTitle.textContent = `Склад: ${loc.code} — ${loc.name}`;
+    document.getElementById("d_id").textContent = r.id;
+    document.getElementById("d_code").textContent = r.code;
+    document.getElementById("d_code2").textContent = r.code;
+    document.getElementById("d_name").textContent = r.name;
 
-    modalBody.innerHTML = `
-        <p><b>Код:</b> ${loc.code}</p>
-        <p><b>Название:</b> ${loc.name}</p>
-        <hr>
-        <p><b>SKU:</b> ${loc.totalProducts}</p>
-        <p><b>Количество единиц:</b> ${loc.totalQty}</p>
-        <p><b>Сумма:</b> ${loc.totalValue} ₽</p>
-    `;
+    document.getElementById("d_sku").textContent = r.totalProducts ?? 0;
+    document.getElementById("d_qty").textContent = r.totalQty ?? 0;
+    document.getElementById("d_value").textContent = r.totalValue ?? 0;
 
     document.getElementById("btnReceipt").onclick =
         () => window.location.href = `/pages/receipts.html?to=${id}`;
-
     document.getElementById("btnIssue").onclick =
         () => window.location.href = `/pages/issues.html?from=${id}`;
-
     document.getElementById("btnTransferFrom").onclick =
         () => window.location.href = `/pages/transfers.html?from=${id}`;
-
     document.getElementById("btnTransferTo").onclick =
         () => window.location.href = `/pages/transfers.html?to=${id}`;
 }
 
-/* ---------- EVENTS ---------- */
-
-function bindEvents() {
-    document.getElementById("createBtn").onclick = createLocation;
+function hideDetail() {
+    document.getElementById("detailOverlay").classList.add("hidden");
 }
-
-// глобально экспортируем (нужно для кнопок)
-window.openInfo = openInfo;
-window.editLocation = editLocation;
-window.deleteLocation = deleteLocation;

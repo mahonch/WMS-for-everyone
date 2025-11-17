@@ -34,45 +34,48 @@
     <section id="alerts"></section>
 
     <section class="panel">
-        <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;">
-            <h2>Склады</h2>
-            <button id="createBtn" class="btn">Создать склад</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h3>Склады</h3>
+            <button class="btn" id="btnCreate">Создать склад</button>
         </div>
 
-        <table class="table">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Код</th>
-                <th>Название</th>
-                <th style="width:200px;">Действия</th>
-            </tr>
-            </thead>
-            <tbody id="locTable">
-            <tr><td colspan="4" class="muted">Загрузка…</td></tr>
-            </tbody>
-        </table>
+        <!-- СЕТКА КАРТОЧЕК -->
+        <div id="locGrid" class="cards-grid">
+            <div class="muted" style="padding:1rem;">Загрузка…</div>
+        </div>
     </section>
 
-</main>
+    <!-- Модалка подробностей -->
+    <div id="detailOverlay" class="modal-overlay hidden">
+        <section id="detailPanel" class="modal-window" style="max-width:650px">
 
-<!-- =============== МОДАЛКА =============== -->
-<div id="infoModal" class="modal hidden">
-    <div class="modal-content">
+            <h3>Склад <span id="d_code"></span></h3>
 
-        <h3 id="modalTitle">Информация</h3>
-        <div id="modalBody">Загрузка…</div>
+            <div class="grid2">
+                <div><b>ID:</b> <span id="d_id">—</span></div>
+                <div><b>Код:</b> <span id="d_code2">—</span></div>
+                <div><b>Название:</b> <span id="d_name">—</span></div>
+            </div>
 
-        <div class="modal-actions">
-            <button class="btn" id="btnReceipt">📦 Приёмка сюда</button>
-            <button class="btn" id="btnIssue">🗑️ Списание отсюда</button>
-            <button class="btn" id="btnTransferFrom">↗ Перемещение из склада</button>
-            <button class="btn" id="btnTransferTo">↘ Перемещение в склад</button>
-            <button class="btn btn-secondary" id="modalClose">Закрыть</button>
-        </div>
+            <h4>Содержимое склада</h4>
+            <div class="grid2">
+                <div><b>SKU:</b> <span id="d_sku">—</span></div>
+                <div><b>Количество:</b> <span id="d_qty">—</span></div>
+                <div><b>Стоимость:</b> <span id="d_value">—</span> ₽</div>
+            </div>
 
+            <div class="actions" style="margin-top:1rem">
+                <button class="btn" id="btnReceipt">Приёмка сюда</button>
+                <button class="btn" id="btnIssue">Списание отсюда</button>
+                <button class="btn" id="btnTransferFrom">Перемещение из склада</button>
+                <button class="btn" id="btnTransferTo">Перемещение в склад</button>
+                <button class="btn btn-secondary" id="btnCloseDetail">Закрыть</button>
+            </div>
+
+        </section>
     </div>
-</div>
+
+</main>
 
 </body>
 </html>
