@@ -12,15 +12,15 @@ public class TransferItem {
     private Long id;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "transfer_id")
+    @JoinColumn(name = "transfer_id", nullable = false)
     private Transfer transfer;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "product_id")
+    @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "batch_id")
+    @JoinColumn(name = "batch_id", nullable = false)
     private Batch batch;
 
     @Column(nullable = false)

@@ -4,22 +4,25 @@
     <meta charset="UTF-8">
     <title>Приёмки — WMS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="/css/app.css" rel="stylesheet">
 
-    <!-- auth helper -->
+    <link href="/css/app.css" rel="stylesheet">
     <script src="/js/auth-debug.js"></script>
+    <script type="module" src="/js/receipts.js"></script>
 </head>
+
 <body>
 
 <header class="topbar">
     <div class="brand">WMS</div>
+
     <nav class="nav">
         <a href="/dashboard.html">Главная</a>
         <a href="/pages/receipts.html" class="active">Приёмка</a>
         <a href="/pages/issues.html">Списание</a>
         <a href="/pages/transfers.html">Перемещения</a>
-        <a href="/pages/scan.html">Сканер</a>
+        <a href="/pages/locations.html">Склады</a>
     </nav>
+
     <div class="user">
         <span id="usernameLabel">—</span>
         <button id="logoutBtn" class="btn">Выйти</button>
@@ -52,62 +55,50 @@
             </thead>
             <tbody></tbody>
         </table>
+
     </section>
 
-    <!-- ====== МОДАЛ ДЕТАЛЕЙ ====== -->
-    <section id="detailPanel" class="panel" style="display:none">
-        <h3>Приёмка <span id="d_number"></span></h3>
+    <!-- ============ МОДАЛКА ДЕТАЛЕЙ ============ -->
+    <div id="detailOverlay" class="modal-overlay hidden">
+        <section id="detailPanel" class="modal-window" style="max-width:900px">
 
-        <div class="grid2">
-            <div><b>ID:</b> <span id="d_id">—</span></div>
-            <div><b>Статус:</b> <span id="d_status">—</span></div>
-            <div><b>Поставщик:</b> <span id="d_supplier">—</span></div>
-            <div><b>Создал:</b> <span id="d_createdBy">—</span></div>
-            <div><b>Дата:</b> <span id="d_date">—</span></div>
-            <div><b>Сумма:</b> <span id="d_total">—</span></div>
-        </div>
+            <h3>Приёмка <span id="d_number"></span></h3>
 
-        <h4>Позиции</h4>
-        <table class="table" id="itemsTable">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Товар</th>
-                <th>Кол-во</th>
-                <th>Цена</th>
-                <th>Партия</th>
-                <th></th>
-            </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-
-        <div class="actions">
-            <button class="btn" id="btnAddItem">Добавить позицию</button>
-            <button class="btn btn-success" id="btnCommit">Провести</button>
-            <button class="btn btn-danger" id="btnDeleteDraft">Удалить черновик</button>
-            <button class="btn btn-secondary" id="btnCloseDetail">Закрыть</button>
-        </div>
-    </section>
-    <!-- ==== ГЛОБАЛЬНАЯ МОДАЛКА ==== -->
-    <div id="modal" class="modal-overlay hidden">
-        <div class="modal-box">
-            <h3 id="modalTitle">Заголовок</h3>
-
-            <div id="modalBody"></div>
-
-            <div class="modal-actions">
-                <button class="btn btn-secondary" id="modalCancel">Отмена</button>
-                <button class="btn" id="modalOk">OK</button>
+            <div class="grid2">
+                <div><b>ID:</b> <span id="d_id">—</span></div>
+                <div><b>Статус:</b> <span id="d_status">—</span></div>
+                <div><b>Поставщик:</b> <span id="d_supplier">—</span></div>
+                <div><b>Создал:</b> <span id="d_createdBy">—</span></div>
+                <div><b>Дата:</b> <span id="d_date">—</span></div>
+                <div><b>Сумма:</b> <span id="d_total">—</span></div>
             </div>
-        </div>
+
+            <h4>Позиции</h4>
+            <table class="table" id="itemsTable">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Товар</th>
+                    <th>Кол-во</th>
+                    <th>Цена</th>
+                    <th>Партия</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <div class="actions">
+                <button class="btn" id="btnAddItem">Добавить</button>
+                <button class="btn btn-success" id="btnCommit">Провести</button>
+                <button class="btn btn-danger" id="btnDeleteDraft">Удалить</button>
+                <button class="btn btn-secondary" id="btnCloseDetail">Закрыть</button>
+            </div>
+
+        </section>
     </div>
 
-
 </main>
-
-<!-- ==== MAIN JS ==== -->
-<script src="/js/receipts.js"></script>
 
 </body>
 </html>

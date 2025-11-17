@@ -2,20 +2,25 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>WMS — Перемещения</title>
+    <title>Перемещения — WMS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <link href="/css/app.css" rel="stylesheet">
+    <script src="/js/auth-debug.js"></script>
+    <script type="module" src="/js/transfers.js"></script>
 </head>
+
 <body>
 
 <header class="topbar">
     <div class="brand">WMS</div>
+
     <nav class="nav">
         <a href="/dashboard.html">Главная</a>
         <a href="/pages/receipts.html">Приёмка</a>
         <a href="/pages/issues.html">Списание</a>
         <a href="/pages/transfers.html" class="active">Перемещения</a>
-        <a href="/pages/scan.html">Сканер</a>
+        <a href="/pages/locations.html">Склады</a>
     </nav>
 
     <div class="user">
@@ -28,77 +33,71 @@
 
     <section id="alerts"></section>
 
-    <h2>Перемещение товара</h2>
+    <section class="panel">
+        <h3>Перемещения</h3>
 
-    <!-- Панель документа -->
-    <div class="panel">
-
-        <div class="row">
-            <label>Документ:</label>
-            <span id="docNumber">—</span>
+        <div class="actions">
+            <button class="btn" id="btnCreate">Новое перемещение</button>
         </div>
 
-        <div class="row">
-            <label>Статус:</label>
-            <span id="docStatus">—</span>
-        </div>
-
-        <div class="row">
-            <label>Из локации:</label>
-            <select id="fromLocation"></select>
-        </div>
-
-        <div class="row">
-            <label>В локацию:</label>
-            <select id="toLocation"></select>
-        </div>
-
-        <button id="btnCreate" class="btn primary">Создать черновик</button>
-        <button id="btnCommit" class="btn success hidden">Провести</button>
-    </div>
-
-    <!-- Таблица позиций -->
-    <div class="panel">
-        <h3>Позиции</h3>
-
-        <table class="table">
+        <table class="table" id="transfersTable">
             <thead>
             <tr>
-                <th>Товар</th>
-                <th>Партия</th>
-                <th>Доступно</th>
-                <th>Кол-во</th>
+                <th>ID</th>
+                <th>Номер</th>
+                <th>Статус</th>
+                <th>Из</th>
+                <th>В</th>
+                <th>Создал</th>
+                <th>Дата</th>
                 <th></th>
             </tr>
             </thead>
-            <tbody id="itemsBody"></tbody>
+            <tbody></tbody>
         </table>
 
-        <h4>Добавить позицию</h4>
+    </section>
 
-        <div class="row">
-            <label>Товар:</label>
-            <select id="prodSelect"></select>
-        </div>
+    <!-- ============ МОДАЛКА ДЕТАЛЕЙ ============ -->
+    <div id="detailOverlay" class="modal-overlay hidden">
+        <section id="detailPanel" class="modal-window" style="max-width:900px">
 
-        <div class="row">
-            <label>Партия:</label>
-            <select id="batchSelect"></select>
-        </div>
+            <h3>Перемещение <span id="d_number"></span></h3>
 
-        <div class="row">
-            <label>Кол-во:</label>
-            <input id="qtyInput" type="number" min="1" value="1">
-        </div>
+            <div class="grid2">
+                <div><b>ID:</b> <span id="d_id">—</span></div>
+                <div><b>Статус:</b> <span id="d_status">—</span></div>
+                <div><b>Из локации:</b> <span id="d_from">—</span></div>
+                <div><b>В локацию:</b> <span id="d_to">—</span></div>
+                <div><b>Создал:</b> <span id="d_createdBy">—</span></div>
+                <div><b>Дата:</b> <span id="d_date">—</span></div>
+            </div>
 
-        <button id="btnAddItem" class="btn">Добавить строку</button>
+            <h4>Позиции</h4>
+            <table class="table" id="itemsTable">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Товар</th>
+                    <th>Партия</th>
+                    <th>Кол-во</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <div class="actions">
+                <button class="btn" id="btnAddItem">Добавить</button>
+                <button class="btn btn-success" id="btnCommit">Провести</button>
+                <button class="btn btn-danger" id="btnDeleteDraft">Удалить</button>
+                <button class="btn btn-secondary" id="btnCloseDetail">Закрыть</button>
+            </div>
+
+        </section>
     </div>
 
-
 </main>
-
-<script src="/js/auth-debug.js"></script>
-<script src="/js/transfers.js"></script>
 
 </body>
 </html>

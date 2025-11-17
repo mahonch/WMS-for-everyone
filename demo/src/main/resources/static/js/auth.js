@@ -1,9 +1,19 @@
-// если уже вошёл — на дашборд
+// Если уже вошёл — сразу на дашборд
+function decodeJwt(token) {
+    try {
+        const payload = token.split('.')[1];
+        const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+        return JSON.parse(json);
+    } catch (e) {
+        console.warn('[auth-debug] Не удалось декодировать JWT:', e);
+        return null;
+    }
+}
 if (localStorage.getItem('token')) {
     window.location.replace('/dashboard.html');
 }
 
-// ---- функция логина ----
+// ---- LOGIN FUNCTION ----
 async function login(username, password) {
     const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -23,12 +33,32 @@ async function login(username, password) {
         throw new Error('Некорректный ответ сервера: отсутствует accessToken');
     }
 
+    // Сохраняем токены и роль
     localStorage.setItem('token', token);
     localStorage.setItem('refresh', body.refreshToken);
     localStorage.setItem('role', body.role);
+
+    // --------------------------------------------
+    // NEW ⭐ ДЕКОДИРУЕМ JWT И СОХРАНЯЕМ USERID
+    // --------------------------------------------
+    const payload = decodeJwt(token);
+    if (payload) {
+        // Обычно sub — это userId
+        if (payload.sub) {
+            localStorage.setItem('userid', payload.sub);
+        }
+
+        // Если backend добавит поля userId / username — тоже сохраним
+        if (payload.userId) {
+            localStorage.setItem('userid', payload.userId);
+        }
+        if (payload.username) {
+            localStorage.setItem('username', payload.username);
+        }
+    }
 }
 
-// ---- обработчик формы ----
+// ---- FORM SUBMIT ----
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('username').value.trim();
@@ -42,7 +72,12 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         console.log('⏳ Вход...');
         await login(username, password);
         console.log('✅ Успешный вход, перенаправление...');
-        localStorage.setItem('username', username);
+
+        // Если JWT нет username — берём тот, что ввёл пользователь
+        if (!localStorage.getItem('username')) {
+            localStorage.setItem('username', username);
+        }
+
         window.location.replace('/dashboard.html');
     } catch (e2) {
         console.error('Ошибка входа:', e2);

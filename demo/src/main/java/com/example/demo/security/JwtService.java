@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
-import java.util.Map;
 
 @Component
 public class JwtService {
@@ -18,30 +17,24 @@ public class JwtService {
 
     public JwtService(@Value("${app.jwt.secret}") String secret,
                       @Value("${app.jwt.access-ttl}") long accessTtl,
-                      @Value("${app.jwt.refresh-ttl}") long refreshTtl,
-                      @Value("${security.jwt.expiration:PT60M}") java.time.Duration expiration)
-                      {
+                      @Value("${app.jwt.refresh-ttl}") long refreshTtl) {
+
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
         this.accessTtl = accessTtl;
         this.refreshTtl = refreshTtl;
-        long expirationMs = expiration.toMillis();
     }
 
-    public String generateAccess(String username, String role) {
-        // гарантируем наличие префикса ROLE_
-        if (!role.startsWith("ROLE_")) {
-            role = "ROLE_" + role;
-        }
+    public String generateAccess(String username, String role, Long userId) {
 
         return Jwts.builder()
                 .setSubject(username)
-                .addClaims(Map.of("role", role))
+                .claim("userId", userId)
+                .claim("role", role)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + accessTtl))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
-
 
     public String generateRefresh(String username) {
         return Jwts.builder()
@@ -58,5 +51,10 @@ public class JwtService {
 
     public String getUsername(String token) {
         return parse(token).getBody().getSubject();
+    }
+
+    public Long getUserId(String token) {
+        Object v = parse(token).getBody().get("userId");
+        return v == null ? null : Long.valueOf(v.toString());
     }
 }

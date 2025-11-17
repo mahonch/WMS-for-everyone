@@ -5,15 +5,20 @@ import com.example.demo.entity.*;
 import com.example.demo.entity.enums.DocStatus;
 import com.example.demo.exception.NotFoundException;
 import com.example.demo.repository.*;
+import com.example.demo.service.TransferService;
 import com.example.demo.util.NumberGenerator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
+import java.time.LocalDateTime;
+import java.util.List;
+
 @RequestMapping("/api/transfers")
+@RestController
 @RequiredArgsConstructor
-public class TransferCrudController {
+public class TransferController {
 
     private final TransferRepository transferRepository;
     private final TransferItemRepository transferItemRepository;
@@ -22,9 +27,12 @@ public class TransferCrudController {
     private final LocationRepository locationRepository;
     private final UserRepository userRepository;
     private final NumberGenerator numberGenerator;
+    private final TransferService transferService;
 
+    // ---------------------------------------------------------
+    // CREATE TRANSFER (DRAFT)
+    // ---------------------------------------------------------
     @PostMapping
-    @Transactional
     public TransferDtos.View create(@RequestBody TransferDtos.Create dto) {
 
         User createdBy = userRepository.findById(dto.createdById())
@@ -47,12 +55,14 @@ public class TransferCrudController {
                 .toLocation(to)
                 .status(DocStatus.DRAFT)
                 .build();
-
+        t.setCreatedAt(LocalDateTime.now());
         t = transferRepository.save(t);
-
         return toView(t);
     }
 
+    // ---------------------------------------------------------
+    // GET BY ID
+    // ---------------------------------------------------------
     @GetMapping("/{id}")
     public TransferDtos.View get(@PathVariable Long id) {
         Transfer t = transferRepository.findById(id)
@@ -60,10 +70,15 @@ public class TransferCrudController {
         return toView(t);
     }
 
+    // ---------------------------------------------------------
+    // ADD ITEM
+    // ---------------------------------------------------------
     @PostMapping("/{id}/items")
     @Transactional
-    public TransferDtos.ViewItem addItem(@PathVariable Long id,
-                                         @RequestBody TransferDtos.ItemCreate dto) {
+    public TransferDtos.ViewItem addItem(
+            @PathVariable Long id,
+            @RequestBody TransferDtos.ItemCreate dto
+    ) {
 
         Transfer t = transferRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Transfer not found"));
@@ -94,7 +109,25 @@ public class TransferCrudController {
                 item.getQty()
         );
     }
+    @GetMapping
+    public List<TransferDtos.View> list() {
+        List<Transfer> list = transferRepository.findAll();
+        return list.stream()
+                .map(this::toView)
+                .toList();
+    }
+    // ---------------------------------------------------------
+    // COMMIT TRANSFER
+    // ---------------------------------------------------------
+    @PostMapping("/{id}/commit")
+    public ResponseEntity<?> commit(@PathVariable Long id) {
+        transferService.commit(id, null);
+        return ResponseEntity.ok().build();
+    }
 
+    // ---------------------------------------------------------
+    // DTO CONVERTER
+    // ---------------------------------------------------------
     private TransferDtos.View toView(Transfer t) {
         return new TransferDtos.View(
                 t.getId(),

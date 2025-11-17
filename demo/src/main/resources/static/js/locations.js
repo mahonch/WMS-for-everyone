@@ -1,4 +1,32 @@
-const token = localStorage.getItem("token");
+/* =======================
+   LOCATIONS PAGE
+   ======================= */
+
+console.log("[LOCATIONS] init...");
+
+/* ---------- AUTH ---------- */
+
+debugAuthContext("LOCATIONS_PAGE").then(() => startPage());
+
+let token = null;
+
+function startPage() {
+    token = localStorage.getItem("token");
+    if (!token) return (window.location.href = "/index.html");
+
+    document.getElementById("usernameLabel").textContent =
+        localStorage.getItem("username") || "user";
+
+    document.getElementById("logoutBtn").onclick = () => {
+        localStorage.clear();
+        window.location.href = "/index.html";
+    };
+
+    bindEvents();
+    loadLocations();
+}
+
+/* ---------- API ---------- */
 
 async function api(url, method = "GET", body) {
     const res = await fetch(url, {
@@ -10,35 +38,40 @@ async function api(url, method = "GET", body) {
         body: body ? JSON.stringify(body) : undefined
     });
 
-    if (!res.ok) {
-        let msg = await res.text();
-        throw new Error(msg);
-    }
-    return res.json();
+    let txt = await res.text();
+    if (!res.ok) throw new Error(txt);
+
+    try { return JSON.parse(txt); }
+    catch { return txt; }
 }
 
+/* ---------- LOAD LIST ---------- */
+
 async function loadLocations() {
-    const list = await api("/api/locations");
     const tbody = document.getElementById("locTable");
+    tbody.innerHTML = `<tr><td colspan="4" class="muted">Загрузка...</td></tr>`;
+
+    const list = await api("/api/locations");
+
     tbody.innerHTML = "";
 
     list.forEach(loc => {
         const tr = document.createElement("tr");
-
         tr.innerHTML = `
             <td>${loc.id}</td>
             <td>${loc.code}</td>
             <td>${loc.name}</td>
             <td>
-                <button onclick="openInfo(${loc.id})">ℹ️</button>
-                <button onclick="editLocation(${loc.id})">✏️</button>
-                <button onclick="deleteLocation(${loc.id})">🗑️</button>
+                <button class="btn btn-secondary" onclick="openInfo(${loc.id})">ℹ️</button>
+                <button class="btn btn-secondary" onclick="editLocation(${loc.id})">✏️</button>
+                <button class="btn btn-danger" onclick="deleteLocation(${loc.id})">🗑️</button>
             </td>
         `;
-
         tbody.appendChild(tr);
     });
 }
+
+/* ---------- CREATE LOCATION ---------- */
 
 async function createLocation() {
     const code = prompt("Введите код:");
@@ -47,9 +80,11 @@ async function createLocation() {
     const name = prompt("Введите название:");
     if (!name) return;
 
-    await api("/api/locations", "POST", {code, name});
+    await api("/api/locations", "POST", { code, name });
     loadLocations();
 }
+
+/* ---------- EDIT LOCATION ---------- */
 
 async function editLocation(id) {
     const loc = await api(`/api/locations/${id}`);
@@ -60,9 +95,11 @@ async function editLocation(id) {
     const name = prompt("Новое название:", loc.name);
     if (!name) return;
 
-    await api(`/api/locations/${id}`, "PUT", {code, name});
+    await api(`/api/locations/${id}`, "PUT", { code, name });
     loadLocations();
 }
+
+/* ---------- DELETE LOCATION ---------- */
 
 async function deleteLocation(id) {
     if (!confirm("Удалить склад?")) return;
@@ -71,21 +108,21 @@ async function deleteLocation(id) {
     loadLocations();
 }
 
-// --------- МОДАЛКА ---------
+/* ===================================================
+   МОДАЛКА ИНФО
+   =================================================== */
 
 const modal = document.getElementById("infoModal");
 const modalTitle = document.getElementById("modalTitle");
 const modalBody = document.getElementById("modalBody");
-
-document.getElementById("modalClose").onclick = () => {
-    modal.classList.add("hidden");
-};
+document.getElementById("modalClose").onclick = () => modal.classList.add("hidden");
 
 let CURRENT_LOCATION = null;
 
+/* ---------- OPEN INFO MODAL ---------- */
+
 async function openInfo(id) {
     CURRENT_LOCATION = id;
-
     modal.classList.remove("hidden");
     modalBody.innerHTML = "Загрузка...";
 
@@ -102,7 +139,6 @@ async function openInfo(id) {
         <p><b>Сумма:</b> ${loc.totalValue} ₽</p>
     `;
 
-    // Привязка действий
     document.getElementById("btnReceipt").onclick =
         () => window.location.href = `/pages/receipts.html?to=${id}`;
 
@@ -116,6 +152,13 @@ async function openInfo(id) {
         () => window.location.href = `/pages/transfers.html?to=${id}`;
 }
 
-document.getElementById("createBtn").onclick = createLocation;
+/* ---------- EVENTS ---------- */
 
-loadLocations();
+function bindEvents() {
+    document.getElementById("createBtn").onclick = createLocation;
+}
+
+// глобально экспортируем (нужно для кнопок)
+window.openInfo = openInfo;
+window.editLocation = editLocation;
+window.deleteLocation = deleteLocation;

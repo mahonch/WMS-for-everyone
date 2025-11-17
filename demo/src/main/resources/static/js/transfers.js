@@ -1,208 +1,288 @@
-// --------------------------------------
-// AUTH
-// --------------------------------------
-const token = localStorage.getItem('token');
-if (!token) {
-    window.location.href = '/index.html';
+import { Modal } from "./modal.js";
+
+console.log("[TRANSFERS] init...");
+
+let token = null;
+let currentTransfer = null;
+let locations = [];
+
+/* ----------------------- INIT ----------------------- */
+
+debugAuthContext("TRANSFERS_PAGE").then(() => startPage());
+
+async function startPage() {
+    token = localStorage.getItem("token");
+    if (!token) return (window.location.href = "/index.html");
+
+    document.getElementById("usernameLabel").textContent =
+        localStorage.getItem("username") || "user";
+
+    document.getElementById("logoutBtn").onclick = () => {
+        localStorage.clear();
+        window.location.href = "/index.html";
+    };
+
+    await loadLocations();
+    bindEvents();
+    loadTransfers();
 }
 
-debugAuthContext('TRANSFERS');
+/* ----------------------- ALERTS ----------------------- */
 
-document.getElementById('usernameLabel').textContent =
-    localStorage.getItem('username') || 'пользователь';
+const alerts = document.getElementById("alerts");
 
-document.getElementById('logoutBtn').onclick = () => {
-    localStorage.clear();
-    window.location.href = '/index.html';
-};
-
-// --------------------------------------
-// ALERTS
-// --------------------------------------
-const alerts = document.getElementById('alerts');
-function pushAlert(type, text) {
-    const el = document.createElement('div');
-    el.className = 'alert ' + type;
-    el.textContent = text;
-    alerts.appendChild(el);
-    setTimeout(() => el.remove(), 4000);
+function alertBox(type, text) {
+    const div = document.createElement("div");
+    div.className = `alert ${type}`;
+    div.textContent = text;
+    alerts.appendChild(div);
+    setTimeout(() => div.remove(), 4000);
 }
 
-// --------------------------------------
-// FETCH WRAPPER
-// --------------------------------------
+/* ----------------------- API WRAPPER ----------------------- */
+
 async function api(method, url, body) {
     const res = await fetch(url, {
         method,
         headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json'
+            Authorization: "Bearer " + token,
+            "Content-Type": "application/json",
         },
-        body: body ? JSON.stringify(body) : undefined
+        body: body ? JSON.stringify(body) : undefined,
     });
 
-    let data = null;
-    try { data = await res.json(); } catch {}
+    let json = null;
+    try { json = await res.json(); } catch {}
 
     if (!res.ok) {
-        throw new Error(data?.message || data?.error || ('Ошибка ' + res.status));
+        const msg = json?.message || json?.error || ("Ошибка " + res.status);
+        throw new Error(msg);
     }
-    return data;
+
+    return json;
 }
 
-// GET without body
-async function apiGet(url) {
-    return api("GET", url);
-}
+/* ----------------------- LOAD LOCATIONS ----------------------- */
 
-// --------------------------------------
-// GLOBAL STATE
-// --------------------------------------
-let transferId = null;
-
-// --------------------------------------
-// LOAD LOCATIONS
-// --------------------------------------
 async function loadLocations() {
-    const locs = await apiGet('/api/locations?size=999');
+    let list = await api("GET", "/api/locations");
 
-    const fromSel = document.getElementById('fromLocation');
-    const toSel = document.getElementById('toLocation');
+    locations = list.content ?? list;
+}
 
-    fromSel.innerHTML = '';
-    toSel.innerHTML = '';
+/* ----------------------- LOAD LIST ----------------------- */
 
-    locs.content.forEach(l => {
-        fromSel.innerHTML += `<option value="${l.id}">${l.code}</option>`;
-        toSel.innerHTML += `<option value="${l.id}">${l.code}</option>`;
+async function loadTransfers() {
+    let list = await api("GET", "/api/transfers");
+
+    const arr = list.content ?? list;
+    const tb = document.querySelector("#transfersTable tbody");
+    tb.innerHTML = "";
+
+    for (const t of arr) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${t.id}</td>
+            <td>${t.number}</td>
+            <td>${t.status}</td>
+            <td>${t.fromLocation}</td>
+            <td>${t.toLocation}</td>
+            <td>${t.createdBy ?? "-"}</td>
+            <td>${t.createdAt ?? "-"}</td>
+            <td><button class="btn btn-secondary openBtn" data-id="${t.id}">Открыть</button></td>
+        `;
+        tb.appendChild(tr);
+    }
+}
+
+/* ----------------------- BIND EVENTS ----------------------- */
+
+function bindEvents() {
+
+    document.getElementById("btnCreate").onclick = openCreateModal;
+
+    document.querySelector("#transfersTable").addEventListener("click", async e => {
+        const btn = e.target.closest(".openBtn");
+        if (!btn) return;
+
+        const t = await api("GET", `/api/transfers/${btn.dataset.id}`);
+        showDetail(t);
+    });
+
+    document.getElementById("btnAddItem").onclick = openAddItemModal;
+    document.getElementById("btnCommit").onclick = commitTransfer;
+    document.getElementById("btnDeleteDraft").onclick = deleteDraft;
+    document.getElementById("btnCloseDetail").onclick = hideDetail;
+
+    document.getElementById("detailOverlay").onclick = e => {
+        if (e.target.id === "detailOverlay") hideDetail();
+    };
+
+    document.querySelector("#itemsTable").addEventListener("click", deleteItemClick);
+}
+
+/* ----------------------- CREATE TRANSFER ----------------------- */
+
+function openCreateModal() {
+
+    let locOptions = locations
+        .map(l => `<option value="${l.id}">${l.code}</option>`)
+        .join("");
+
+    Modal.open(`
+        <label>Из локации</label>
+        <select name="fromLocationId">${locOptions}</select>
+
+        <label>В локацию</label>
+        <select name="toLocationId">${locOptions}</select>
+    `, {
+        width: "400px",
+        onOk: async d => {
+
+            if (!d.fromLocationId || !d.toLocationId)
+                return alertBox("error", "Выберите локации");
+
+            const createdById = Number(localStorage.getItem("userid"));
+
+            const dto = {
+                createdById,
+                fromLocationId: Number(d.fromLocationId),
+                toLocationId: Number(d.toLocationId)
+            };
+
+            const t = await api("POST", "/api/transfers", dto);
+
+            alertBox("info", "Создан черновик " + t.number);
+            loadTransfers();
+        }
     });
 }
 
-// --------------------------------------
-// LOAD PRODUCTS AND BATCHES
-// --------------------------------------
-async function loadProducts() {
-    const list = await apiGet('/api/products?size=9999');
+/* ----------------------- DETAIL MODAL ----------------------- */
 
-    const sel = document.getElementById('prodSelect');
-    sel.innerHTML = '';
-    list.content.forEach(p => {
-        sel.innerHTML += `<option value="${p.id}">${p.name} (${p.sku})</option>`;
-    });
+function showDetail(t) {
+    currentTransfer = t;
 
-    sel.onchange = loadBatches;
-    await loadBatches();
-}
+    const ov = document.getElementById("detailOverlay");
+    ov.classList.remove("hidden");
 
-async function loadBatches() {
-    const prodId = document.getElementById('prodSelect').value;
-    const fromLoc = document.getElementById('fromLocation').value;
+    document.getElementById("d_id").textContent = t.id;
+    document.getElementById("d_number").textContent = t.number;
+    document.getElementById("d_status").textContent = t.status;
+    document.getElementById("d_from").textContent = t.fromLocation;
+    document.getElementById("d_to").textContent = t.toLocation;
+    document.getElementById("d_createdBy").textContent = t.createdBy;
+    document.getElementById("d_date").textContent = t.createdAt;
 
-    // API поиска партий по товару + локации
-    const batches = await apiGet(`/api/stock/batches/${prodId}/${fromLoc}`);
+    const tb = document.querySelector("#itemsTable tbody");
+    tb.innerHTML = "";
 
-    const sel = document.getElementById('batchSelect');
-    sel.innerHTML = '';
-
-    batches.forEach(b => {
-        sel.innerHTML += `<option value="${b.id}">Партия #${b.id}, остаток: ${b.qty}</option>`;
-    });
-}
-
-// --------------------------------------
-// CREATE TRANSFER
-// --------------------------------------
-document.getElementById('btnCreate').onclick = async () => {
-    try {
-        const res = await api("POST", "/api/transfers", {
-            fromLocationId: Number(document.getElementById('fromLocation').value),
-            toLocationId: Number(document.getElementById('toLocation').value),
-            createdById: Number(localStorage.getItem('userid'))
-        });
-
-        transferId = res.id;
-
-        document.getElementById('docNumber').textContent = res.number;
-        document.getElementById('docStatus').textContent = res.status;
-
-        document.getElementById('btnCommit').classList.remove('hidden');
-        pushAlert('success', 'Черновик создан!');
-    } catch (e) {
-        pushAlert('error', e.message);
-    }
-};
-
-// --------------------------------------
-// ADD ITEM
-// --------------------------------------
-document.getElementById('btnAddItem').onclick = async () => {
-
-    if (!transferId) {
-        pushAlert('error', 'Сначала создайте документ!');
-        return;
-    }
-
-    const prodId = Number(document.getElementById('prodSelect').value);
-    const batchId = Number(document.getElementById('batchSelect').value);
-    const qty = Number(document.getElementById('qtyInput').value);
-
-    try {
-        await api("POST", `/api/transfers/${transferId}/items`, {
-            productId: prodId,
-            batchId: batchId,
-            qty: qty
-        });
-
-        pushAlert('success', 'Строка добавлена');
-        await loadItems();
-    } catch (e) {
-        pushAlert('error', e.message);
-    }
-};
-
-// --------------------------------------
-// LOAD ITEMS
-// --------------------------------------
-async function loadItems() {
-    if (!transferId) return;
-
-    const doc = await apiGet(`/api/transfers/${transferId}`);
-
-    const tbody = document.getElementById('itemsBody');
-    tbody.innerHTML = '';
-
-    doc.items.forEach(i => {
-        tbody.innerHTML += `
+    for (const it of t.items) {
+        tb.innerHTML += `
             <tr>
-                <td>${i.productId}</td>
-                <td>${i.batchId ?? '—'}</td>
-                <td>${i.available ?? '—'}</td>
-                <td>${i.qty}</td>
-                <td></td>
+                <td>${it.id}</td>
+                <td>${it.productId}</td>
+                <td>${it.batchId ?? ""}</td>
+                <td>${it.qty}</td>
+                <td>
+                    ${t.status === "DRAFT"
+            ? `<button class="btn btn-danger delItemBtn" data-id="${it.id}">Удалить</button>`
+            : ""}
+                </td>
             </tr>
         `;
+    }
+}
+
+function hideDetail() {
+    document.getElementById("detailOverlay").classList.add("hidden");
+}
+
+/* ----------------------- DELETE ITEM ----------------------- */
+
+async function deleteItemClick(e) {
+    const btn = e.target.closest(".delItemBtn");
+    if (!btn) return;
+
+    if (currentTransfer.status !== "DRAFT")
+        return alertBox("error", "Удалять можно только DRAFT");
+
+    if (!confirm("Удалить позицию?")) return;
+
+    await api("DELETE", `/api/transfers/${currentTransfer.id}/items/${btn.dataset.id}`);
+
+    const updated = await api("GET", `/api/transfers/${currentTransfer.id}`);
+    showDetail(updated);
+}
+
+/* ----------------------- ADD ITEM MODAL ----------------------- */
+
+async function openAddItemModal() {
+    if (!currentTransfer || currentTransfer.status !== "DRAFT")
+        return alertBox("error", "Можно добавлять только в DRAFT");
+
+    Modal.open(`
+        <label>ID товара</label>
+        <input name="productId" type="number">
+
+        <label>Кол-во</label>
+        <input name="qty" type="number" min="1" value="1">
+    `, {
+        width: "350px",
+        onOk: async d => {
+
+            if (!d.productId || !d.qty)
+                return alertBox("error", "Заполните поля");
+
+            // получаем партии
+            const batches = await api("GET",
+                `/api/stocks/batches/${d.productId}/${currentTransfer.fromLocation}`
+            );
+
+            if (batches.length === 0)
+                return alertBox("error", "Партии не найдены");
+
+            const batchId = batches[0].batchId ?? batches[0].id;
+
+            await api("POST",
+                `/api/transfers/${currentTransfer.id}/items`,
+                {
+                    productId: Number(d.productId),
+                    batchId: Number(batchId),
+                    qty: Number(d.qty)
+                }
+            );
+
+            const updated = await api("GET", `/api/transfers/${currentTransfer.id}`);
+            showDetail(updated);
+        }
     });
 }
 
-// --------------------------------------
-// COMMIT
-// --------------------------------------
-document.getElementById('btnCommit').onclick = async () => {
-    if (!transferId) return;
+/* ----------------------- COMMIT ----------------------- */
 
-    try {
-        await api("POST", `/api/transfers/${transferId}/commit`);
-        pushAlert('success', 'Документ проведён');
-        document.getElementById('docStatus').textContent = 'COMMITTED';
-    } catch (e) {
-        pushAlert('error', e.message);
-    }
-};
+async function commitTransfer() {
+    if (!currentTransfer || currentTransfer.status !== "DRAFT")
+        return alertBox("error", "Документ уже проведён");
 
-// --------------------------------------
-// INIT PAGE
-// --------------------------------------
-(async function start() {
-    await loadLocations();
-    await loadProducts();
-})();
+    await api("POST", `/api/transfers/${currentTransfer.id}/commit`);
+
+    alertBox("info", "Проведено");
+    hideDetail();
+    loadTransfers();
+}
+
+/* ----------------------- DELETE DRAFT ----------------------- */
+
+async function deleteDraft() {
+    if (!currentTransfer || currentTransfer.status !== "DRAFT")
+        return alertBox("error", "Удалять можно только DRAFT");
+
+    if (!confirm("Удалить документ?")) return;
+
+    await api("DELETE", `/api/transfers/${currentTransfer.id}`);
+
+    alertBox("info", "Удалено");
+    hideDetail();
+    loadTransfers();
+}

@@ -13,7 +13,8 @@ import java.util.List;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Transfer {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, unique = true)
@@ -23,15 +24,15 @@ public class Transfer {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "created_by")
+    @JoinColumn(name = "created_by_id", nullable = false)
     private User createdBy;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "from_location")
+    @JoinColumn(name = "from_location_id", nullable = false)
     private Location fromLocation;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "to_location")
+    @JoinColumn(name = "to_location_id", nullable = false)
     private Location toLocation;
 
     @Enumerated(EnumType.STRING)
@@ -41,6 +42,4 @@ public class Transfer {
     @OneToMany(mappedBy = "transfer", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<TransferItem> items = new ArrayList<>();
-
-
 }

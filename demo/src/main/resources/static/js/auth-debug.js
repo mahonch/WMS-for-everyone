@@ -13,19 +13,24 @@ async function debugAuthContext(pageName) {
     const lsToken = localStorage.getItem('token');
     const lsRole  = localStorage.getItem('role');
     const lsUser  = localStorage.getItem('username');
+    const lsUserId = localStorage.getItem('userid');
 
-    console.log(`[%c${pageName}%c] localStorage`, 'color: green', 'color: inherit', {
-        token: lsToken,
-        role: lsRole,
-        username: lsUser,
-    });
+    console.log(
+        `[${pageName}] localStorage`,
+        {
+            token: lsToken,
+            role: lsRole,
+            username: lsUser,
+            userid: lsUserId
+        }
+    );
 
     let jwtPayload = null;
     if (lsToken) {
         jwtPayload = decodeJwt(lsToken);
-        console.log(`[%c${pageName}%c] JWT payload`, 'color: green', 'color: inherit', jwtPayload);
+        console.log(`[${pageName}] JWT payload`, jwtPayload);
     } else {
-        console.log(`[%c${pageName}%c] JWT токен отсутствует`, 'color: green', 'color: inherit');
+        console.log(`[${pageName}] JWT токен отсутствует`);
     }
 
     try {
@@ -33,8 +38,8 @@ async function debugAuthContext(pageName) {
             headers: lsToken ? { 'Authorization': 'Bearer ' + lsToken } : {}
         });
         const body = await res.json();
-        console.log(`[%c${pageName}%c] /api/auth/me → ${res.status}`, 'color: green', 'color: inherit', body);
+        console.log(`[${pageName}] /api/auth/me → ${res.status}`, body);
     } catch (e) {
-        console.warn(`[%c${pageName}%c] Ошибка запроса /api/auth/me`, 'color: green', 'color: inherit', e);
+        console.warn(`[${pageName}] Ошибка запроса /api/auth/me`, e);
     }
 }

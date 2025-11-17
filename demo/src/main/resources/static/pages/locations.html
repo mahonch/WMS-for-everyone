@@ -4,20 +4,25 @@
     <meta charset="UTF-8">
     <title>WMS — Склады</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <link href="/css/app.css" rel="stylesheet">
+    <script src="/js/auth-debug.js"></script>
+    <script type="module" defer src="/js/locations.js"></script>
 </head>
+
 <body>
 
 <header class="topbar">
     <div class="brand">WMS</div>
+
     <nav class="nav">
         <a href="/dashboard.html">Главная</a>
         <a href="/pages/receipts.html">Приёмка</a>
         <a href="/pages/issues.html">Списание</a>
         <a href="/pages/transfers.html">Перемещения</a>
-        <a href="/pages/scan.html">Сканер</a>
         <a href="/pages/locations.html" class="active">Склады</a>
     </nav>
+
     <div class="user">
         <span id="usernameLabel">—</span>
         <button id="logoutBtn" class="btn">Выйти</button>
@@ -29,7 +34,7 @@
     <section id="alerts"></section>
 
     <section class="panel">
-        <div class="panel-header">
+        <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;">
             <h2>Склады</h2>
             <button id="createBtn" class="btn">Создать склад</button>
         </div>
@@ -40,7 +45,7 @@
                 <th>ID</th>
                 <th>Код</th>
                 <th>Название</th>
-                <th style="width:160px;">Действия</th>
+                <th style="width:200px;">Действия</th>
             </tr>
             </thead>
             <tbody id="locTable">
@@ -51,9 +56,10 @@
 
 </main>
 
-<!-- -------- МОДАЛЬНОЕ ОКНО -------- -->
+<!-- =============== МОДАЛКА =============== -->
 <div id="infoModal" class="modal hidden">
     <div class="modal-content">
+
         <h3 id="modalTitle">Информация</h3>
         <div id="modalBody">Загрузка…</div>
 
@@ -64,11 +70,9 @@
             <button class="btn" id="btnTransferTo">↘ Перемещение в склад</button>
             <button class="btn btn-secondary" id="modalClose">Закрыть</button>
         </div>
+
     </div>
 </div>
-
-<script src="/js/auth-debug.js"></script>
-<script src="/js/locations.js"></script>
 
 </body>
 </html>

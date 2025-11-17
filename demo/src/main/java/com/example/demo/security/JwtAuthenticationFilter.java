@@ -24,30 +24,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
 
-    /**
-     * ❗ УБРАНО "/" — иначе фильтр НЕ РАБОТАЕТ НИКОГДА
-     */
     private static final List<String> SKIP_PATHS = List.of(
-            "/index.html", "/dashboard.html", "/scan.html", "/labels.html",
-            "/admin.html",
-            "/favicon.ico", "/error",
-            "/css/", "/js/", "/images/", "/assets/", "/webjars/","/pages/issues.html",
-            "/v3/api-docs/", "/swagger-ui/",
-            "/api/auth/",          // login / refresh
-            "/api/auth/me","/pages","/pages/receipts.html"         // информация о себе
+            "/api/auth/login",
+            "/api/auth/refresh",
+            "/css/", "/js/", "/images/", "/assets/", "/webjars/"
     );
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String uri = request.getRequestURI();
-
-        for (String prefix : SKIP_PATHS) {
-            if (uri.equals(prefix) || uri.startsWith(prefix)) {
-                return true;
-            }
-        }
-
-        return false;
+        return SKIP_PATHS.stream().anyMatch(uri::startsWith);
     }
 
     @Override
@@ -67,7 +53,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String username = jwtService.getUsername(token);
 
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (username != null &&
+                    SecurityContextHolder.getContext().getAuthentication() == null) {
+
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
                 var auth = new UsernamePasswordAuthenticationToken(
