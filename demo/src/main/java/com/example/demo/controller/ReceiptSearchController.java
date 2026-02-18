@@ -35,6 +35,9 @@ public class ReceiptSearchController {
         if (p.supplierId() != null) {
             spec = spec.and((root, q, cb) -> cb.equal(root.get("supplier").get("id"), p.supplierId()));
         }
+        if (p.warehouseId() != null) {
+            spec = spec.and((root, q, cb) -> cb.equal(root.get("warehouse").get("id"), p.warehouseId()));
+        }
         if (p.createdById() != null) {
             spec = spec.and((root, q, cb) -> cb.equal(root.get("createdBy").get("id"), p.createdById()));
         }
@@ -69,11 +72,14 @@ public class ReceiptSearchController {
                 r.getStatus().name(),
 
                 r.getSupplier() != null ? r.getSupplier().getId() : null,
+                r.getWarehouse() != null ? r.getWarehouse().getId() : null,
 
                 r.getCreatedBy() != null ? r.getCreatedBy().getId() : null,
                 r.getCreatedBy() != null ? r.getCreatedBy().getUsername() : null,
-
                 r.getCreatedAt(),
+                r.getCommittedBy() != null ? r.getCommittedBy().getId() : null,
+                r.getCommittedBy() != null ? r.getCommittedBy().getUsername() : null,
+                r.getCommittedAt(),
                 r.getTotalSum(),
 
                 r.getItems().stream().map(i -> new ReceiptDtos.ViewItem(
@@ -81,7 +87,8 @@ public class ReceiptSearchController {
                         i.getProduct().getId(),
                         i.getQty(),
                         i.getPrice(),
-                        i.getBatch() != null ? i.getBatch().getId() : null
+                        i.getBatch() != null ? i.getBatch().getId() : null,
+                        i.getLocation() != null ? i.getLocation().getId() : null
                 )).toList()
         );
     }

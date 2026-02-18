@@ -72,6 +72,8 @@ public class TransferService {
         }
 
         t.setStatus(DocStatus.COMMITTED);
+        t.setCommittedAt(java.time.LocalDateTime.now());
+        t.setCommittedBy(actor);
         transferRepository.save(t);
 
         auditService.log(actor, "TRANSFER_COMMIT", "Transfer", t.getId(), before, snapshot(t));

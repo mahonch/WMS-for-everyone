@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.audit.AuditSnapshot;
 import com.example.demo.entity.*;
 import com.example.demo.entity.enums.DocStatus;
+import com.example.demo.entity.enums.IssueReason;
 import com.example.demo.exception.DocumentAlreadyCommittedException;
 import com.example.demo.exception.NegativeStockException;
 import com.example.demo.exception.NotFoundException;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -22,13 +24,19 @@ public class IssueService {
     private final IssueRepository issueRepository;
     private final IssueItemRepository issueItemRepository;
     private final LocationRepository locationRepository;
+    private final WarehouseRepository warehouseRepository;
     private final BatchRepository batchRepository;
     private final StockRepository stockRepository;
     private final StockService stockService;
     private final AuditService auditService;
 
     @Transactional
-    public void commit(Long issueId, Long fromLocationId, User actor) {
+    public void commit(Long issueId,
+                       Long fromLocationId,
+                       Long targetWarehouseId,
+                       Long targetLocationId,
+                       String reasonCode,
+                       User actor) {
 
         Issue issue = issueRepository.findById(issueId)
                 .orElseThrow(() -> new NotFoundException("Issue not found: " + issueId));
@@ -36,8 +44,44 @@ public class IssueService {
         if (issue.getStatus() == DocStatus.COMMITTED)
             throw new DocumentAlreadyCommittedException("Issue already committed");
 
+        IssueReason reason = reasonCode != null
+                ? IssueReason.valueOf(reasonCode)
+                : IssueReason.DAMAGE;
+        issue.setReasonCode(reason);
+
         Location loc = locationRepository.findById(fromLocationId)
                 .orElseThrow(() -> new NotFoundException("Location not found: " + fromLocationId));
+
+        Warehouse targetWarehouse = null;
+        if (targetWarehouseId != null) {
+            targetWarehouse = warehouseRepository.findById(targetWarehouseId)
+                    .orElseThrow(() -> new NotFoundException("Warehouse not found: " + targetWarehouseId));
+        }
+
+        Location targetLocation = null;
+        if (targetLocationId != null) {
+            targetLocation = locationRepository.findById(targetLocationId)
+                    .orElseThrow(() -> new NotFoundException("Location not found: " + targetLocationId));
+            if (targetWarehouse != null && !targetLocation.getWarehouse().getId().equals(targetWarehouse.getId())) {
+                throw new IllegalStateException("Target location belongs to another warehouse");
+            }
+            // если склад не указан, берем из локации
+            if (targetWarehouse == null) {
+                targetWarehouse = targetLocation.getWarehouse();
+            }
+        }
+
+        if (reason == IssueReason.TRANSFER_OUT) {
+            if (targetWarehouse == null && targetLocation == null) {
+                throw new IllegalStateException("Target warehouse or location required for TRANSFER_OUT");
+            }
+            issue.setTargetWarehouse(targetWarehouse);
+            issue.setTargetLocation(targetLocation);
+        } else {
+            // для DAMAGE/SALE не должно быть цели
+            issue.setTargetWarehouse(null);
+            issue.setTargetLocation(null);
+        }
 
         // ---------- BEFORE SNAPSHOT ----------
         AuditSnapshot before = snapshot(issue);
@@ -115,8 +159,18 @@ public class IssueService {
             issueItemRepository.saveAll(itemsToAppend);
         }
 
+        // Если TRANSFER_OUT и есть целевая локация — приходуем туда
+        if (reason == IssueReason.TRANSFER_OUT && targetLocation != null) {
+            for (IssueItem it : issue.getItems()) {
+                if (it.getBatch() == null) continue; // защита, но по логике уже заполнено
+                stockService.increase(it.getProduct(), it.getBatch(), targetLocation, it.getQty());
+            }
+        }
+
         // ---------- COMMIT ----------
         issue.setStatus(DocStatus.COMMITTED);
+        issue.setCommittedAt(LocalDateTime.now());
+        issue.setCommittedBy(actor);
         issueRepository.save(issue);
 
         // ---------- AFTER SNAPSHOT ----------

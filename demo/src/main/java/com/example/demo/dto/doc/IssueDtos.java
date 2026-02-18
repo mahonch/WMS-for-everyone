@@ -32,7 +32,12 @@ public class IssueDtos {
             String number,
             String status,
             Long createdBy,
+            String createdByName,
+            Long committedBy,
+            String committedByName,
+            LocalDateTime committedAt,
             String reason,
+            String reasonCode,
             LocalDateTime createdAt,
             List<ViewItem> items
     ) {}

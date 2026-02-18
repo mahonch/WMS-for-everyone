@@ -28,6 +28,10 @@ public class ReceiptItem {
     @JoinColumn(name = "batch_id")
     private Batch batch; // можно заполнить после создания партии
 
+    @ManyToOne
+    @JoinColumn(name = "location_id")
+    private Location location; // ячейка для этой строки (опционально)
+
     @Column(nullable = false)
     private Integer qty;
 

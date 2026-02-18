@@ -10,6 +10,7 @@ public record ReceiptSearchParams(
         DocStatus status,
         Long supplierId,
         Long createdById,
+        Long warehouseId,
         String sku,
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateFrom,
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateTo,

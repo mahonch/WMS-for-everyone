@@ -1,5 +1,6 @@
 package com.example.demo.entity;
 
+import com.example.demo.entity.enums.LocationType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,9 +17,21 @@ public class Location {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "warehouse_id")
+    private Warehouse warehouse;
+
+    @Column(nullable = false)
     private String code;
 
     @Column(nullable = false)
     private String name;
+
+    @ManyToOne
+    @JoinColumn(name = "parent_id")
+    private Location parent;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private LocationType type = LocationType.BIN;
 }

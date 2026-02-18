@@ -17,16 +17,9 @@ public interface IssueRepository extends JpaRepository<Issue, Long>, JpaSpecific
 
     List<Issue> findByStatusOrderByCreatedAtDesc(DocStatus status);
 
-    /**
-     * Для детального просмотра — сразу подтягиваем позиции, продукты и партии (борьба с N+1).
-     */
     @EntityGraph(attributePaths = {"items", "items.product", "items.batch"})
     Optional<Issue> findWithItemsById(Long id);
 
-    /**
-     * Для листинга — хотя бы items, чтобы можно было быстро посчитать общее,
-     * а детальную инфу догружать по необходимости.
-     */
     @Override
     @EntityGraph(attributePaths = {"items"})
     Page<Issue> findAll(Pageable pageable);

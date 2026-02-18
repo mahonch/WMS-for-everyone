@@ -61,7 +61,13 @@ public class IssueSearchController {
         return new IssueDtos.View(
                 d.getId(), d.getNumber(), d.getStatus().name(),
                 d.getCreatedBy() != null ? d.getCreatedBy().getId() : null,
-                d.getReason(), d.getCreatedAt(),
+                d.getCreatedBy() != null ? d.getCreatedBy().getUsername() : null,
+                d.getCommittedBy() != null ? d.getCommittedBy().getId() : null,
+                d.getCommittedBy() != null ? d.getCommittedBy().getUsername() : null,
+                d.getCommittedAt(),
+                d.getReason(),
+                d.getReasonCode() != null ? d.getReasonCode().name() : null,
+                d.getCreatedAt(),
                 d.getItems().stream().map(i -> new IssueDtos.ViewItem(
                         i.getId(),
                         i.getProduct().getId(),

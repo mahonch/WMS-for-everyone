@@ -20,10 +20,15 @@ public class StockController {
     // -----------------------------------------------------------
     @GetMapping
     public List<StockDto> list(@RequestParam(required = false) Long productId,
-                               @RequestParam(required = false) Long locationId) {
+                               @RequestParam(required = false) Long locationId,
+                               @RequestParam(required = false) Long warehouseId) {
         List<Stock> stocks;
         if (productId != null && locationId != null) {
             stocks = stockRepository.findByProductIdAndLocationId(productId, locationId);
+        } else if (productId != null && warehouseId != null) {
+            stocks = stockRepository.findByProductIdAndLocation_Warehouse_Id(productId, warehouseId);
+        } else if (warehouseId != null) {
+            stocks = stockRepository.findByLocation_Warehouse_Id(warehouseId);
         } else if (productId != null) {
             stocks = stockRepository.findByProduct_Id(productId);
         } else if (locationId != null) {
@@ -36,8 +41,11 @@ public class StockController {
                 .map(s -> new StockDto(
                         s.getId(),
                         s.getProduct().getId(),
+                        s.getProduct().getName(),
                         s.getLocation().getId(),
+                        s.getLocation().getCode(),
                         s.getBatch() != null ? s.getBatch().getId() : null,
+                        s.getBatch() != null ? s.getBatch().getLotNumber() : null,
                         s.getQty()
                 ))
                 .toList();
@@ -57,8 +65,11 @@ public class StockController {
                 .map(s -> new StockDto(
                         s.getId(),
                         s.getProduct().getId(),
+                        s.getProduct().getName(),
                         s.getLocation().getId(),
+                        s.getLocation().getCode(),
                         s.getBatch() != null ? s.getBatch().getId() : null,
+                        s.getBatch() != null ? s.getBatch().getLotNumber() : null,
                         s.getQty()
                 ))
                 .toList();

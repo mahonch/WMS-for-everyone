@@ -10,6 +10,7 @@ import com.example.demo.util.NumberGenerator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -120,8 +121,13 @@ public class TransferController {
     // COMMIT TRANSFER
     // ---------------------------------------------------------
     @PostMapping("/{id}/commit")
-    public ResponseEntity<?> commit(@PathVariable Long id) {
-        transferService.commit(id, null);
+    public ResponseEntity<?> commit(@PathVariable Long id,
+                                    @AuthenticationPrincipal com.example.demo.security.CustomUserDetails principal) {
+        User actor = null;
+        if (principal != null) {
+            actor = userRepository.findById(principal.getId()).orElse(null);
+        }
+        transferService.commit(id, actor);
         return ResponseEntity.ok().build();
     }
 
@@ -134,6 +140,10 @@ public class TransferController {
                 t.getNumber(),
                 t.getStatus().name(),
                 t.getCreatedBy() != null ? t.getCreatedBy().getId() : null,
+                t.getCreatedBy() != null ? t.getCreatedBy().getUsername() : null,
+                t.getCommittedBy() != null ? t.getCommittedBy().getId() : null,
+                t.getCommittedBy() != null ? t.getCommittedBy().getUsername() : null,
+                t.getCommittedAt(),
                 t.getFromLocation().getId(),
                 t.getToLocation().getId(),
                 t.getCreatedAt(),

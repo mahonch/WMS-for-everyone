@@ -29,6 +29,8 @@ public interface StockRepository extends JpaRepository<Stock, StockId> {
     List<Stock> findByProduct_Id(Long productId);
     List<Stock> findByLocation_Id(Long locationId);
     List<Stock> findByProductIdAndLocationId(Long productId, Long locationId);
+    List<Stock> findByLocation_Warehouse_Id(Long warehouseId);
+    List<Stock> findByProductIdAndLocation_Warehouse_Id(Long productId, Long warehouseId);
 
 
     // ---------------- FIFO for ISSUE ----------------

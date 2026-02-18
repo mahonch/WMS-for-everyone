@@ -1,0 +1,7 @@
+-- Commit metadata for docs 
+ALTER TABLE receipts ADD COLUMN IF NOT EXISTS committed_by BIGINT REFERENCES users(id); 
+ALTER TABLE receipts ADD COLUMN IF NOT EXISTS committed_at TIMESTAMP; 
+ALTER TABLE issues ADD COLUMN IF NOT EXISTS committed_by BIGINT REFERENCES users(id); 
+ALTER TABLE issues ADD COLUMN IF NOT EXISTS committed_at TIMESTAMP; 
+ALTER TABLE transfers ADD COLUMN IF NOT EXISTS committed_by_id BIGINT REFERENCES users(id); 
+ALTER TABLE transfers ADD COLUMN IF NOT EXISTS committed_at TIMESTAMP;

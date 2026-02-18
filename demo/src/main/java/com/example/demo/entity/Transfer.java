@@ -27,6 +27,13 @@ public class Transfer {
     @JoinColumn(name = "created_by_id", nullable = false)
     private User createdBy;
 
+    @ManyToOne
+    @JoinColumn(name = "committed_by_id")
+    private User committedBy;
+
+    @Column(name = "committed_at")
+    private LocalDateTime committedAt;
+
     @ManyToOne(optional = false)
     @JoinColumn(name = "from_location_id", nullable = false)
     private Location fromLocation;

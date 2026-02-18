@@ -30,8 +30,19 @@ public class Receipt {
     private User createdBy;
 
     @ManyToOne
+    @JoinColumn(name = "committed_by")
+    private User committedBy;
+
+    @Column(name = "committed_at")
+    private LocalDateTime committedAt;
+
+    @ManyToOne
     @JoinColumn(name = "supplier_id")
     private Supplier supplier;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "warehouse_id")
+    private Warehouse warehouse;
 
     @Column(name = "total_sum", nullable = false)
     private BigDecimal totalSum = BigDecimal.ZERO;

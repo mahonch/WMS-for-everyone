@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.doc.ReceiptDtos;
 import com.example.demo.entity.*;
+import com.example.demo.entity.Warehouse;
 import com.example.demo.entity.enums.DocStatus;
 import com.example.demo.exception.NotFoundException;
 import com.example.demo.repository.*;
@@ -24,6 +25,8 @@ public class ReceiptCrudController {
     private final ReceiptItemRepository receiptItemRepository;
     private final SupplierRepository supplierRepository;
     private final ProductRepository productRepository;
+    private final LocationRepository locationRepository;
+    private final WarehouseRepository warehouseRepository;
     private final UserRepository userRepository;
     private final NumberGenerator numberGenerator;
 
@@ -49,6 +52,9 @@ public class ReceiptCrudController {
                 supplierRepository.findById(dto.supplierId())
                         .orElseThrow(() -> new NotFoundException("Supplier not found"));
 
+        Warehouse wh = warehouseRepository.findById(dto.warehouseId())
+                .orElseThrow(() -> new NotFoundException("Warehouse not found"));
+
         User createdBy = userRepository.findById(dto.createdById())
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
@@ -59,6 +65,7 @@ public class ReceiptCrudController {
         Receipt r = Receipt.builder()
                 .number(number)
                 .supplier(s)
+                .warehouse(wh)
                 .createdBy(createdBy)
                 .status(DocStatus.DRAFT)
                 .totalSum(BigDecimal.ZERO)
@@ -70,9 +77,12 @@ public class ReceiptCrudController {
             for (ReceiptDtos.ItemCreate ic : dto.items()) {
                 Product p = productRepository.findById(ic.productId())
                         .orElseThrow(() -> new NotFoundException("Product not found: " + ic.productId()));
+                Location loc = ic.locationId() == null ? null :
+                        locationRepository.findById(ic.locationId())
+                                .orElseThrow(() -> new NotFoundException("Location not found: " + ic.locationId()));
 
                 ReceiptItem item = ReceiptItem.builder()
-                        .receipt(r).product(p).qty(ic.qty()).price(ic.price())
+                        .receipt(r).product(p).qty(ic.qty()).price(ic.price()).location(loc)
                         .build();
 
                 receiptItemRepository.save(item);
@@ -94,9 +104,12 @@ public class ReceiptCrudController {
         Receipt r = mustBeDraft(id);
         Product p = productRepository.findById(dto.productId())
                 .orElseThrow(() -> new NotFoundException("Product not found: " + dto.productId()));
+        Location loc = dto.locationId() == null ? null :
+                locationRepository.findById(dto.locationId())
+                        .orElseThrow(() -> new NotFoundException("Location not found: " + dto.locationId()));
 
         ReceiptItem item = ReceiptItem.builder()
-                .receipt(r).product(p).qty(dto.qty()).price(dto.price())
+                .receipt(r).product(p).qty(dto.qty()).price(dto.price()).location(loc)
                 .build();
 
         item = receiptItemRepository.save(item);
@@ -105,7 +118,9 @@ public class ReceiptCrudController {
         recalcTotal(r);
 
         return new ReceiptDtos.ViewItem(item.getId(), p.getId(), item.getQty(),
-                item.getPrice(), item.getBatch() != null ? item.getBatch().getId() : null);
+                item.getPrice(),
+                item.getBatch() != null ? item.getBatch().getId() : null,
+                item.getLocation() != null ? item.getLocation().getId() : null);
     }
 
     @PutMapping("/{id}/items/{itemId}")
@@ -119,16 +134,21 @@ public class ReceiptCrudController {
 
         Product p = productRepository.findById(dto.productId())
                 .orElseThrow(() -> new NotFoundException("Product not found: " + dto.productId()));
+        Location loc = dto.locationId() == null ? null :
+                locationRepository.findById(dto.locationId())
+                        .orElseThrow(() -> new NotFoundException("Location not found: " + dto.locationId()));
 
         item.setProduct(p);
         item.setQty(dto.qty());
         item.setPrice(dto.price());
+        item.setLocation(loc);
 
         item = receiptItemRepository.save(item);
         recalcTotal(r);
 
         return new ReceiptDtos.ViewItem(item.getId(), p.getId(), item.getQty(),
-                item.getPrice(), item.getBatch() != null ? item.getBatch().getId() : null);
+                item.getPrice(), item.getBatch() != null ? item.getBatch().getId() : null,
+                item.getLocation() != null ? item.getLocation().getId() : null);
     }
 
     @DeleteMapping("/{id}/items/{itemId}")
@@ -160,12 +180,16 @@ public class ReceiptCrudController {
                 r.getStatus().name(),
 
                 r.getSupplier() != null ? r.getSupplier().getId() : null,
+                r.getWarehouse() != null ? r.getWarehouse().getId() : null,
 
                 // NOW SENDING BOTH ID + USERNAME
                 r.getCreatedBy() != null ? r.getCreatedBy().getId() : null,
                 r.getCreatedBy() != null ? r.getCreatedBy().getUsername() : null,
 
                 r.getCreatedAt(),
+                r.getCommittedBy() != null ? r.getCommittedBy().getId() : null,
+                r.getCommittedBy() != null ? r.getCommittedBy().getUsername() : null,
+                r.getCommittedAt(),
                 r.getTotalSum(),
 
                 r.getItems().stream().map(i -> new ReceiptDtos.ViewItem(
@@ -173,7 +197,8 @@ public class ReceiptCrudController {
                         i.getProduct().getId(),
                         i.getQty(),
                         i.getPrice(),
-                        i.getBatch() != null ? i.getBatch().getId() : null
+                        i.getBatch() != null ? i.getBatch().getId() : null,
+                        i.getLocation() != null ? i.getLocation().getId() : null
                 )).toList()
         );
     }

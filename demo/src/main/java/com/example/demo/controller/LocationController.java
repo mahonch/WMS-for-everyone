@@ -2,9 +2,11 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.warehouse.LocationDto;
 import com.example.demo.entity.Location;
+import com.example.demo.entity.Warehouse;
 import com.example.demo.exception.NotFoundException;
 import com.example.demo.repository.LocationRepository;
 import com.example.demo.repository.StockRepository;
+import com.example.demo.repository.WarehouseRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +20,7 @@ import java.util.List;
 public class LocationController {
 
     private final LocationRepository locationRepository;
+    private final WarehouseRepository warehouseRepository;
     private final StockRepository stockRepository;
 
     // ---------- LIST ----------
@@ -40,9 +43,19 @@ public class LocationController {
     // ---------- CREATE ----------
     @PostMapping
     public LocationDto.View create(@Valid @RequestBody LocationDto.Create dto) {
+        Warehouse wh = warehouseRepository.findById(dto.warehouseId())
+                .orElseThrow(() -> new NotFoundException("Warehouse not found"));
+
+        Location parent = dto.parentId() == null ? null :
+                locationRepository.findById(dto.parentId())
+                        .orElseThrow(() -> new NotFoundException("Parent location not found"));
+
         Location loc = Location.builder()
                 .code(dto.code())
                 .name(dto.name())
+                .warehouse(wh)
+                .parent(parent)
+                .type(dto.type() != null ? dto.type() : com.example.demo.entity.enums.LocationType.BIN)
                 .build();
 
         loc = locationRepository.save(loc);
@@ -51,6 +64,9 @@ public class LocationController {
                 loc.getId(),
                 loc.getCode(),
                 loc.getName(),
+                loc.getWarehouse().getId(),
+                loc.getParent() != null ? loc.getParent().getId() : null,
+                loc.getType(),
                 0L,
                 0L,
                 BigDecimal.ZERO
@@ -65,8 +81,18 @@ public class LocationController {
         Location loc = locationRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Location not found"));
 
+        Warehouse wh = warehouseRepository.findById(dto.warehouseId())
+                .orElseThrow(() -> new NotFoundException("Warehouse not found"));
+
+        Location parent = dto.parentId() == null ? null :
+                locationRepository.findById(dto.parentId())
+                        .orElseThrow(() -> new NotFoundException("Parent location not found"));
+
         loc.setCode(dto.code());
         loc.setName(dto.name());
+        loc.setWarehouse(wh);
+        loc.setParent(parent);
+        loc.setType(dto.type() != null ? dto.type() : loc.getType());
         loc = locationRepository.save(loc);
 
         return toViewWithStats(loc);
@@ -91,6 +117,9 @@ public class LocationController {
                 l.getId(),
                 l.getCode(),
                 l.getName(),
+                l.getWarehouse() != null ? l.getWarehouse().getId() : null,
+                l.getParent() != null ? l.getParent().getId() : null,
+                l.getType(),
                 products != null ? products : 0L,
                 qty != null ? qty : 0L,
                 value != null ? value : BigDecimal.ZERO

@@ -39,8 +39,7 @@ public class ScanController {
                 var b = batchRepo.findById(id).orElseThrow();
                 resp.setProductName(b.getProduct().getName());
                 resp.setAvailableQty(b.getAvailableQty());
-                if (b.getLocation()!=null) resp.setLocationCode(b.getLocation().getCode());
-                if (b.getExpiryDate()!=null) resp.setExpiryDate(b.getExpiryDate().toString());
+                // локация теперь определяется по stock; здесь не возвращаем
             }
             case "product" -> {
                 var p = productRepo.findById(id).orElseThrow();

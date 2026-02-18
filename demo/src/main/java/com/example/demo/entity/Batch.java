@@ -3,7 +3,6 @@ package com.example.demo.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -39,10 +38,6 @@ public class Batch {
     @Column(name = "available_qty", nullable = false)
     private Integer availableQty; // доступно (для списания)
 
-    @Column(name = "expiry_date")
-    private LocalDate expiryDate;
-
-    @ManyToOne
-    @JoinColumn(name = "location_id")
-    private Location location; // <-- вот добавленное поле
+    @Column(name = "lot_number")
+    private String lotNumber; // опциональный номер партии для человека/этикетки
 }
