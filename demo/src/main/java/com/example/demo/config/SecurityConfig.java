@@ -39,7 +39,11 @@ public class SecurityConfig {
 
                         // публичные страницы
                         .requestMatchers("/", "/index.html", "/dashboard.html", "/scan.html",
-                                "/labels.html", "/admin.html", "/favicon.ico", "/pages","/pages/receipts.html","/pages/issues.html").permitAll()
+                                "/labels.html", "/admin.html", "/favicon.ico", 
+                                "/pages/warehouses.html", "/pages/warehouse-detail.html", 
+                                "/pages/receipts.html", "/pages/issues.html", 
+                                "/pages/transfers.html", "/pages/products.html", 
+                                "/pages/suppliers.html").permitAll()
 
                         // swagger
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()

@@ -117,10 +117,11 @@ public class ReceiptCrudController {
 
         recalcTotal(r);
 
-        return new ReceiptDtos.ViewItem(item.getId(), p.getId(), item.getQty(),
+        return new ReceiptDtos.ViewItem(item.getId(), p.getId(), p.getName(), item.getQty(),
                 item.getPrice(),
                 item.getBatch() != null ? item.getBatch().getId() : null,
-                item.getLocation() != null ? item.getLocation().getId() : null);
+                item.getLocation() != null ? item.getLocation().getId() : null,
+                item.getLocation() != null ? item.getLocation().getName() : null);
     }
 
     @PutMapping("/{id}/items/{itemId}")
@@ -146,9 +147,10 @@ public class ReceiptCrudController {
         item = receiptItemRepository.save(item);
         recalcTotal(r);
 
-        return new ReceiptDtos.ViewItem(item.getId(), p.getId(), item.getQty(),
+        return new ReceiptDtos.ViewItem(item.getId(), p.getId(), p.getName(), item.getQty(),
                 item.getPrice(), item.getBatch() != null ? item.getBatch().getId() : null,
-                item.getLocation() != null ? item.getLocation().getId() : null);
+                item.getLocation() != null ? item.getLocation().getId() : null,
+                item.getLocation() != null ? item.getLocation().getName() : null);
     }
 
     @DeleteMapping("/{id}/items/{itemId}")
@@ -180,9 +182,11 @@ public class ReceiptCrudController {
                 r.getStatus().name(),
 
                 r.getSupplier() != null ? r.getSupplier().getId() : null,
-                r.getWarehouse() != null ? r.getWarehouse().getId() : null,
+                r.getSupplier() != null ? r.getSupplier().getName() : null,
 
-                // NOW SENDING BOTH ID + USERNAME
+                r.getWarehouse() != null ? r.getWarehouse().getId() : null,
+                r.getWarehouse() != null ? r.getWarehouse().getName() : null,
+
                 r.getCreatedBy() != null ? r.getCreatedBy().getId() : null,
                 r.getCreatedBy() != null ? r.getCreatedBy().getUsername() : null,
 
@@ -195,10 +199,12 @@ public class ReceiptCrudController {
                 r.getItems().stream().map(i -> new ReceiptDtos.ViewItem(
                         i.getId(),
                         i.getProduct().getId(),
+                        i.getProduct().getName(),
                         i.getQty(),
                         i.getPrice(),
                         i.getBatch() != null ? i.getBatch().getId() : null,
-                        i.getLocation() != null ? i.getLocation().getId() : null
+                        i.getLocation() != null ? i.getLocation().getId() : null,
+                        i.getLocation() != null ? i.getLocation().getName() : null
                 )).toList()
         );
     }

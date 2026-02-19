@@ -1,128 +1,122 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.warehouse.LocationDto;
-import com.example.demo.entity.Location;
-import com.example.demo.entity.Warehouse;
-import com.example.demo.exception.NotFoundException;
-import com.example.demo.repository.LocationRepository;
-import com.example.demo.repository.StockRepository;
-import com.example.demo.repository.WarehouseRepository;
+import com.example.demo.dto.warehouse.LocationSearchParams;
+import com.example.demo.security.CustomUserDetails;
+import com.example.demo.service.LocationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * Контроллер для управления локациями (ячейками хранения).
+ */
 @RestController
 @RequestMapping("/api/locations")
 @RequiredArgsConstructor
 public class LocationController {
 
-    private final LocationRepository locationRepository;
-    private final WarehouseRepository warehouseRepository;
-    private final StockRepository stockRepository;
+    private final LocationService locationService;
 
-    // ---------- LIST ----------
+    /**
+     * Получить все локации списком.
+     */
     @GetMapping
     public List<LocationDto.View> list() {
-        return locationRepository.findAll()
-                .stream()
-                .map(this::toViewWithStats)
-                .toList();
+        return locationService.findAllList();
     }
 
-    // ---------- GET ----------
+    /**
+     * Поиск локаций по фильтрам.
+     */
+    @GetMapping("/search")
+    public Page<LocationDto.View> search(
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Long warehouseId,
+            @RequestParam(required = false) Long parentId,
+            @RequestParam(required = false) String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        LocationSearchParams params = LocationSearchParams.builder()
+                .code(code)
+                .name(name)
+                .warehouseId(warehouseId)
+                .parentId(parentId)
+                .type(type != null ? com.example.demo.entity.enums.LocationType.valueOf(type) : null)
+                .build();
+        return locationService.search(params, PageRequest.of(page, size, Sort.by("id").descending()));
+    }
+
+    /**
+     * Получить локацию по ID.
+     */
     @GetMapping("/{id}")
     public LocationDto.View get(@PathVariable Long id) {
-        Location l = locationRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Location not found"));
-        return toViewWithStats(l);
+        return locationService.findById(id);
     }
 
-    // ---------- CREATE ----------
+    /**
+     * Получить локации по складу.
+     */
+    @GetMapping("/warehouse/{warehouseId}")
+    public List<LocationDto.View> getByWarehouse(@PathVariable Long warehouseId) {
+        return locationService.findByWarehouseId(warehouseId);
+    }
+
+    /**
+     * Создать локацию.
+     */
     @PostMapping
-    public LocationDto.View create(@Valid @RequestBody LocationDto.Create dto) {
-        Warehouse wh = warehouseRepository.findById(dto.warehouseId())
-                .orElseThrow(() -> new NotFoundException("Warehouse not found"));
-
-        Location parent = dto.parentId() == null ? null :
-                locationRepository.findById(dto.parentId())
-                        .orElseThrow(() -> new NotFoundException("Parent location not found"));
-
-        Location loc = Location.builder()
-                .code(dto.code())
-                .name(dto.name())
-                .warehouse(wh)
-                .parent(parent)
-                .type(dto.type() != null ? dto.type() : com.example.demo.entity.enums.LocationType.BIN)
-                .build();
-
-        loc = locationRepository.save(loc);
-
-        return new LocationDto.View(
-                loc.getId(),
-                loc.getCode(),
-                loc.getName(),
-                loc.getWarehouse().getId(),
-                loc.getParent() != null ? loc.getParent().getId() : null,
-                loc.getType(),
-                0L,
-                0L,
-                BigDecimal.ZERO
-        );
+    public ResponseEntity<LocationDto.View> create(
+            @Valid @RequestBody LocationDto.Create dto,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        System.out.println("[LocationController.create] dto: " + dto);
+        try {
+            Long actorId = userDetails != null ? userDetails.getId() : null;
+            LocationDto.View created = locationService.create(dto, actorId);
+            System.out.println("[LocationController.create] created: " + created);
+            return ResponseEntity.ok(created);
+        } catch (Exception e) {
+            System.err.println("[LocationController.create] error: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
-    // ---------- UPDATE ----------
+    /**
+     * Обновить локацию.
+     */
     @PutMapping("/{id}")
-    public LocationDto.View update(@PathVariable Long id,
-                                   @Valid @RequestBody LocationDto.Update dto) {
-
-        Location loc = locationRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Location not found"));
-
-        Warehouse wh = warehouseRepository.findById(dto.warehouseId())
-                .orElseThrow(() -> new NotFoundException("Warehouse not found"));
-
-        Location parent = dto.parentId() == null ? null :
-                locationRepository.findById(dto.parentId())
-                        .orElseThrow(() -> new NotFoundException("Parent location not found"));
-
-        loc.setCode(dto.code());
-        loc.setName(dto.name());
-        loc.setWarehouse(wh);
-        loc.setParent(parent);
-        loc.setType(dto.type() != null ? dto.type() : loc.getType());
-        loc = locationRepository.save(loc);
-
-        return toViewWithStats(loc);
+    public ResponseEntity<LocationDto.View> update(
+            @PathVariable Long id,
+            @Valid @RequestBody LocationDto.Update dto,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long actorId = userDetails != null ? userDetails.getId() : null;
+        LocationDto.View updated = locationService.update(id, dto, actorId);
+        return ResponseEntity.ok(updated);
     }
 
-    // ---------- DELETE ----------
+    /**
+     * Удалить локацию.
+     */
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        locationRepository.deleteById(id);
-    }
-
-    // ---------- PRIVATE HELPERS ----------
-
-    private LocationDto.View toViewWithStats(Location l) {
-        Long locationId = l.getId();
-
-        Long products = stockRepository.countProductsByLocation(locationId);
-        Long qty = stockRepository.sumQtyByLocation(locationId);
-        BigDecimal value = stockRepository.sumValueByLocation(locationId);
-
-        return new LocationDto.View(
-                l.getId(),
-                l.getCode(),
-                l.getName(),
-                l.getWarehouse() != null ? l.getWarehouse().getId() : null,
-                l.getParent() != null ? l.getParent().getId() : null,
-                l.getType(),
-                products != null ? products : 0L,
-                qty != null ? qty : 0L,
-                value != null ? value : BigDecimal.ZERO
-        );
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long actorId = userDetails != null ? userDetails.getId() : null;
+        locationService.deleteById(id, actorId);
+        return ResponseEntity.ok().build();
     }
 }

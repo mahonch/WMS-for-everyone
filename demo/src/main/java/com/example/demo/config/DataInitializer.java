@@ -1,7 +1,9 @@
 package com.example.demo.config;
 
+import com.example.demo.entity.Category;
 import com.example.demo.entity.Role;
 import com.example.demo.entity.User;
+import com.example.demo.repository.CategoryRepository;
 import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final CategoryRepository categoryRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -26,6 +29,18 @@ public class DataInitializer implements CommandLineRunner {
         ensureRole("STOREKEEPER", "Кладовщик");
         ensureRole("MANAGER", "Менеджер");
         ensureRole("GUEST", "Гость");
+
+        // категории по-умолчанию
+        ensureCategory("Электроника");
+        ensureCategory("Бытовая техника");
+        ensureCategory("Продукты");
+        ensureCategory("Хозтовары");
+        ensureCategory("Строительство");
+        ensureCategory("Одежда");
+        ensureCategory("Автозапчасти");
+        ensureCategory("Канцтовары");
+        ensureCategory("Игрушки");
+        ensureCategory("Спорт");
 
         if (userRepository.findByUsername("admin").isEmpty()) {
             var adminRole = roleRepository.findByCode("ADMIN").orElseThrow();
@@ -43,6 +58,13 @@ public class DataInitializer implements CommandLineRunner {
         roleRepository.findByCode(code).orElseGet(() -> {
             Role r = Role.builder().code(code).name(name).build();
             return roleRepository.save(r);
+        });
+    }
+
+    private void ensureCategory(String name) {
+        categoryRepository.findByName(name).orElseGet(() -> {
+            Category c = Category.builder().name(name).build();
+            return categoryRepository.save(c);
         });
     }
 }

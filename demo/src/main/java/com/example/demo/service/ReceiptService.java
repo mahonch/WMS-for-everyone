@@ -87,7 +87,7 @@ public class ReceiptService {
         boolean missingLocation = receipt.getItems().stream()
                 .anyMatch(it -> it.getLocation() == null && locForAll == null);
         if (missingLocation) {
-            throw new IllegalStateException("Provide location per item or toLocationId for commit");
+            throw new IllegalStateException("Укажите локацию для каждой позиции");
         }
 
         // BEFORE snapshot
@@ -116,7 +116,7 @@ public class ReceiptService {
                 receiptItemRepository.save(it);
             }
 
-            // Ячейка по строке или общий fallback
+            // Ячейка по строке или общий fallback (если не указан в позиции)
             Location targetLocation = it.getLocation() != null ? it.getLocation() : defaultLoc;
 
             // Проверяем принадлежность локации тому же складу, что и приемка

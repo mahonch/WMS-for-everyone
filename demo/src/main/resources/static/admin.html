@@ -4,22 +4,33 @@
     <meta charset="UTF-8">
     <title>Админ — пользователи</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="/css/app.css" rel="stylesheet">
+    <link href="/css/app-v2.css" rel="stylesheet">
 </head>
-<body>
-<header class="topbar">
-    <div class="brand">WMS</div>
-    <nav class="nav">
-        <a href="/dashboard.html">Главная</a>
-        <a href="/admin.html" class="active">Админ</a>
-    </nav>
-    <div class="user">
-        <span id="usernameLabel">—</span>
-        <button id="logoutBtn" class="btn">Выйти</button>
-    </div>
-</header>
+<body class="layout">
 
-<main class="container">
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="logo">📦 WMS</div>
+    <nav>
+        <a href="/dashboard.html">📊 Главная</a>
+        <a href="/admin.html" class="active">👥 Админ</a>
+    </nav>
+    <div class="user-chip">
+        <span id="usernameLabel">—</span>
+        <button id="logoutBtn" class="btn btn-secondary">Выйти</button>
+    </div>
+</aside>
+
+<!-- PAGE -->
+<section class="page">
+    <header class="topbar">
+        <div>
+            <div class="tag-muted">Администрирование</div>
+            <strong>Пользователи</strong>
+        </div>
+    </header>
+
+<main class="content">
     <section id="alerts"></section>
 
     <section class="panel">

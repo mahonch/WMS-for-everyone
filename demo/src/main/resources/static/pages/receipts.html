@@ -1,53 +1,55 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>Приёмки — WMS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <link href="/css/app.css" rel="stylesheet">
     <link href="/css/app-v2.css" rel="stylesheet">
+    <script src="/js/modal.js"></script>
     <script src="/js/auth-debug.js"></script>
     <script type="module" src="/js/receipts.js"></script>
 </head>
-
 <body class="layout">
+
+<!-- SIDEBAR -->
 <aside class="sidebar">
-    <div class="logo">WMS</div>
+    <div class="logo">📦 WMS</div>
     <nav>
-        <a href="/dashboard.html">Главная</a>
-        <a href="/pages/receipts.html" class="active">Приёмки</a>
-        <a href="/pages/issues.html">Списания</a>
-        <a href="/pages/transfers.html">Перемещения</a>
-        <a href="/pages/locations.html">Склады</a>
-        <a href="/scan.html">Скан / QR</a>
+        <a href="/dashboard.html">📊 Главная</a>
+        <a href="/pages/receipts.html" class="active">📥 Приёмки</a>
+        <a href="/pages/issues.html">📤 Списание</a>
+        <a href="/pages/transfers.html">🔁 Перемещения</a>
+        <a href="/pages/products.html">📦 Товары</a>
+        <a href="/pages/suppliers.html">🚚 Поставщики</a>
+        <a href="/pages/warehouses.html">🏢 Склады</a>
+        <a href="/scan.html">📷 Скан QR</a>
     </nav>
+    <div class="user-chip">
+        <span id="usernameLabel">—</span>
+        <button id="logoutBtn" class="btn btn-secondary">Выйти</button>
+    </div>
 </aside>
 
-<section class="page">
+<main class="content">
     <header class="topbar">
         <div>
             <div class="tag-muted">Документы</div>
-            <strong>Приёмки</strong>
-        </div>
-        <div class="userchip">
-            <span id="usernameLabel">—</span>
-            <button id="logoutBtn" class="btn btn-secondary">Выйти</button>
+            <strong>Приёмка товаров</strong>
         </div>
     </header>
 
-    <main class="content">
-        <div id="alerts"></div>
+    <div id="alerts"></div>
 
-        <div class="card">
+        <!-- СПИСОК ДОКУМЕНТОВ -->
+        <section class="card">
             <div class="section-title">
                 <div>
-                    <p class="eyebrow">Список документов</p>
-                    <h3>Приёмки по складам</h3>
+                    <p class="eyebrow">Журнал</p>
+                    <h3>Все приёмки</h3>
                 </div>
                 <div class="toolbar">
-                    <input id="filterInput" class="input" placeholder="Поиск по номеру/поставщику">
-                    <button class="btn btn-primary" id="btnCreate">Новая приёмка</button>
+                    <input id="filterInput" class="input" placeholder="🔍 Поиск по номеру, поставщику...">
+                    <button class="btn btn-primary" id="btnCreate">➕ Новая приёмка</button>
                 </div>
             </div>
 
@@ -60,8 +62,7 @@
                         <th>Поставщик</th>
                         <th>Склад</th>
                         <th>Создал</th>
-                        <th>Провёл</th>
-                        <th>Дата проводки</th>
+                        <th>Дата</th>
                         <th class="right">Сумма</th>
                         <th></th>
                     </tr>
@@ -69,66 +70,233 @@
                     <tbody></tbody>
                 </table>
             </div>
-        </div>
+        </section>
     </main>
-</section>
 
-<!-- Детальная карточка -->
-<div id="detailOverlay" class="modal-overlay hidden">
-    <div class="modal wide">
+    <!-- ДЕТАЛЬНАЯ МОДАЛКА -->
+    <div id="detailOverlay" class="modal-overlay hidden">
         <div class="section-title">
             <div>
                 <p class="eyebrow">Документ</p>
                 <h3>Приёмка <span id="d_number"></span></h3>
             </div>
-            <button class="btn btn-secondary" id="btnCloseDetail">Закрыть</button>
-        </div>
-
-        <div class="grid2 gap16">
-            <div class="info-block">
-                <div><span class="label">ID</span><span id="d_id">—</span></div>
-                <div><span class="label">Статус</span><span id="d_status">—</span></div>
-                <div><span class="label">Поставщик</span><span id="d_supplier">—</span></div>
-                <div><span class="label">Склад</span><span id="d_wh">—</span></div>
-            </div>
-            <div class="info-block">
-                <div><span class="label">Создал</span><span id="d_createdBy">—</span></div>
-                <div><span class="label">Дата создания</span><span id="d_date">—</span></div>
-                <div><span class="label">Провёл</span><span id="d_committedBy">—</span></div>
-                <div><span class="label">Дата проводки</span><span id="d_committedAt">—</span></div>
+            <div class="toolbar">
+                <button class="btn btn-secondary" id="btnCloseDetail">✕ Закрыть</button>
             </div>
         </div>
 
-        <div class="chip-line">
-            <div class="chip muted">Итого: <strong id="d_total">—</strong></div>
-            <div class="chip muted">Партии и локации указаны внутри позиций</div>
+        <!-- ИНФО БЛОК -->
+        <div class="card card-inline">
+            <div class="grid4">
+                <div class="info-item">
+                    <span class="label">ID</span>
+                    <span id="d_id">—</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Статус</span>
+                    <span id="d_status">—</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Поставщик</span>
+                    <span id="d_supplier">—</span>
+                    <button class="btn btn-sm btn-link" id="btnSelectSupplier">🔍</button>
+                </div>
+                <div class="info-item">
+                    <span class="label">Склад</span>
+                    <span id="d_wh">—</span>
+                    <button class="btn btn-sm btn-link" id="btnSelectWarehouse">🔍</button>
+                </div>
+            </div>
+            <div class="grid4" style="margin-top: 12px;">
+                <div class="info-item">
+                    <span class="label">Создал</span>
+                    <span id="d_createdBy">—</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Дата создания</span>
+                    <span id="d_date">—</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Провёл</span>
+                    <span id="d_committedBy">—</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Дата проводки</span>
+                    <span id="d_committedAt">—</span>
+                </div>
+            </div>
         </div>
 
-        <h4 style="margin-top:12px;">Позиции</h4>
+        <!-- ПОЗИЦИИ -->
+        <div class="card" style="margin-top: 16px;">
+            <div class="section-title">
+                <h4>Позиции</h4>
+                <div class="toolbar">
+                    <button class="btn btn-primary" id="btnAddItem">➕ Добавить позицию</button>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="table" id="itemsTable">
+                    <thead>
+                    <tr>
+                        <th>№</th>
+                        <th>Товар</th>
+                        <th>Кол-во</th>
+                        <th>Цена</th>
+                        <th>Сумма</th>
+                        <th>Локация</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="total-row">
+                <span>Итого:</span>
+                <strong id="d_total">0 ₽</strong>
+            </div>
+        </div>
+
+        <!-- ДЕЙСТВИЯ -->
+        <div class="toolbar" style="justify-content: flex-end; margin-top: 16px;">
+            <button class="btn btn-secondary" id="btnPrint">🖨️ Печать</button>
+            <button class="btn btn-success" id="btnCommit">✅ Провести</button>
+            <button class="btn btn-danger" id="btnDeleteDraft">🗑️ Удалить</button>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛКА ВЫБОРА ПОСТАВЩИКА -->
+<div id="supplierSelectOverlay" class="modal-overlay hidden">
+    <div class="modal modal-lg">
+        <div class="section-title">
+            <h3>🚚 Выбор поставщика</h3>
+            <button class="btn btn-secondary" id="btnCloseSupplierSelect">✕</button>
+        </div>
+        <div class="toolbar" style="margin-bottom: 12px;">
+            <input id="supplierSearch" class="input" placeholder="🔍 Поиск по названию, ИНН...">
+            <button class="btn btn-primary" id="btnCreateSupplier">➕ Создать</button>
+        </div>
         <div class="table-wrapper">
-            <table class="table" id="itemsTable">
+            <table class="table" id="supplierTable">
                 <thead>
                 <tr>
                     <th>ID</th>
-                    <th>Товар</th>
-                    <th>Кол-во</th>
-                    <th>Цена</th>
-                    <th>Партия</th>
-                    <th>Локация</th>
+                    <th>Название</th>
+                    <th>ИНН</th>
+                    <th>Телефон</th>
+                    <th>Email</th>
                     <th></th>
                 </tr>
                 </thead>
                 <tbody></tbody>
             </table>
         </div>
+    </div>
+</div>
 
-        <div class="toolbar" style="justify-content:flex-end;margin-top:16px;">
-            <button class="btn" id="btnAddItem">Добавить позицию</button>
-            <button class="btn btn-success" id="btnCommit">Провести</button>
-            <button class="btn btn-danger" id="btnDeleteDraft">Удалить</button>
+<!-- МОДАЛКА ВЫБОРА СКЛАДА -->
+<div id="warehouseSelectOverlay" class="modal-overlay hidden">
+    <div class="modal modal-lg">
+        <div class="section-title">
+            <h3>🏢 Выбор склада</h3>
+            <button class="btn btn-secondary" id="btnCloseWarehouseSelect">✕</button>
+        </div>
+        <div class="toolbar" style="margin-bottom: 12px;">
+            <input id="warehouseSearch" class="input" placeholder="🔍 Поиск по названию, коду...">
+            <button class="btn btn-primary" id="btnCreateWarehouse">➕ Создать</button>
+        </div>
+        <div class="table-wrapper">
+            <table class="table" id="warehouseTable">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Название</th>
+                    <th>Код</th>
+                    <th>Адрес</th>
+                    <th>Статус</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
 </div>
+
+<!-- МОДАЛКА ВЫБОРА ТОВАРА -->
+<div id="productSelectOverlay" class="modal-overlay hidden">
+    <div class="modal modal-xl">
+        <div class="section-title">
+            <h3>📦 Выбор товара</h3>
+            <button class="btn btn-secondary" id="btnCloseProductSelect">✕</button>
+        </div>
+        <div class="toolbar" style="margin-bottom: 12px;">
+            <input id="productSearch" class="input" placeholder="🔍 Поиск по названию, SKU, штрих-коду...">
+            <button class="btn btn-primary" id="btnCreateProduct">➕ Создать</button>
+        </div>
+        <div class="table-wrapper">
+            <table class="table" id="productTable">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>SKU</th>
+                    <th>Название</th>
+                    <th>Штрих-код</th>
+                    <th>Категория</th>
+                    <th>Цена</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛКА ВЫБОРА ЛОКАЦИИ -->
+<div id="locationSelectOverlay" class="modal-overlay hidden">
+    <div class="modal modal-lg">
+        <div class="section-title">
+            <h3>📍 Выбор локации</h3>
+            <button class="btn btn-secondary" id="btnCloseLocationSelect">✕</button>
+        </div>
+        <div class="toolbar" style="margin-bottom: 12px; flex-wrap: wrap;">
+            <input id="locationSearch" class="input" placeholder="🔍 Поиск по коду, названию..." style="flex: 1; min-width: 200px;">
+            <select id="locationWarehouseFilter" class="input" style="width: auto;">
+                <option value="">Все склады</option>
+            </select>
+            <select id="locationTypeFilter" class="input" style="width: auto;">
+                <option value="">Все типы</option>
+                <option value="ZONE">📍 Зона</option>
+                <option value="RACK">📚 Стеллаж</option>
+                <option value="SHELF">📋 Полка</option>
+                <option value="BIN" selected>📦 Ячейка</option>
+            </select>
+            <button class="btn btn-primary" id="btnCreateLocation">➕ Создать ячейку</button>
+        </div>
+        <div class="table-wrapper">
+            <table class="table" id="locationTable">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Код</th>
+                    <th>Название</th>
+                    <th>Склад</th>
+                    <th>Тип</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
 
 </body>
 </html>

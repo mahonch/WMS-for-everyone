@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Склады — WMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="/css/app-v2.css" rel="stylesheet">
+    <script src="/js/modal.js"></script>
+    <script src="/js/auth-debug.js"></script>
+    <script type="module" src="/js/warehouses.js"></script>
+</head>
+<body class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="logo">📦 WMS</div>
+    <nav>
+        <a href="/dashboard.html">📊 Главная</a>
+        <a href="/pages/receipts.html">📥 Приёмка</a>
+        <a href="/pages/issues.html">📤 Списание</a>
+        <a href="/pages/transfers.html">🔁 Перемещения</a>
+        <a href="/pages/products.html">📦 Товары</a>
+        <a href="/pages/suppliers.html">🚚 Поставщики</a>
+        <a href="/pages/warehouses.html" class="active">🏢 Склады</a>
+        <a href="/scan.html">📷 Скан QR</a>
+    </nav>
+    <div class="user-chip">
+        <span id="usernameLabel">—</span>
+        <button id="logoutBtn" class="btn btn-secondary">Выйти</button>
+    </div>
+</aside>
+
+<main class="content">
+    <header class="topbar">
+        <div>
+            <div class="tag-muted">Справочники</div>
+            <strong>Склады</strong>
+        </div>
+    </header>
+
+    <div id="alerts"></div>
+
+        <!-- СПИСОК СКЛАДОВ -->
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <p class="eyebrow">Справочник</p>
+                    <h3>Все склады</h3>
+                </div>
+                <div class="toolbar">
+                    <input id="filterInput" class="input" placeholder="🔍 Поиск по названию, коду..." style="flex: 1;">
+                    <select id="statusFilter" class="input" style="width: auto;">
+                        <option value="">Все статусы</option>
+                        <option value="true">✅ Активные</option>
+                        <option value="false">❌ Неактивные</option>
+                    </select>
+                    <button class="btn btn-primary" id="btnCreate">➕ Новый склад</button>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="table" id="warehousesTable">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Название</th>
+                        <th>Код</th>
+                        <th>Адрес</th>
+                        <th>Статус</th>
+                        <th>Локации</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</section>
+
+<!-- МОДАЛКА СОЗДАНИЯ/РЕДАКТИРОВАНИЯ -->
+<div id="warehouseModalOverlay" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="section-title">
+            <h3 id="modalTitle">🏢 Новый склад</h3>
+            <button class="btn btn-secondary" id="btnCloseModal">✕</button>
+        </div>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<!-- МОДАЛКА ПРОСМОТРА -->
+<div id="detailOverlay" class="modal-overlay hidden">
+    <div class="modal modal-lg">
+        <div class="section-title">
+            <h3>🏢 Склад <span id="d_name"></span></h3>
+            <button class="btn btn-secondary" id="btnCloseDetail">✕</button>
+        </div>
+        
+        <div class="grid2" style="margin-bottom: 16px;">
+            <div class="info-item">
+                <span class="label">ID</span>
+                <span id="d_id">—</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Код</span>
+                <span id="d_code">—</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Адрес</span>
+                <span id="d_address">—</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Статус</span>
+                <span id="d_status">—</span>
+            </div>
+        </div>
+
+        <div class="toolbar" style="justify-content: flex-end;">
+            <button class="btn btn-secondary" id="btnEditWarehouse">✏️ Редактировать</button>
+            <button class="btn btn-danger" id="btnDeleteWarehouse">🗑️ Удалить</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

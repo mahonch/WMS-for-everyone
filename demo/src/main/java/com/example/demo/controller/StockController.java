@@ -42,11 +42,15 @@ public class StockController {
                         s.getId(),
                         s.getProduct().getId(),
                         s.getProduct().getName(),
+                        s.getProduct().getSku(),
+                        s.getProduct().getCategory() != null ? s.getProduct().getCategory().getName() : null,
                         s.getLocation().getId(),
                         s.getLocation().getCode(),
+                        s.getLocation().getType() != null ? s.getLocation().getType().name() : null,
                         s.getBatch() != null ? s.getBatch().getId() : null,
                         s.getBatch() != null ? s.getBatch().getLotNumber() : null,
-                        s.getQty()
+                        s.getQty(),
+                        s.getBatch() != null ? s.getBatch().getBuyPrice() : null
                 ))
                 .toList();
     }
@@ -66,11 +70,15 @@ public class StockController {
                         s.getId(),
                         s.getProduct().getId(),
                         s.getProduct().getName(),
+                        s.getProduct().getSku(),
+                        s.getProduct().getCategory() != null ? s.getProduct().getCategory().getName() : null,
                         s.getLocation().getId(),
                         s.getLocation().getCode(),
+                        s.getLocation().getType() != null ? s.getLocation().getType().name() : null,
                         s.getBatch() != null ? s.getBatch().getId() : null,
                         s.getBatch() != null ? s.getBatch().getLotNumber() : null,
-                        s.getQty()
+                        s.getQty(),
+                        s.getBatch() != null ? s.getBatch().getBuyPrice() : null
                 ))
                 .toList();
     }

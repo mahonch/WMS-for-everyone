@@ -4,60 +4,121 @@
     <meta charset="UTF-8">
     <title>WMS — Главная</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="/css/app.css" rel="stylesheet">
+    <link href="/css/app-v2.css" rel="stylesheet">
 </head>
-<body>
-<header class="topbar">
-    <div class="brand">WMS</div>
-    <nav class="nav">
-        <a href="/dashboard.html" class="active">Главная</a>
-        <a href="/pages/receipts.html">Приёмка</a>
-        <a href="/pages/issues.html">Списание</a>
-        <a href="/pages/transfers.html">Перемещения</a>
-        <a href="/pages/locations.html">склады</a>
+<body class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="logo">📦 WMS</div>
+    <nav>
+        <a href="/dashboard.html" class="active">📊 Главная</a>
+        <a href="/pages/receipts.html">📥 Приёмка</a>
+        <a href="/pages/issues.html">📤 Списание</a>
+        <a href="/pages/transfers.html">🔁 Перемещения</a>
+        <a href="/pages/warehouses.html">🏢 Склады</a>
     </nav>
-    <div class="user">
+    <div class="user-chip">
         <span id="usernameLabel">—</span>
-        <button id="logoutBtn" class="btn">Выйти</button>
+        <button id="logoutBtn" class="btn btn-secondary">Выйти</button>
     </div>
-</header>
+</aside>
 
-<main class="container">
-    <section id="alerts"></section>
+<!-- PAGE -->
+<section class="page">
+    <header class="topbar">
+        <div>
+            <div class="tag-muted">WMS</div>
+            <strong>Главная</strong>
+        </div>
+    </header>
 
-    <section class="cards">
-        <div class="card">
-            <h3>Товары</h3>
-            <div class="metric" id="metricProducts">—</div>
+<main class="content">
+    <div id="alerts"></div>
+
+    <!-- СТАТИСТИКА -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <div class="stat-value" id="metricProducts">—</div>
+            <div class="stat-label">Товаров</div>
         </div>
-        <div class="card">
-            <h3>Партии</h3>
-            <div class="metric" id="metricBatches">—</div>
+        <div class="stat-card">
+            <div class="stat-icon">🏷️</div>
+            <div class="stat-value" id="metricBatches">—</div>
+            <div class="stat-label">Партий</div>
         </div>
-        <div class="card">
-            <h3>Локации</h3>
-            <div class="metric" id="metricLocations">—</div>
+        <div class="stat-card">
+            <div class="stat-icon">📍</div>
+            <div class="stat-value" id="metricLocations">—</div>
+            <div class="stat-label">Локаций</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🏢</div>
+            <div class="stat-value" id="metricWarehouses">—</div>
+            <div class="stat-label">Складов</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🚚</div>
+            <div class="stat-value" id="metricSuppliers">—</div>
+            <div class="stat-label">Поставщиков</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-value" id="metricValue">—</div>
+            <div class="stat-label">Стоимость запасов</div>
+        </div>
+    </div>
+
+    <!-- БЫСТРЫЕ ДЕЙСТВИЯ -->
+    <section class="card">
+        <h3>⚡ Быстрые действия</h3>
+        <div class="actions-grid">
+            <a class="action-btn" href="/pages/receipts.html">
+                <span class="action-icon">📥</span>
+                <span>Новая приёмка</span>
+            </a>
+            <a class="action-btn" href="/pages/issues.html">
+                <span class="action-icon">📤</span>
+                <span>Новое списание</span>
+            </a>
+            <a class="action-btn" href="/pages/transfers.html">
+                <span class="action-icon">🔁</span>
+                <span>Перемещение</span>
+            </a>
+            <a class="action-btn" href="/scan.html">
+                <span class="action-icon">📷</span>
+                <span>Сканировать QR</span>
+            </a>
+            <a class="action-btn" href="/pages/warehouses.html">
+                <span class="action-icon">🏢</span>
+                <span>Склады</span>
+            </a>
+            <a id="adminBtn" class="action-btn hidden" href="/admin.html">
+                <span class="action-icon">👥</span>
+                <span>Админ-панель</span>
+            </a>
         </div>
     </section>
 
-    <section class="grid">
-        <div class="panel">
-            <h3>Быстрые действия</h3>
-            <div class="actions">
-                <a class="btn" href="/pages/receipts.html">Новая приёмка</a>
-                <a class="btn" href="/pages/issues.html">Новое списание</a>
-                <a class="btn" href="/pages/transfers.html">Новое перемещение</a>
-                <a class="btn" href="/pages/scan.html">Сканировать QR</a>
-                <a id="adminBtn" class="btn hidden" href="/admin.html">Админ-панель</a>
-
-            </div>
+    <!-- ПОСЛЕДНИЕ ИЗМЕНЕНИЯ -->
+    <section class="card">
+        <div class="section-title">
+            <h3>📋 Последние изменения</h3>
+            <button class="btn btn-sm btn-secondary" onclick="loadRecent()">🔄 Обновить</button>
         </div>
-
-        <div class="panel">
-            <h3>Последние изменения</h3>
-            <ul id="recentList" class="list">
-                <li class="muted">Здесь будет список последних операций…</li>
-            </ul>
+        <div class="table-wrapper">
+            <table class="table" id="recentTable">
+                <thead>
+                <tr>
+                    <th>Время</th>
+                    <th>Действие</th>
+                    <th>Сущность</th>
+                    <th>Пользователь</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
     </section>
 </main>

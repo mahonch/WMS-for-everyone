@@ -34,7 +34,9 @@ public class ReceiptDtos {
             String number,
             String status,
             Long supplierId,
+            String supplierName,
             Long warehouseId,
+            String warehouseName,
             Long createdBy,
             String createdByName,
             LocalDateTime createdAt,
@@ -48,9 +50,11 @@ public class ReceiptDtos {
     public record ViewItem(
             Long id,
             Long productId,
+            String productName,
             Integer qty,
             BigDecimal price,
             Long batchId,
-            Long locationId
+            Long locationId,
+            String locationName
     ) {}
 }

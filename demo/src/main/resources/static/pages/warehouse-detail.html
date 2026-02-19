@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Склад — WMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="/css/app-v2.css" rel="stylesheet">
+    <script src="/js/modal.js"></script>
+    <script src="/js/auth-debug.js"></script>
+    <script type="module" src="/js/warehouse-detail.js"></script>
+</head>
+<body class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="logo">📦 WMS</div>
+    <nav>
+        <a href="/dashboard.html">📊 Главная</a>
+        <a href="/pages/receipts.html">📥 Приёмка</a>
+        <a href="/pages/issues.html">📤 Списание</a>
+        <a href="/pages/transfers.html">🔁 Перемещения</a>
+        <a href="/pages/products.html">📦 Товары</a>
+        <a href="/pages/suppliers.html">🚚 Поставщики</a>
+        <a href="/pages/warehouses.html">🏢 Склады</a>
+        <a href="/scan.html">📷 Скан QR</a>
+    </nav>
+    <div class="user-chip">
+        <span id="usernameLabel">—</span>
+        <button id="logoutBtn" class="btn btn-secondary">Выйти</button>
+    </div>
+</aside>
+
+<main class="content">
+    <header class="topbar">
+        <div>
+            <button class="btn btn-secondary btn-sm" onclick="window.location.href='/pages/warehouses.html'" style="margin-right: 12px;">← Назад</button>
+            <div class="tag-muted">Склад</div>
+            <strong id="warehouseName">Загрузка...</strong>
+        </div>
+    </header>
+
+    <main class="content">
+        <div id="alerts"></div>
+
+        <!-- ВКЛАДКИ -->
+        <section class="card" style="padding: 0;">
+            <div class="tabs">
+                <button class="tab active" data-tab="overview">📊 Обзор</button>
+                <button class="tab" data-tab="locations">📍 Локации</button>
+                <button class="tab" data-tab="products">📦 Товары</button>
+            </div>
+        </section>
+
+        <!-- ВКЛАДКА: ОБЗОР -->
+        <section id="tab-overview" class="tab-content">
+            <!-- Статистика -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📍</div>
+                    <div class="stat-value" id="statLocations">—</div>
+                    <div class="stat-label">Локаций</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-value" id="statProducts">—</div>
+                    <div class="stat-label">Товаров</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-value" id="statQty">—</div>
+                    <div class="stat-label">Единиц</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-value" id="statValue">—</div>
+                    <div class="stat-label">Сумма</div>
+                </div>
+            </div>
+
+            <!-- Быстрые действия -->
+            <div class="card" style="margin-top: 16px;">
+                <div class="section-title">
+                    <h3>⚡ Быстрые действия</h3>
+                    <button class="btn btn-primary" id="btnAutoGenerate">🏗️ Автогенерация</button>
+                </div>
+                <div class="actions-grid">
+                    <button class="action-btn" id="btnCreateReceipt">
+                        <span class="action-icon">📥</span>
+                        <span>Приёмка сюда</span>
+                    </button>
+                    <button class="action-btn" id="btnCreateIssue">
+                        <span class="action-icon">📤</span>
+                        <span>Списание</span>
+                    </button>
+                    <button class="action-btn" id="btnCreateTransfer">
+                        <span class="action-icon">🔁</span>
+                        <span>Перемещение</span>
+                    </button>
+                    <button class="action-btn" id="btnPrintQR">
+                        <span class="action-icon">🏷️</span>
+                        <span>Печать QR</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Заполненность зон -->
+            <div class="card" style="margin-top: 16px;">
+                <h3>🗺️ Заполненность зон</h3>
+                <div id="zonesStats"></div>
+            </div>
+        </section>
+
+        <!-- ВКЛАДКА: ЛОКАЦИИ -->
+        <section id="tab-locations" class="tab-content hidden">
+            <div class="card">
+                <div class="section-title">
+                    <div>
+                        <p class="eyebrow">Навигация</p>
+                        <h3>📍 Локации склада</h3>
+                    </div>
+                    <div class="toolbar">
+                        <input id="locationSearch" class="input" placeholder="🔍 Поиск по коду..." style="flex: 1;">
+                        <select id="locationTypeFilter" class="input" style="width: auto;">
+                            <option value="">Все типы</option>
+                            <option value="ZONE">📍 Зона</option>
+                            <option value="RACK">📚 Стеллаж</option>
+                            <option value="SHELF">📋 Полка</option>
+                            <option value="BIN">📦 Ячейка</option>
+                        </select>
+                        <select id="locationStockFilter" class="input" style="width: auto;">
+                            <option value="">Все</option>
+                            <option value="empty">⚪ Пустые</option>
+                            <option value="stocked">🟢 С товаром</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="location-tree" id="locationTree">
+                    <div class="muted" style="padding: 2rem; text-align: center;">Загрузка...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ВКЛАДКА: ТОВАРЫ -->
+        <section id="tab-products" class="tab-content hidden">
+            <div class="card">
+                <div class="section-title">
+                    <div>
+                        <p class="eyebrow">Справочник</p>
+                        <h3>📦 Товары на складе</h3>
+                    </div>
+                    <div class="toolbar">
+                        <input id="productSearch" class="input" placeholder="🔍 Поиск по названию, SKU..." style="flex: 1;">
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table class="table" id="productsTable">
+                        <thead>
+                        <tr>
+                            <th>Товар</th>
+                            <th>SKU</th>
+                            <th>Категория</th>
+                            <th class="right">Всего ед.</th>
+                            <th class="right">Сумма</th>
+                            <th>Локаций</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+<!-- МОДАЛКА: ПРОСМОТР ЛОКАЦИИ -->
+<div id="locationDetailOverlay" class="modal-overlay hidden">
+    <div class="modal modal-lg">
+        <div class="section-title">
+            <h3>📦 <span id="ld_code"></span></h3>
+            <button class="btn btn-secondary" onclick="closeLocationDetail()">✕ Закрыть</button>
+        </div>
+
+        <div class="loc-path" style="background: #f0f4ff; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+            <div style="font-size: 13px;" id="ld_path"></div>
+        </div>
+
+        <div class="grid2" style="margin-bottom: 16px;">
+            <div class="info-item">
+                <span class="label">Тип</span>
+                <span id="ld_type">—</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Товаров</span>
+                <span id="ld_products">—</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Кол-во</span>
+                <span id="ld_qty">—</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Сумма</span>
+                <span id="ld_value">—</span>
+            </div>
+        </div>
+
+        <h4>📦 Товары в локации</h4>
+        <div class="table-wrapper">
+            <table class="table" id="locationStockTable">
+                <thead>
+                <tr>
+                    <th>Товар</th>
+                    <th>SKU</th>
+                    <th class="right">Кол-во</th>
+                    <th class="right">Цена</th>
+                    <th class="right">Сумма</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="toolbar" style="justify-content: flex-end; margin-top: 16px;">
+            <button class="btn btn-secondary" onclick="closeLocationDetail()">Закрыть</button>
+            <button class="btn btn-primary" id="btnCreateReceiptToLocation">📥 Приёмка сюда</button>
+            <button class="btn btn-danger" id="btnCreateIssueFromLocation">📤 Списание отсюда</button>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛКА: ПРОСМОТР ТОВАРА -->
+<div id="productDetailOverlay" class="modal-overlay hidden">
+    <div class="modal modal-lg">
+        <div class="section-title">
+            <h3>📦 <span id="pd_name"></span></h3>
+            <button class="btn btn-secondary" onclick="closeProductDetail()">✕ Закрыть</button>
+        </div>
+
+        <div class="grid2" style="margin-bottom: 16px;">
+            <div class="info-item">
+                <span class="label">SKU</span>
+                <span id="pd_sku">—</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Категория</span>
+                <span id="pd_category">—</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Всего ед.</span>
+                <span id="pd_qty">—</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Сумма</span>
+                <span id="pd_value">—</span>
+            </div>
+        </div>
+
+        <h4>📍 Локации с товаром</h4>
+        <div class="table-wrapper">
+            <table class="table" id="productLocationsTable">
+                <thead>
+                <tr>
+                    <th>Локация</th>
+                    <th>Тип</th>
+                    <th class="right">Кол-во</th>
+                    <th class="right">Цена</th>
+                    <th class="right">Сумма</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="toolbar" style="justify-content: flex-end; margin-top: 16px;">
+            <button class="btn btn-secondary" onclick="closeProductDetail()">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛКА: АВТОГЕНЕРАЦИЯ -->
+<div id="autoGenerateOverlay" class="modal-overlay hidden">
+    <div class="modal modal-lg">
+        <div class="section-title">
+            <h3>🏗️ Автогенерация структуры склада</h3>
+            <button class="btn btn-secondary" onclick="closeAutoGenerate()">✕</button>
+        </div>
+
+        <div class="loc-path" style="background: #fff3cd; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+            ⚠️ <strong>Внимание!</strong> Будут созданы новые локации. Существующие не будут затронуты.
+        </div>
+
+        <div class="grid2">
+            <div class="loc-row">
+                <label>📍 Префикс зон</label>
+                <input id="ag_zonePrefix" class="input" value="Z" placeholder="Z">
+                <small class="muted">Пример: Z1, Z2, Z3</small>
+            </div>
+            <div class="loc-row">
+                <label>Кол-во зон</label>
+                <input id="ag_zoneCount" type="number" min="1" max="10" value="3" class="input">
+            </div>
+        </div>
+
+        <div class="grid2">
+            <div class="loc-row">
+                <label>📚 Стеллажей в зоне</label>
+                <input id="ag_rackCount" type="number" min="1" max="20" value="5" class="input">
+            </div>
+            <div class="loc-row">
+                <label>Префикс стеллажей</label>
+                <input id="ag_rackPrefix" class="input" value="R" placeholder="R">
+            </div>
+        </div>
+
+        <div class="grid2">
+            <div class="loc-row">
+                <label>📋 Полок на стеллаж</label>
+                <input id="ag_shelfCount" type="number" min="1" max="10" value="4" class="input">
+            </div>
+            <div class="loc-row">
+                <label>Префикс полок</label>
+                <input id="ag_shelfPrefix" class="input" value="S" placeholder="S">
+            </div>
+        </div>
+
+        <div class="grid2">
+            <div class="loc-row">
+                <label>📦 Ячеек на полку</label>
+                <input id="ag_binCount" type="number" min="1" max="20" value="6" class="input">
+            </div>
+            <div class="loc-row">
+                <label>Префикс ячеек</label>
+                <input id="ag_binPrefix" class="input" value="B" placeholder="B">
+            </div>
+        </div>
+
+        <div class="loc-path" style="background: #e8f5e9; padding: 12px; border-radius: 8px; margin-top: 16px;">
+            📊 <strong>Будет создано:</strong><br>
+            <span id="ag_summary">Зон: 3, Стеллажей: 15, Полок: 60, Ячеек: 360</span>
+        </div>
+
+        <div class="toolbar" style="justify-content: flex-end; margin-top: 16px;">
+            <button class="btn btn-secondary" onclick="closeAutoGenerate()">Отмена</button>
+            <button class="btn btn-primary" onclick="generateStructure()">🚀 Создать</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

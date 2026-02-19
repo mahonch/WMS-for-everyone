@@ -17,9 +17,10 @@ public class ReceiptCommitController {
 
     @PostMapping("/{id}/commit")
     public ResponseEntity<?> commit(@PathVariable Long id,
-                                    @RequestBody ReceiptCommitRequest body,
+                                    @RequestBody(required = false) ReceiptCommitRequest body,
                                     @AuthenticationPrincipal CustomUserDetails user) {
-        receiptService.commit(id, body.toLocationId(), user != null ? user.getId() : null);
+        Long toLocationId = body != null ? body.toLocationId() : null;
+        receiptService.commit(id, toLocationId, user != null ? user.getId() : null);
         return ResponseEntity.ok().build();
     }
 }

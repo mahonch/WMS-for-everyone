@@ -72,10 +72,14 @@ public class ReceiptSearchController {
                 r.getStatus().name(),
 
                 r.getSupplier() != null ? r.getSupplier().getId() : null,
+                r.getSupplier() != null ? r.getSupplier().getName() : null,
+
                 r.getWarehouse() != null ? r.getWarehouse().getId() : null,
+                r.getWarehouse() != null ? r.getWarehouse().getName() : null,
 
                 r.getCreatedBy() != null ? r.getCreatedBy().getId() : null,
                 r.getCreatedBy() != null ? r.getCreatedBy().getUsername() : null,
+
                 r.getCreatedAt(),
                 r.getCommittedBy() != null ? r.getCommittedBy().getId() : null,
                 r.getCommittedBy() != null ? r.getCommittedBy().getUsername() : null,
@@ -85,10 +89,12 @@ public class ReceiptSearchController {
                 r.getItems().stream().map(i -> new ReceiptDtos.ViewItem(
                         i.getId(),
                         i.getProduct().getId(),
+                        i.getProduct().getName(),
                         i.getQty(),
                         i.getPrice(),
                         i.getBatch() != null ? i.getBatch().getId() : null,
-                        i.getLocation() != null ? i.getLocation().getId() : null
+                        i.getLocation() != null ? i.getLocation().getId() : null,
+                        i.getLocation() != null ? i.getLocation().getName() : null
                 )).toList()
         );
     }
