@@ -349,57 +349,17 @@ async function loadProducts() {
 /* ==================== LOCATION DETAIL ==================== */
 
 window.openLocationDetail = async function(id) {
-    try {
-        const loc = await api("GET", `/api/locations/${id}`);
-        const stocks = await api("GET", `/api/stocks?warehouseId=${warehouseId}`);
-        const locStocks = stocks.filter(s => s.locationId === id && s.qty > 0);
-        
-        currentLocation = loc;
-        
-        document.getElementById("ld_code").textContent = `${typeIcons[loc.type]} ${loc.code}`;
-        document.getElementById("ld_type").textContent = typeNames[loc.type] || "—";
-        document.getElementById("ld_products").textContent = fmtNum(locStocks.length);
-        document.getElementById("ld_qty").textContent = fmtNum(locStocks.reduce((sum, s) => sum + s.qty, 0));
-        document.getElementById("ld_value").textContent = fmtMoney(locStocks.reduce((sum, s) => sum + s.qty * (s.costPrice || 0), 0));
-        
-        // Путь
-        let path = `🏢 ${warehouse.name}`;
-        let parent = loc;
-        const pathParts = [];
-        while (parent) {
-            pathParts.unshift(`${typeIcons[parent.type]} ${parent.name}`);
-            parent = parent.parent;
-        }
-        document.getElementById("ld_path").textContent = pathParts.join(" → ");
-        
-        // Товары
-        const tb = document.querySelector("#locationStockTable tbody");
-        tb.innerHTML = "";
-        if (locStocks.length === 0) {
-            tb.innerHTML = `<tr><td colspan="5" class="muted">Товаров нет</td></tr>`;
-        } else {
-            locStocks.forEach(s => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td>${s.productName || "Товар #" + s.productId}</td>
-                    <td><code>${s.sku || "—"}</code></td>
-                    <td class="right">${fmtNum(s.qty)}</td>
-                    <td class="right">${fmtMoney(s.costPrice || 0)}</td>
-                    <td class="right">${fmtMoney((s.qty || 0) * (s.costPrice || 0))}</td>
-                `;
-                tb.appendChild(tr);
-            });
-        }
-        
-        document.getElementById("locationDetailOverlay").classList.remove("hidden");
-    } catch (e) {
-        alertBox("error", "Не удалось загрузить локацию");
+    // Используем универсальное модальное окно LocationView
+    if (window.LocationView) {
+        LocationView.open(id, warehouseId);
+    } else {
+        alertBox("error", "Модуль LocationView не загружен");
     }
 }
 
 window.closeLocationDetail = function() {
-    document.getElementById("locationDetailOverlay").classList.add("hidden");
-    currentLocation = null;
+    // LocationView закрывается сам через кнопку в модальном окне
+    console.log('[warehouse-detail] closeLocationDetail called');
 }
 
 /* ==================== PRODUCT DETAIL ==================== */

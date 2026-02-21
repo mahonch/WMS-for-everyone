@@ -51,6 +51,13 @@ public class Receipt {
     @Column(nullable = false)
     private DocStatus status = DocStatus.DRAFT;
 
+    @Column(name = "doc_type", nullable = false)
+    private String docType = "RECEIPT";
+
+    @ManyToOne
+    @JoinColumn(name = "from_warehouse_id")
+    private Warehouse fromWarehouse;
+
     @OneToMany(mappedBy = "receipt", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ReceiptItem> items = new ArrayList<>();

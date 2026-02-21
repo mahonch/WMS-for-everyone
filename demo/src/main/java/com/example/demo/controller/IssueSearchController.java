@@ -74,7 +74,11 @@ public class IssueSearchController {
                         i.getBatch() != null ? i.getBatch().getId() : null,
                         i.getQty(),
                         i.getCostPrice()
-                )).toList()
+                )).toList(),
+                d.getTargetWarehouse() != null ? d.getTargetWarehouse().getId() : null,
+                d.getTargetWarehouse() != null ? d.getTargetWarehouse().getName() : null,
+                d.getTargetLocation() != null ? d.getTargetLocation().getId() : null,
+                d.getTargetLocation() != null ? d.getTargetLocation().getCode() : null
         );
     }
 }

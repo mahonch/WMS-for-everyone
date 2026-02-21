@@ -2,8 +2,10 @@ package com.example.demo.service;
 
 import com.example.demo.dto.catalog.SupplierDto;
 import com.example.demo.dto.catalog.SupplierSearchParams;
+import com.example.demo.entity.Receipt;
 import com.example.demo.entity.Supplier;
 import com.example.demo.exception.NotFoundException;
+import com.example.demo.repository.ReceiptRepository;
 import com.example.demo.repository.SupplierRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -11,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
 
 /**
  * Сервис для управления поставщиками.
@@ -20,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class SupplierService {
 
     private final SupplierRepository supplierRepository;
+    private final ReceiptRepository receiptRepository;
     private final AuditService auditService;
 
     /**
@@ -156,5 +161,24 @@ public class SupplierService {
                 s.getEmail(),
                 s.getAddress()
         );
+    }
+
+    /**
+     * Получить документы поставщика (приёмки).
+     */
+    @Transactional(readOnly = true)
+    public Page<SupplierDto.DocumentView> findDocumentsBySupplierId(Long supplierId, Pageable pageable) {
+        return receiptRepository.findBySupplierId(supplierId, pageable)
+                .map(r -> new SupplierDto.DocumentView(
+                        r.getId(),
+                        r.getNumber(),
+                        r.getDocType(),
+                        r.getStatus().name(),
+                        r.getCreatedAt(),
+                        r.getCommittedAt(),
+                        r.getWarehouse() != null ? r.getWarehouse().getName() : null,
+                        r.getItems().size(),
+                        r.getTotalSum()
+                ));
     }
 } 

@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Поставщики — WMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="/css/app-v2.css" rel="stylesheet">
+    <link href="/css/mobile.css" rel="stylesheet">
+    <script src="/js/modal.js"></script>
+    <script src="/js/auth-debug.js"></script>
+</head>
+<body class="layout">
+
+<!-- BOTTOM NAV (MOBILE) -->
+<nav class="bottom-nav">
+    <a href="/dashboard.html">
+        <span class="nav-icon">📊</span>
+        <span>Главная</span>
+    </a>
+    <a href="/pages/receipts.html">
+        <span class="nav-icon">📥</span>
+        <span>Приёмка</span>
+    </a>
+    <a href="/pages/issues.html">
+        <span class="nav-icon">📤</span>
+        <span>Списание</span>
+    </a>
+    <a href="/pages/transfers.html">
+        <span class="nav-icon">🔁</span>
+        <span>Перемещ.</span>
+    </a>
+    <a href="/pages/products.html">
+        <span class="nav-icon">📦</span>
+        <span>Товары</span>
+    </a>
+    <a href="/pages/suppliers.html" class="active">
+        <span class="nav-icon">🚚</span>
+        <span>Поставщ.</span>
+    </a>
+</nav>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="logo">📦 WMS</div>
+    <nav>
+        <a href="/dashboard.html">📊 Главная</a>
+        <a href="/pages/receipts.html">📥 Приёмка</a>
+        <a href="/pages/issues.html">📤 Списание</a>
+        <a href="/pages/transfers.html">🔁 Перемещения</a>
+        <a href="/pages/products.html">📦 Товары</a>
+        <a href="/pages/suppliers.html" class="active">🚚 Поставщики</a>
+        <a href="/pages/warehouses.html">🏢 Склады</a>
+        <a href="/scan.html">📷 Скан QR</a>
+    </nav>
+    <div class="user-chip">
+        <span id="usernameLabel">—</span>
+        <button id="logoutBtn" class="btn btn-secondary">Выйти</button>
+    </div>
+</aside>
+
+<!-- PAGE -->
+<main class="content">
+    <header class="topbar">
+        <div>
+            <div class="tag-muted">Справочники</div>
+            <strong>Поставщики</strong>
+        </div>
+    </header>
+
+    <div id="alerts"></div>
+
+    <div class="suppliers-layout" style="padding: 24px;">
+        <section class="card" style="overflow: hidden; display: flex; flex-direction: column;">
+            <div class="section-title" style="padding: 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+                    <div>
+                        <p class="eyebrow">Справочник</p>
+                        <h3 id="suppliersCount">0 поставщиков</h3>
+                    </div>
+                    <div class="toolbar" style="gap: 12px; flex-wrap: wrap;">
+                        <input id="searchInput" class="input" placeholder="🔍 Поиск..." style="width: 250px;">
+                        <select id="suppliersSort" class="input" onchange="SuppliersPage.sortSuppliers()" style="width: 180px;">
+                            <option value="name_asc">По названию (А-Я)</option>
+                            <option value="name_desc">По названию (Я-А)</option>
+                            <option value="created_desc">Сначала новые</option>
+                            <option value="created_asc">Сначала старые</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="SuppliersPage.openCreate()">➕ Новый поставщик</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="suppliersTableContainer" style="flex: 1; overflow-y: auto;">
+                <table class="table" id="suppliersTable">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>ИНН</th>
+                            <th>Телефон</th>
+                            <th>Email</th>
+                            <th>Адрес</th>
+                            <th style="width: 120px;">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="suppliersTableBody">
+                        <!-- Поставщики рендерятся здесь -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</main>
+
+<!-- Подключаем модальные окна для поставщиков -->
+<script>
+// Инициализация страницы
+document.addEventListener('DOMContentLoaded', function() {
+    SuppliersPage.init();
+});
+
+window.SuppliersPage = {
+    suppliers: [],
+    filteredSuppliers: [],
+    currentSort: 'name_asc',
+
+    async init() {
+        console.log('[SuppliersPage] init...');
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/index.html';
+            return;
+        }
+
+        document.getElementById('usernameLabel').textContent = localStorage.getItem('username') || 'user';
+        document.getElementById('logoutBtn').onclick = () => {
+            localStorage.clear();
+            window.location.href = '/index.html';
+        };
+
+        // Поиск поставщиков
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            this.searchQuery = e.target.value;
+            this.filterSuppliers();
+        });
+
+        await this.loadSuppliers();
+        this.renderSuppliers();
+    },
+
+    async loadSuppliers() {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/api/suppliers?page=0&size=1000', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const page = await res.json();
+            this.suppliers = page.content || [];
+            this.filteredSuppliers = [...this.suppliers];
+        } catch (e) {
+            console.error('[SuppliersPage] Failed to load suppliers:', e);
+        }
+    },
+
+    filterSuppliers() {
+        const searchQuery = (document.getElementById('searchInput').value || '').toLowerCase();
+
+        this.filteredSuppliers = this.suppliers.filter(s => {
+            if (searchQuery) {
+                const matchName = s.name.toLowerCase().includes(searchQuery);
+                const matchInn = s.inn && s.inn.toLowerCase().includes(searchQuery);
+                const matchEmail = s.email && s.email.toLowerCase().includes(searchQuery);
+                const matchPhone = s.phone && s.phone.toLowerCase().includes(searchQuery);
+                if (!matchName && !matchInn && !matchEmail && !matchPhone) {
+                    return false;
+                }
+            }
+            return true;
+        });
+
+        this.sortSuppliers();
+    },
+
+    sortSuppliers() {
+        const sort = document.getElementById('suppliersSort').value;
+
+        this.filteredSuppliers.sort((a, b) => {
+            switch(sort) {
+                case 'name_asc': return a.name.localeCompare(b.name);
+                case 'name_desc': return b.name.localeCompare(a.name);
+                case 'created_desc': return (b.id || 0) - (a.id || 0);
+                case 'created_asc': return (a.id || 0) - (b.id || 0);
+                default: return 0;
+            }
+        });
+
+        this.renderSuppliers();
+    },
+
+    renderSuppliers() {
+        const tbody = document.getElementById('suppliersTableBody');
+        const countEl = document.getElementById('suppliersCount');
+
+        countEl.textContent = `${this.filteredSuppliers.length} поставщиков`;
+
+        if (this.filteredSuppliers.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="muted" style="padding: 48px; text-align: center;">
+                        🚚 Нет поставщиков
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = this.filteredSuppliers.map(s => `
+            <tr onclick="SuppliersPage.viewSupplier(${s.id})" style="cursor: pointer;">
+                <td><strong>${s.name || 'Без названия'}</strong></td>
+                <td>${s.inn || '—'}</td>
+                <td>${s.phone || '—'}</td>
+                <td>${s.email || '—'}</td>
+                <td>${s.address || '—'}</td>
+                <td onclick="event.stopPropagation()">
+                    <button class="btn btn-sm btn-secondary" onclick="SuppliersPage.viewSupplier(${s.id})">👁</button>
+                    <button class="btn btn-sm btn-warning" onclick="SuppliersPage.editSupplier(${s.id})">✏️</button>
+                </td>
+            </tr>
+        `).join('');
+    },
+
+    openCreate() {
+        SupplierForm.open('create');
+    },
+
+    viewSupplier(id) {
+        SupplierView.open(id);
+    },
+
+    editSupplier(id) {
+        SupplierForm.open('edit', id);
+    },
+
+    refresh() {
+        this.loadSuppliers().then(() => {
+            this.filterSuppliers();
+        });
+    }
+};
+
+// ============================================
+// SUPPLIER FORM - Создание/редактирование
+// ============================================
+window.SupplierForm = {
+    currentMode: 'create',
+
+    open(mode = 'create', supplierId = null) {
+        this.currentMode = mode;
+
+        const modal = document.getElementById('supplierFormModal');
+        const header = document.getElementById('supplierFormHeader');
+        const form = document.getElementById('supplierForm');
+
+        if (mode === 'edit' && supplierId) {
+            header.textContent = 'Редактирование поставщика';
+            this.loadSupplier(supplierId);
+        } else {
+            header.textContent = 'Создание поставщика';
+            form.reset();
+            document.getElementById('supplierId').value = '';
+        }
+
+        modal.classList.remove('hidden');
+    },
+
+    close() {
+        document.getElementById('supplierFormModal').classList.add('hidden');
+        document.getElementById('supplierForm').reset();
+    },
+
+    async loadSupplier(supplierId) {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/suppliers/${supplierId}`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const supplier = await res.json();
+
+            document.getElementById('supplierId').value = supplier.id;
+            document.getElementById('supplierName').value = supplier.name;
+            document.getElementById('supplierInn').value = supplier.inn || '';
+            document.getElementById('supplierPhone').value = supplier.phone || '';
+            document.getElementById('supplierEmail').value = supplier.email || '';
+            document.getElementById('supplierAddress').value = supplier.address || '';
+        } catch (e) {
+            console.error('[SupplierForm] Load error:', e);
+            alert('Ошибка загрузки: ' + e.message);
+        }
+    },
+
+    async handleSubmit(event) {
+        event.preventDefault();
+
+        const token = localStorage.getItem('token');
+        const supplierId = document.getElementById('supplierId').value;
+        const isEdit = supplierId && supplierId !== '';
+
+        const data = {
+            name: document.getElementById('supplierName').value,
+            inn: document.getElementById('supplierInn').value || null,
+            phone: document.getElementById('supplierPhone').value || null,
+            email: document.getElementById('supplierEmail').value || null,
+            address: document.getElementById('supplierAddress').value || null
+        };
+
+        try {
+            const url = isEdit ? `/api/suppliers/${supplierId}` : '/api/suppliers';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method,
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.message || 'Ошибка сохранения');
+            }
+
+            const result = await res.json();
+
+            if (isEdit) {
+                alert('Поставщик обновлён: ' + result.name);
+            } else {
+                alert('Поставщик создан: ' + result.name);
+            }
+
+            this.close();
+            SuppliersPage.refresh();
+
+        } catch (e) {
+            console.error('[SupplierForm] Save error:', e);
+            alert('Ошибка сохранения: ' + e.message);
+        }
+    }
+};
+
+// ============================================
+// SUPPLIER VIEW - Просмотр поставщика
+// ============================================
+window.SupplierView = {
+    currentSupplier: null,
+    currentTab: 'info',
+
+    open(supplierId) {
+        this.currentTab = 'info';
+        this.loadSupplier(supplierId);
+        document.getElementById('supplierViewModal').classList.remove('hidden');
+    },
+
+    close() {
+        document.getElementById('supplierViewModal').classList.add('hidden');
+    },
+
+    switchTab(tab) {
+        this.currentTab = tab;
+        
+        // Переключаем классы на кнопках
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-' + tab + '-btn').classList.add('active');
+        
+        // Переключаем контент
+        document.getElementById('tab-info').classList.add('hidden');
+        document.getElementById('tab-documents').classList.add('hidden');
+        document.getElementById('tab-' + tab).classList.remove('hidden');
+        
+        // Если вкладка документов - загружаем документы
+        if (tab === 'documents' && this.currentSupplier) {
+            this.loadDocuments(this.currentSupplier.id);
+        }
+    },
+
+    async loadSupplier(supplierId) {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/suppliers/${supplierId}`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            this.currentSupplier = await res.json();
+            this.render();
+        } catch (e) {
+            console.error('[SupplierView] Load error:', e);
+            alert('Ошибка загрузки: ' + e.message);
+        }
+    },
+
+    async loadDocuments(supplierId) {
+        const token = localStorage.getItem('token');
+        const tbody = document.getElementById('supplierDocumentsBody');
+        
+        try {
+            const res = await fetch(`/api/suppliers/${supplierId}/documents?page=0&size=50`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const page = await res.json();
+            const docs = page.content || [];
+
+            if (docs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="muted" style="padding: 2rem; text-align: center;">Документов нет</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = docs.map(d => `
+                <tr>
+                    <td><strong>${d.number}</strong></td>
+                    <td>${d.docType === 'RECEIPT' ? '📥 Приёмка' : d.docType || '—'}</td>
+                    <td>
+                        <span class="pill ${d.status === 'COMMITTED' ? 'pill-success' : 'pill-draft'}">
+                            ${d.status === 'COMMITTED' ? '✅ Проведён' : '📝 Черновик'}
+                        </span>
+                    </td>
+                    <td>${d.warehouseName || '—'}</td>
+                    <td>${d.itemsCount || 0}</td>
+                    <td class="right">${this.formatMoney(d.totalSum)}</td>
+                    <td>${this.formatDate(d.createdAt)}</td>
+                </tr>
+            `).join('');
+
+        } catch (e) {
+            console.error('[SupplierView] Documents load error:', e);
+            tbody.innerHTML = '<tr><td colspan="7" class="error">Ошибка загрузки документов</td></tr>';
+        }
+    },
+
+    render() {
+        const s = this.currentSupplier;
+
+        document.getElementById('supplierViewName').textContent = s.name;
+        document.getElementById('supplierViewInn').textContent = s.inn || '—';
+        document.getElementById('supplierViewPhone').textContent = s.phone || '—';
+        document.getElementById('supplierViewEmail').textContent = s.email || '—';
+        document.getElementById('supplierViewAddress').textContent = s.address || '—';
+    },
+
+    formatMoney(amount) {
+        return new Intl.NumberFormat('ru-RU', {
+            style: 'currency',
+            currency: 'RUB',
+            minimumFractionDigits: 0
+        }).format(amount || 0);
+    },
+
+    formatDate(dateStr) {
+        if (!dateStr) return '—';
+        return new Date(dateStr).toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    },
+
+    edit() {
+        this.close();
+        SupplierForm.open('edit', this.currentSupplier.id);
+    },
+
+    async delete() {
+        const s = this.currentSupplier;
+        if (!confirm(`Удалить поставщика "${s.name}"?\n\nЭто действие нельзя отменить.`)) {
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/suppliers/${s.id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (!res.ok) {
+                throw new Error('Ошибка удаления');
+            }
+
+            alert('Поставщик удалён');
+            this.close();
+            SuppliersPage.refresh();
+
+        } catch (e) {
+            console.error('[SupplierView] Delete error:', e);
+            alert('Ошибка удаления: ' + e.message);
+        }
+    }
+};
+</script>
+
+<!-- МОДАЛЬНОЕ ОКНО СОЗДАНИЯ/РЕДАКТИРОВАНИЯ ПОСТАВЩИКА -->
+<div id="supplierFormModal" class="modal-overlay hidden">
+    <div class="modal" style="max-width: 700px; width: 95%;">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow">Поставщик</p>
+                <h3 id="supplierFormHeader">Создание поставщика</h3>
+            </div>
+            <button class="btn btn-secondary" onclick="SupplierForm.close()">✕ Закрыть</button>
+        </div>
+
+        <form id="supplierForm" onsubmit="SupplierForm.handleSubmit(event)">
+            <input type="hidden" id="supplierId">
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- Название -->
+                <div>
+                    <label>Название поставщика <span class="required">*</span></label>
+                    <input type="text" id="supplierName" class="input" required placeholder="ООО «Ромашка»">
+                </div>
+
+                <!-- ИНН -->
+                <div>
+                    <label>ИНН</label>
+                    <input type="text" id="supplierInn" class="input" placeholder="1234567890">
+                </div>
+
+                <!-- Телефон -->
+                <div>
+                    <label>Телефон</label>
+                    <input type="tel" id="supplierPhone" class="input" placeholder="+7 (999) 123-45-67">
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <label>Email</label>
+                    <input type="email" id="supplierEmail" class="input" placeholder="info@example.com">
+                </div>
+
+                <!-- Адрес -->
+                <div>
+                    <label>Адрес</label>
+                    <input type="text" id="supplierAddress" class="input" placeholder="г. Москва, ул. Примерная, д. 1">
+                </div>
+            </div>
+
+            <!-- Кнопки -->
+            <div class="toolbar" style="justify-content: flex-end; margin-top: 24px;">
+                <button type="button" class="btn btn-secondary" onclick="SupplierForm.close()">Отмена</button>
+                <button type="submit" class="btn btn-primary" id="supplierFormSubmitBtn">💾 Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ПРОСМОТРА ПОСТАВЩИКА -->
+<div id="supplierViewModal" class="modal-overlay hidden">
+    <div class="modal" style="max-width: 900px; width: 95%;">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow">Карточка поставщика</p>
+                <h3 id="supplierViewTitle">🚚 Поставщик</h3>
+            </div>
+            <button class="btn btn-secondary" onclick="SupplierView.close()">✕ Закрыть</button>
+        </div>
+
+        <!-- Вкладки -->
+        <div class="tabs" style="margin: 16px 0; border-bottom: 1px solid var(--border);">
+            <button class="tab active" onclick="SupplierView.switchTab('info')" id="tab-info-btn">📋 Информация</button>
+            <button class="tab" onclick="SupplierView.switchTab('documents')" id="tab-documents-btn">📄 Документы</button>
+        </div>
+
+        <!-- Вкладка: Информация -->
+        <div id="tab-info" class="tab-content">
+            <div class="supplier-card" style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="grid2" style="gap: 16px;">
+                    <div class="info-item">
+                        <span class="label">Название</span>
+                        <div id="supplierViewName" class="value" style="font-size: 18px; font-weight: 600;">—</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">ИНН</span>
+                        <span id="supplierViewInn" class="value">—</span>
+                    </div>
+                </div>
+
+                <div class="grid2" style="gap: 16px;">
+                    <div class="info-item">
+                        <span class="label">Телефон</span>
+                        <span id="supplierViewPhone" class="value">—</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Email</span>
+                        <span id="supplierViewEmail" class="value">—</span>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Адрес</span>
+                    <span id="supplierViewAddress" class="value">—</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Вкладка: Документы -->
+        <div id="tab-documents" class="tab-content hidden" style="margin-top: 16px;">
+            <div class="table-wrapper">
+                <table class="table" id="supplierDocumentsTable">
+                    <thead>
+                        <tr>
+                            <th>№</th>
+                            <th>Тип</th>
+                            <th>Статус</th>
+                            <th>Склад</th>
+                            <th>Позиций</th>
+                            <th>Сумма</th>
+                            <th>Дата</th>
+                        </tr>
+                    </thead>
+                    <tbody id="supplierDocumentsBody">
+                        <tr><td colspan="7" class="muted" style="padding: 2rem; text-align: center;">Загрузка...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Кнопки действий -->
+        <div class="toolbar" style="justify-content: flex-end; margin-top: 24px;">
+            <button type="button" class="btn btn-secondary" onclick="SupplierView.close()">Закрыть</button>
+            <button type="button" class="btn btn-warning" onclick="SupplierView.edit()">✏️ Редактировать</button>
+            <button type="button" class="btn btn-danger" onclick="SupplierView.delete()">🗑️ Удалить</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.required {
+    color: #dc3545;
+}
+
+.suppliers-layout {
+    padding: 24px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-item .label {
+    font-size: 13px;
+    color: #6c757d;
+    margin-bottom: 4px;
+}
+
+.info-item .value {
+    font-size: 15px;
+    color: #212529;
+}
+
+.supplier-card {
+    margin-top: 16px;
+}
+
+/* Вкладки */
+.tabs {
+    display: flex;
+    gap: 8px;
+}
+
+.tab {
+    padding: 10px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #6c757d;
+    transition: all 0.2s;
+}
+
+.tab:hover {
+    color: #212529;
+    background: #f8f9fa;
+    border-radius: 4px 4px 0 0;
+}
+
+.tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.tab-content {
+    padding: 16px 0;
+}
+</style>
+
+</body>
+</html>

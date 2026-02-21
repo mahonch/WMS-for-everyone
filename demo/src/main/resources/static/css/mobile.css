@@ -1,0 +1,264 @@
+/* ============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================ */
+
+@media (max-width: 768px) {
+    /* SIDEBAR -> BOTTOM NAV */
+    .sidebar {
+        display: none;
+    }
+    
+    .bottom-nav {
+        display: flex !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #1a163a;
+        padding: 8px 0;
+        z-index: 1000;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+    }
+    
+    .bottom-nav a {
+        flex: 1;
+        text-align: center;
+        padding: 8px 4px;
+        color: #b9bbc9;
+        text-decoration: none;
+        font-size: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .bottom-nav a.active {
+        color: #fff;
+    }
+    
+    .bottom-nav a .nav-icon {
+        font-size: 20px;
+    }
+    
+    /* CONTENT */
+    .content {
+        padding-bottom: 70px; /* Space for bottom nav */
+    }
+    
+    .topbar {
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+    }
+    
+    .topbar .toolbar {
+        width: 100%;
+        justify-content: stretch;
+    }
+    
+    .topbar .toolbar .input {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    /* CARDS */
+    .card {
+        margin: 12px;
+        border-radius: 8px;
+    }
+    
+    .section-title {
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+    }
+    
+    .section-title .toolbar {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    
+    /* TABLES */
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .table {
+        font-size: 13px;
+    }
+    
+    .table th,
+    .table td {
+        padding: 8px 4px;
+        white-space: nowrap;
+    }
+    
+    /* GRID */
+    .grid2,
+    .grid3,
+    .grid4 {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    /* MODALS */
+    .modal {
+        width: 95% !important;
+        max-width: 95% !important;
+        max-height: 90vh !important;
+        margin: 10px;
+        padding: 16px !important;
+    }
+    
+    .modal-xl,
+    .modal-lg {
+        max-width: 95% !important;
+    }
+    
+    .modal-overlay {
+        padding: 10px;
+    }
+    
+    /* BUTTONS */
+    .btn {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+    
+    .btn-sm {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    
+    /* INPUTS */
+    .input {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+    
+    /* LOCATION EXPLORER */
+    .location-explorer-modal {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 95vh !important;
+    }
+    
+    .explorer-body {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr 1fr;
+    }
+    
+    .explorer-tree-panel {
+        border-bottom: 1px solid var(--border);
+    }
+    
+    /* TOOLBAR */
+    .toolbar {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .toolbar .input,
+    .toolbar select,
+    .toolbar .btn {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    /* ALERTS */
+    .alert {
+        margin: 12px;
+        padding: 12px;
+        font-size: 14px;
+    }
+    
+    /* TOAST */
+    .toast-container {
+        left: 10px;
+        right: 10px;
+        bottom: 80px;
+    }
+    
+    .toast {
+        max-width: 100%;
+        margin-bottom: 8px;
+    }
+    
+    /* PILLS */
+    .pill {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+    
+    /* INFO ITEMS */
+    .info-item {
+        margin-bottom: 8px;
+    }
+    
+    .info-item .label {
+        font-size: 12px;
+    }
+    
+    .info-item .value {
+        font-size: 14px;
+    }
+    
+    /* PRODUCT IMAGE IN TABLES */
+    .table td img {
+        width: 32px !important;
+        height: 32px !important;
+    }
+    
+    /* ACTION BUTTONS IN TABLES */
+    .table td .btn-sm {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+}
+
+/* Show bottom nav only on mobile */
+.bottom-nav {
+    display: none;
+}
+
+/* Hide elements on mobile that should be hidden */
+@media (max-width: 768px) {
+    .hide-mobile {
+        display: none !important;
+    }
+}
+
+/* Landscape mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    .location-explorer-modal {
+        height: 100vh !important;
+    }
+    
+    .explorer-body {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr;
+    }
+    
+    .explorer-tree-panel {
+        border-bottom: none;
+        border-right: 1px solid var(--border);
+    }
+}
+
+/* Very small screens */
+@media (max-width: 360px) {
+    .bottom-nav a {
+        font-size: 9px;
+    }
+    
+    .bottom-nav a .nav-icon {
+        font-size: 18px;
+    }
+    
+    .btn {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+}

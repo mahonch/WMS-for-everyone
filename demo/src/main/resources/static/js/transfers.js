@@ -1,288 +1,163 @@
-import { Modal } from "./modal.js";
-
-console.log("[TRANSFERS] init...");
-
-let token = null;
-let currentTransfer = null;
-let locations = [];
-
-/* ----------------------- INIT ----------------------- */
+console.log('[TRANSFERS] init...');
 
 debugAuthContext("TRANSFERS_PAGE").then(() => startPage());
 
-async function startPage() {
+let token = null;
+let transfersCache = [];
+
+/* ==================== START ==================== */
+
+function startPage() {
     token = localStorage.getItem("token");
     if (!token) return (window.location.href = "/index.html");
 
-    document.getElementById("usernameLabel").textContent =
-        localStorage.getItem("username") || "user";
-
+    document.getElementById("usernameLabel").textContent = localStorage.getItem("username") || "user";
     document.getElementById("logoutBtn").onclick = () => {
         localStorage.clear();
         window.location.href = "/index.html";
     };
 
-    await loadLocations();
     bindEvents();
     loadTransfers();
 }
 
-/* ----------------------- ALERTS ----------------------- */
+/* ==================== ALERTS ==================== */
 
 const alerts = document.getElementById("alerts");
+let toastContainer = document.getElementById("toastContainer");
+if (!toastContainer) {
+    toastContainer = document.createElement("div");
+    toastContainer.id = "toastContainer";
+    toastContainer.className = "toast-container";
+    if (document.body) document.body.appendChild(toastContainer);
+}
+
+function showNotification(type, title, message) {
+    const toast = document.createElement("div");
+    toast.className = `toast ${type}`;
+    const icon = type === "success" ? "✅" : type === "error" ? "❌" : "⚠️";
+    toast.innerHTML = `
+        <span class="toast-icon">${icon}</span>
+        <div class="toast-content">
+            <div class="toast-title">${title}</div>
+            ${message ? `<div class="toast-message">${message}</div>` : ""}
+        </div>
+        <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+    `;
+    if (toastContainer) toastContainer.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add("hiding");
+        setTimeout(() => toast.remove(), 3000);
+    }, 4000);
+}
 
 function alertBox(type, text) {
-    const div = document.createElement("div");
-    div.className = `alert ${type}`;
-    div.textContent = text;
-    alerts.appendChild(div);
-    setTimeout(() => div.remove(), 4000);
+    showNotification(type, type === "success" ? "Успех" : type === "error" ? "Ошибка" : "Уведомление", text);
 }
 
-/* ----------------------- API WRAPPER ----------------------- */
+/* ==================== HELPERS ==================== */
+
+const fmtDate = (d) => d ? new Date(d).toLocaleString("ru-RU") : "—";
+
+const statusPill = (s) => {
+    const cls = s === "COMMITTED" ? "pill-committed" : "pill-draft";
+    return `<span class="pill ${cls}">${s === "COMMITTED" ? "✅ Проведён" : "📝 Черновик"}</span>`;
+};
+
+/* ==================== API ==================== */
 
 async function api(method, url, body) {
-    const res = await fetch(url, {
-        method,
-        headers: {
-            Authorization: "Bearer " + token,
-            "Content-Type": "application/json",
-        },
-        body: body ? JSON.stringify(body) : undefined,
-    });
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: {
+                Authorization: "Bearer " + token,
+                "Content-Type": "application/json",
+            },
+            body: body ? JSON.stringify(body) : undefined,
+        });
 
-    let json = null;
-    try { json = await res.json(); } catch {}
+        let json = null;
+        try { json = await res.json(); } catch {}
 
-    if (!res.ok) {
-        const msg = json?.message || json?.error || ("Ошибка " + res.status);
-        throw new Error(msg);
+        if (!res.ok) {
+            alertBox("error", json?.message || json?.error || ("Ошибка " + res.status));
+            throw new Error(json?.message || res.status);
+        }
+        return json;
+    } catch (e) {
+        if (!e.message.includes("API")) alertBox("error", e.message);
+        throw e;
     }
-
-    return json;
 }
 
-/* ----------------------- LOAD LOCATIONS ----------------------- */
-
-async function loadLocations() {
-    let list = await api("GET", "/api/locations");
-
-    locations = list.content ?? list;
-}
-
-/* ----------------------- LOAD LIST ----------------------- */
+/* ==================== LOAD DATA ==================== */
 
 async function loadTransfers() {
-    let list = await api("GET", "/api/transfers");
-
-    const arr = list.content ?? list;
     const tb = document.querySelector("#transfersTable tbody");
+    tb.innerHTML = `<tr><td colspan="7" class="muted">Загрузка...</td></tr>`;
+
+    try {
+        const page = await api("GET", "/api/transfers?page=0&size=200");
+        transfersCache = page.content || [];
+        renderTable();
+    } catch (e) {
+        tb.innerHTML = `<tr><td colspan="7" class="error">Ошибка: ${e.message}</td></tr>`;
+    }
+}
+
+function renderTable() {
+    const tb = document.querySelector("#transfersTable tbody");
+    const q = (document.getElementById("filterInput").value || "").toLowerCase();
     tb.innerHTML = "";
 
-    for (const t of arr) {
+    const filtered = transfersCache.filter(t => {
+        if (!q) return true;
+        return t.number && t.number.toLowerCase().includes(q);
+    });
+
+    if (filtered.length === 0) {
+        tb.innerHTML = `<tr><td colspan="7" class="muted">${transfersCache.length === 0 ? 'Нет перемещений' : 'Документы не найдены'}</td></tr>`;
+        return;
+    }
+
+    for (const t of filtered) {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-            <td>${t.id}</td>
-            <td>${t.number}</td>
-            <td>${t.status}</td>
-            <td>${t.fromLocation}</td>
-            <td>${t.toLocation}</td>
-            <td>${t.createdBy ?? "-"}</td>
-            <td>${t.createdAt ?? "-"}</td>
-            <td><button class="btn btn-secondary openBtn" data-id="${t.id}">Открыть</button></td>
+            <td><strong>${t.number}</strong></td>
+            <td>${statusPill(t.status)}</td>
+            <td>${t.fromLocationCode || "—"}</td>
+            <td>${t.toLocationCode || "—"}</td>
+            <td>${fmtDate(t.createdAt)}</td>
+            <td>${t.itemsCount || 0}</td>
+            <td><button class="btn btn-sm btn-secondary" onclick="TransferForm.open(${t.id})">👁</button></td>
         `;
         tb.appendChild(tr);
     }
 }
 
-/* ----------------------- BIND EVENTS ----------------------- */
+/* ==================== EVENTS ==================== */
 
 function bindEvents() {
-
-    document.getElementById("btnCreate").onclick = openCreateModal;
-
-    document.querySelector("#transfersTable").addEventListener("click", async e => {
-        const btn = e.target.closest(".openBtn");
-        if (!btn) return;
-
-        const t = await api("GET", `/api/transfers/${btn.dataset.id}`);
-        showDetail(t);
-    });
-
-    document.getElementById("btnAddItem").onclick = openAddItemModal;
-    document.getElementById("btnCommit").onclick = commitTransfer;
-    document.getElementById("btnDeleteDraft").onclick = deleteDraft;
-    document.getElementById("btnCloseDetail").onclick = hideDetail;
-
-    document.getElementById("detailOverlay").onclick = e => {
-        if (e.target.id === "detailOverlay") hideDetail();
-    };
-
-    document.querySelector("#itemsTable").addEventListener("click", deleteItemClick);
-}
-
-/* ----------------------- CREATE TRANSFER ----------------------- */
-
-function openCreateModal() {
-
-    let locOptions = locations
-        .map(l => `<option value="${l.id}">${l.code}</option>`)
-        .join("");
-
-    Modal.open(`
-        <label>Из локации</label>
-        <select name="fromLocationId">${locOptions}</select>
-
-        <label>В локацию</label>
-        <select name="toLocationId">${locOptions}</select>
-    `, {
-        width: "400px",
-        onOk: async d => {
-
-            if (!d.fromLocationId || !d.toLocationId)
-                return alertBox("error", "Выберите локации");
-
-            const createdById = Number(localStorage.getItem("userid"));
-
-            const dto = {
-                createdById,
-                fromLocationId: Number(d.fromLocationId),
-                toLocationId: Number(d.toLocationId)
-            };
-
-            const t = await api("POST", "/api/transfers", dto);
-
-            alertBox("info", "Создан черновик " + t.number);
-            loadTransfers();
-        }
-    });
-}
-
-/* ----------------------- DETAIL MODAL ----------------------- */
-
-function showDetail(t) {
-    currentTransfer = t;
-
-    const ov = document.getElementById("detailOverlay");
-    ov.classList.remove("hidden");
-
-    document.getElementById("d_id").textContent = t.id;
-    document.getElementById("d_number").textContent = t.number;
-    document.getElementById("d_status").textContent = t.status;
-    document.getElementById("d_from").textContent = t.fromLocation;
-    document.getElementById("d_to").textContent = t.toLocation;
-    document.getElementById("d_createdBy").textContent = t.createdBy;
-    document.getElementById("d_date").textContent = t.createdAt;
-
-    const tb = document.querySelector("#itemsTable tbody");
-    tb.innerHTML = "";
-
-    for (const it of t.items) {
-        tb.innerHTML += `
-            <tr>
-                <td>${it.id}</td>
-                <td>${it.productId}</td>
-                <td>${it.batchId ?? ""}</td>
-                <td>${it.qty}</td>
-                <td>
-                    ${t.status === "DRAFT"
-            ? `<button class="btn btn-danger delItemBtn" data-id="${it.id}">Удалить</button>`
-            : ""}
-                </td>
-            </tr>
-        `;
+    const filterInput = document.getElementById("filterInput");
+    const btnCreate = document.getElementById("btnCreate");
+    
+    if (filterInput) {
+        filterInput.addEventListener("input", renderTable);
+    }
+    if (btnCreate) {
+        btnCreate.onclick = () => TransferForm.open();
     }
 }
 
-function hideDetail() {
-    document.getElementById("detailOverlay").classList.add("hidden");
-}
+/* ==================== PAGE FUNCTIONS ==================== */
 
-/* ----------------------- DELETE ITEM ----------------------- */
+window.TransfersPage = {
+    refresh() {
+        loadTransfers();
+    }
+};
 
-async function deleteItemClick(e) {
-    const btn = e.target.closest(".delItemBtn");
-    if (!btn) return;
-
-    if (currentTransfer.status !== "DRAFT")
-        return alertBox("error", "Удалять можно только DRAFT");
-
-    if (!confirm("Удалить позицию?")) return;
-
-    await api("DELETE", `/api/transfers/${currentTransfer.id}/items/${btn.dataset.id}`);
-
-    const updated = await api("GET", `/api/transfers/${currentTransfer.id}`);
-    showDetail(updated);
-}
-
-/* ----------------------- ADD ITEM MODAL ----------------------- */
-
-async function openAddItemModal() {
-    if (!currentTransfer || currentTransfer.status !== "DRAFT")
-        return alertBox("error", "Можно добавлять только в DRAFT");
-
-    Modal.open(`
-        <label>ID товара</label>
-        <input name="productId" type="number">
-
-        <label>Кол-во</label>
-        <input name="qty" type="number" min="1" value="1">
-    `, {
-        width: "350px",
-        onOk: async d => {
-
-            if (!d.productId || !d.qty)
-                return alertBox("error", "Заполните поля");
-
-            // получаем партии
-            const batches = await api("GET",
-                `/api/stocks/batches/${d.productId}/${currentTransfer.fromLocation}`
-            );
-
-            if (batches.length === 0)
-                return alertBox("error", "Партии не найдены");
-
-            const batchId = batches[0].batchId ?? batches[0].id;
-
-            await api("POST",
-                `/api/transfers/${currentTransfer.id}/items`,
-                {
-                    productId: Number(d.productId),
-                    batchId: Number(batchId),
-                    qty: Number(d.qty)
-                }
-            );
-
-            const updated = await api("GET", `/api/transfers/${currentTransfer.id}`);
-            showDetail(updated);
-        }
-    });
-}
-
-/* ----------------------- COMMIT ----------------------- */
-
-async function commitTransfer() {
-    if (!currentTransfer || currentTransfer.status !== "DRAFT")
-        return alertBox("error", "Документ уже проведён");
-
-    await api("POST", `/api/transfers/${currentTransfer.id}/commit`);
-
-    alertBox("info", "Проведено");
-    hideDetail();
-    loadTransfers();
-}
-
-/* ----------------------- DELETE DRAFT ----------------------- */
-
-async function deleteDraft() {
-    if (!currentTransfer || currentTransfer.status !== "DRAFT")
-        return alertBox("error", "Удалять можно только DRAFT");
-
-    if (!confirm("Удалить документ?")) return;
-
-    await api("DELETE", `/api/transfers/${currentTransfer.id}`);
-
-    alertBox("info", "Удалено");
-    hideDetail();
-    loadTransfers();
-}
+// Helper functions for formatting
+window.fmtDate = fmtDate;
+window.alertBox = alertBox;

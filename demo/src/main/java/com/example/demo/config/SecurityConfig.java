@@ -37,13 +37,16 @@ public class SecurityConfig {
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**","/api/batches","/api/batches/**","/pages/locations.html","/api/receipts/**","/pages/transfers.html", "/assets/**", "/webjars/**", "/api/audit/recent", "/api/audit/**").permitAll()
 
+                        // файлы изображений товаров
+                        .requestMatchers("/uploads/**", "/api/files/**").permitAll()
+
                         // публичные страницы
                         .requestMatchers("/", "/index.html", "/dashboard.html", "/scan.html",
-                                "/labels.html", "/admin.html", "/favicon.ico", 
-                                "/pages/warehouses.html", "/pages/warehouse-detail.html", 
-                                "/pages/receipts.html", "/pages/issues.html", 
-                                "/pages/transfers.html", "/pages/products.html", 
-                                "/pages/suppliers.html").permitAll()
+                                "/labels.html", "/admin.html", "/favicon.ico",
+                                "/pages/warehouses.html", "/pages/warehouse-detail.html",
+                                "/pages/receipts.html", "/pages/issues.html",
+                                "/pages/transfers.html", "/pages/products.html",
+                                "/pages/suppliers.html", "/components/**").permitAll()
 
                         // swagger
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()

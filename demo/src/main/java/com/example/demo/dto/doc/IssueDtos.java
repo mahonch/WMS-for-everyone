@@ -12,7 +12,10 @@ public class IssueDtos {
             @NotNull Long createdById,
             String number,
             String reason,
-            List<ItemCreate> items
+            String reasonCode,
+            List<ItemCreate> items,
+            Long targetWarehouseId,
+            Long targetLocationId
     ) {}
 
     public record ItemCreate(
@@ -39,7 +42,11 @@ public class IssueDtos {
             String reason,
             String reasonCode,
             LocalDateTime createdAt,
-            List<ViewItem> items
+            List<ViewItem> items,
+            Long targetWarehouseId,
+            String targetWarehouseName,
+            Long targetLocationId,
+            String targetLocationCode
     ) {}
 
     public record ViewItem(

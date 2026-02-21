@@ -124,6 +124,14 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- DevTools для авто-рестарта -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+
         <!-- TESTS -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -165,6 +173,10 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <fork>true</fork>
+                    <addResources>true</addResources>
+                </configuration>
             </plugin>
 
             <!-- Flyway plugin (оставил как у тебя — он ок) -->

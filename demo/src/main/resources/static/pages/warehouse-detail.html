@@ -7,6 +7,38 @@
     <link href="/css/app-v2.css" rel="stylesheet">
     <script src="/js/modal.js"></script>
     <script src="/js/auth-debug.js"></script>
+    <script type="module">
+        // Загружаем модальные окна для товаров и ячеек
+        fetch('/components/product-modals.html')
+            .then(res => res.text())
+            .then(html => {
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                
+                // Копируем стили
+                const styles = temp.querySelectorAll('style');
+                styles.forEach(style => document.head.appendChild(style.cloneNode(true)));
+                
+                // Копируем модальные окна в body
+                const modals = temp.querySelectorAll('#productFormModal, #productViewModal, #categorySelectModal, #locationViewModal');
+                modals.forEach(modal => document.body.appendChild(modal.cloneNode(true)));
+                
+                // Выполняем скрипты
+                const scripts = temp.querySelectorAll('script');
+                scripts.forEach(script => {
+                    const newScript = document.createElement('script');
+                    if (script.src) {
+                        newScript.src = script.src;
+                    } else {
+                        newScript.textContent = script.textContent;
+                    }
+                    document.body.appendChild(newScript);
+                });
+                
+                console.log('[warehouse-detail] Product modals loaded');
+            })
+            .catch(err => console.error('Failed to load product modals:', err));
+    </script>
     <script type="module" src="/js/warehouse-detail.js"></script>
 </head>
 <body class="layout">

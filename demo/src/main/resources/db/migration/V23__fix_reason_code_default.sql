@@ -1,0 +1,1 @@
+ALTER TABLE issues ALTER COLUMN reason_code SET DEFAULT 'DAMAGE';  

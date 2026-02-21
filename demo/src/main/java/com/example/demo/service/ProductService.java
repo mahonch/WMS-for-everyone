@@ -31,6 +31,7 @@ public class ProductService {
     private final QrLabelRepository qrLabelRepository;
     private final QrService qrService;
     private final AuditService auditService;
+    private final FileUploadService fileUploadService;
 
     /**
      * Поиск товаров с фильтрами.
@@ -207,6 +208,11 @@ public class ProductService {
 
         ProductDtos.View before = toView(product);
 
+        // Удаление старого изображения если загружено новое
+        if (dto.imageUrl() != null && !dto.imageUrl().equals(product.getImageUrl())) {
+            fileUploadService.deleteFile(product.getImageUrl());
+        }
+
         // Проверка на дубликат SKU (если SKU изменился)
         if (!product.getSku().equals(dto.sku())) {
             productRepository.findBySku(dto.sku())
@@ -265,6 +271,11 @@ public class ProductService {
                 .orElseThrow(() -> new NotFoundException("Товар не найден: " + id));
 
         ProductDtos.View before = toView(product);
+
+        // Удаление изображения товара
+        if (product.getImageUrl() != null) {
+            fileUploadService.deleteFile(product.getImageUrl());
+        }
 
         // Удаление QR-кода
         qrLabelRepository.findByEntityTypeAndEntityId("PRODUCT", id)

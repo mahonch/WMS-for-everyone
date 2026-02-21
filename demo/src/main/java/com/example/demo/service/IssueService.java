@@ -9,9 +9,11 @@ import com.example.demo.exception.NegativeStockException;
 import com.example.demo.exception.NotFoundException;
 import com.example.demo.repository.*;
 import lombok.RequiredArgsConstructor;
+import com.example.demo.util.NumberGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -29,6 +31,9 @@ public class IssueService {
     private final StockRepository stockRepository;
     private final StockService stockService;
     private final AuditService auditService;
+    private final ReceiptRepository receiptRepository;
+    private final ReceiptItemRepository receiptItemRepository;
+    private final NumberGenerator numberGenerator;
 
     @Transactional
     public void commit(Long issueId,
@@ -37,6 +42,13 @@ public class IssueService {
                        Long targetLocationId,
                        String reasonCode,
                        User actor) {
+
+        System.out.println("=== ISSUE COMMIT START ===");
+        System.out.println("Issue ID: " + issueId);
+        System.out.println("From Location ID: " + fromLocationId);
+        System.out.println("Target Warehouse ID: " + targetWarehouseId);
+        System.out.println("Target Location ID: " + targetLocationId);
+        System.out.println("Reason Code: " + reasonCode);
 
         Issue issue = issueRepository.findById(issueId)
                 .orElseThrow(() -> new NotFoundException("Issue not found: " + issueId));
@@ -48,6 +60,8 @@ public class IssueService {
                 ? IssueReason.valueOf(reasonCode)
                 : IssueReason.DAMAGE;
         issue.setReasonCode(reason);
+
+        System.out.println("Issue reasonCode set to: " + reason);
 
         Location loc = locationRepository.findById(fromLocationId)
                 .orElseThrow(() -> new NotFoundException("Location not found: " + fromLocationId));
@@ -159,12 +173,21 @@ public class IssueService {
             issueItemRepository.saveAll(itemsToAppend);
         }
 
-        // Если TRANSFER_OUT и есть целевая локация — приходуем туда
+        System.out.println("=== CHECKING TRANSFER_OUT ===");
+        System.out.println("Reason: " + reason);
+        System.out.println("Target Location: " + targetLocation);
+        System.out.println("Issue Items: " + issue.getItems().size());
+
+        // Если TRANSFER_OUT и есть целевая локация — приходуем туда и создаём зеркало-приёмку
         if (reason == IssueReason.TRANSFER_OUT && targetLocation != null) {
+            System.out.println("=== CREATING INBOUND RECEIPT ===");
             for (IssueItem it : issue.getItems()) {
                 if (it.getBatch() == null) continue; // защита, но по логике уже заполнено
                 stockService.increase(it.getProduct(), it.getBatch(), targetLocation, it.getQty());
             }
+            createInboundReceiptForTransfer(issue, targetWarehouse, targetLocation, actor);
+        } else {
+            System.out.println("=== NOT CREATING RECEIPT (reason=" + reason + ", targetLocation=" + targetLocation + ")");
         }
 
         // ---------- COMMIT ----------
@@ -201,8 +224,69 @@ public class IssueService {
                 issue.getStatus().name(),
                 issue.getCreatedAt(),
                 issue.getCreatedBy() != null ? issue.getCreatedBy().getUsername() : null,
-                issue.getReason(),
+                issue.getReasonCode() != null ? issue.getReasonCode().name() : null,
                 itemSnapshots
         );
+    }
+
+    // ---------------------------------------------
+    // CREATE INBOUND RECEIPT FOR TRANSFER
+    // ---------------------------------------------
+    @Transactional
+    public void createInboundReceiptForTransfer(Issue issue, Warehouse targetWarehouse, Location targetLocation, User actor) {
+
+        System.out.println("=== CREATE INBOUND RECEIPT FOR TRANSFER ===");
+        System.out.println("Issue ID: " + issue.getId());
+        System.out.println("Target Warehouse: " + (targetWarehouse != null ? targetWarehouse.getName() : "null"));
+        System.out.println("Target Location: " + (targetLocation != null ? targetLocation.getCode() : "null"));
+        System.out.println("Issue Items count: " + issue.getItems().size());
+
+        // Склад-источник пока не определяем (требуется доработка модели Issue)
+        Warehouse sourceWarehouse = null;
+
+        Receipt receipt = Receipt.builder()
+                .number(numberGenerator.next("RECEIPT"))
+                .createdBy(actor)
+                .warehouse(targetWarehouse)
+                .fromWarehouse(sourceWarehouse)
+                .docType("TRANSFER")
+                .status(DocStatus.DRAFT)
+                .totalSum(BigDecimal.ZERO)
+                .build();
+
+        receipt = receiptRepository.save(receipt);
+        System.out.println("Receipt created with ID: " + receipt.getId());
+
+        for (IssueItem it : issue.getItems()) {
+            if (it.getBatch() == null) {
+                System.out.println("Skipping item - batch is null");
+                continue;
+            }
+
+            System.out.println("Creating receipt item: product=" + it.getProduct().getId() + 
+                               ", qty=" + it.getQty() + 
+                               ", price=" + it.getCostPrice());
+
+            ReceiptItem receiptItem = ReceiptItem.builder()
+                    .receipt(receipt)
+                    .product(it.getProduct())
+                    .batch(it.getBatch())
+                    .qty(it.getQty())
+                    .price(it.getCostPrice() != null ? it.getCostPrice() : BigDecimal.ZERO)
+                    .location(targetLocation)
+                    .build();
+
+            receiptItem = receiptItemRepository.save(receiptItem);
+            System.out.println("ReceiptItem created with ID: " + receiptItem.getId());
+        }
+
+        // Рассчитываем totalSum
+        BigDecimal total = receipt.getItems().stream()
+                .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQty())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        receipt.setTotalSum(total);
+        receiptRepository.save(receipt);
+        System.out.println("Receipt totalSum updated: " + total);
+        System.out.println("=== END CREATE INBOUND RECEIPT ===");
     }
 }

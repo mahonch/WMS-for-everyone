@@ -1,0 +1,1132 @@
+<!-- ============================================
+     ПРОДУКТОВЫЕ МОДАЛЬНЫЕ ОКНА
+     Переиспользуемые компоненты для работы с товарами
+     ============================================ -->
+
+<!-- МОДАЛЬНОЕ ОКНО СОЗДАНИЯ/РЕДАКТИРОВАНИЯ ТОВАРА -->
+<div id="productFormModal" class="modal-overlay hidden">
+    <div class="modal" style="max-width: 900px; width: 95%;">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow" id="productFormTitle">Товар</p>
+                <h3 id="productFormHeader">Создание товара</h3>
+            </div>
+            <button class="btn btn-secondary" onclick="ProductForm.close()">✕ Закрыть</button>
+        </div>
+
+        <form id="productForm" onsubmit="ProductForm.handleSubmit(event)">
+            <input type="hidden" id="productId">
+            
+            <div class="grid2" style="gap: 16px;">
+                <!-- Левая колонка -->
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <!-- Артикул -->
+                    <div>
+                        <label>Артикул <span class="required">*</span></label>
+                        <input type="text" id="productSku" class="input" required placeholder="ART-001">
+                    </div>
+
+                    <!-- Название -->
+                    <div>
+                        <label>Название <span class="required">*</span></label>
+                        <input type="text" id="productName" class="input" required placeholder="Товар">
+                    </div>
+
+                    <!-- Штрих-код -->
+                    <div>
+                        <label>Штрих-код</label>
+                        <input type="text" id="productBarcode" class="input" placeholder="4600000000000">
+                        <small class="muted">Оставьте пустым для автогенерации</small>
+                    </div>
+
+                    <!-- Категория -->
+                    <div>
+                        <label>Категория <span class="required">*</span></label>
+                        <select id="productCategory" class="input" required>
+                            <option value="">Выберите категорию</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Правая колонка -->
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <!-- Единица измерения -->
+                    <div>
+                        <label>Единица измерения <span class="required">*</span></label>
+                        <select id="productUnit" class="input" required>
+                            <option value="pcs">шт.</option>
+                            <option value="kg">кг</option>
+                            <option value="g">г</option>
+                            <option value="l">л</option>
+                            <option value="ml">мл</option>
+                            <option value="m">м</option>
+                            <option value="cm">см</option>
+                            <option value="pack">упак</option>
+                            <option value="box">кор</option>
+                        </select>
+                    </div>
+
+                    <!-- Минимальный остаток -->
+                    <div>
+                        <label>Минимальный остаток</label>
+                        <input type="number" id="productMinStock" class="input" value="0" min="0">
+                    </div>
+
+                    <!-- Цена -->
+                    <div>
+                        <label>Цена <span class="required">*</span></label>
+                        <input type="number" id="productCostPrice" class="input" value="0" min="0" step="0.01">
+                    </div>
+
+                    <!-- Активен -->
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="productIsActive" checked>
+                            <span>Активный товар</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Загрузка изображения -->
+            <div style="margin-top: 24px;">
+                <label>Изображение товара</label>
+                <div class="image-upload-container" style="margin-top: 8px;">
+                    <div id="productImagePreview" class="image-preview" style="display: none;">
+                        <img id="productImagePreviewImg" src="" alt="Предпросмотр">
+                        <button type="button" class="btn btn-sm btn-danger" onclick="ProductForm.removeImage()">✕ Удалить</button>
+                    </div>
+                    <div id="productImageUpload" class="image-upload-area">
+                        <input type="file" id="productImageFile" accept="image/*" onchange="ProductForm.handleImageSelect(this)" style="display: none;">
+                        <div class="upload-placeholder" onclick="document.getElementById('productImageFile').click()">
+                            <span class="upload-icon">📷</span>
+                            <div class="upload-text">Нажмите для загрузки изображения</div>
+                            <div class="upload-hint">PNG, JPG, GIF до 5MB</div>
+                        </div>
+                        <div id="productImageProgress" class="upload-progress" style="display: none;">
+                            <div class="progress-bar"></div>
+                            <span class="progress-text">Загрузка...</span>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="productImageUrl">
+            </div>
+
+            <!-- Кнопки -->
+            <div class="toolbar" style="justify-content: flex-end; margin-top: 24px;">
+                <button type="button" class="btn btn-secondary" onclick="ProductForm.close()">Отмена</button>
+                <button type="submit" class="btn btn-primary" id="productFormSubmitBtn">💾 Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ПРОСМОТРА ТОВАРА -->
+<div id="productViewModal" class="modal-overlay hidden">
+    <div class="modal" style="max-width: 900px; width: 95%;">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow">Карточка товара</p>
+                <h3 id="productViewTitle">Товар</h3>
+            </div>
+            <button class="btn btn-secondary" onclick="ProductView.close()">✕ Закрыть</button>
+        </div>
+
+        <div class="product-card" style="display: grid; grid-template-columns: 280px 1fr; gap: 24px;">
+            <!-- Левая колонка - изображение -->
+            <div class="product-image-section">
+                <div id="productViewImageContainer" class="product-image-large">
+                    <img id="productViewImage" src="" alt="Товар" style="display: none; width: 100%; height: auto; border-radius: 8px;">
+                    <div id="productViewNoImage" class="no-image-placeholder">
+                        <span style="font-size: 64px;">📦</span>
+                        <div class="muted">Нет изображения</div>
+                    </div>
+                </div>
+                
+                <!-- QR код -->
+                <div style="margin-top: 16px; padding: 16px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                    <div id="productViewQrCode"></div>
+                    <small class="muted">QR-код товара</small>
+                </div>
+            </div>
+
+            <!-- Правая колонка - информация -->
+            <div class="product-info-section">
+                <div class="grid2" style="gap: 16px;">
+                    <div class="info-item">
+                        <span class="label">Артикул</span>
+                        <span id="productViewSku" class="value">—</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Штрих-код</span>
+                        <span id="productViewBarcode" class="value">—</span>
+                    </div>
+                </div>
+
+                <div style="margin: 16px 0;">
+                    <div class="info-item" style="margin-bottom: 8px;">
+                        <span class="label">Название</span>
+                        <div id="productViewName" class="value" style="font-size: 18px; font-weight: 600;">—</div>
+                    </div>
+                </div>
+
+                <div class="grid2" style="gap: 16px;">
+                    <div class="info-item">
+                        <span class="label">Категория</span>
+                        <span id="productViewCategory" class="value">—</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Единица измерения</span>
+                        <span id="productViewUnit" class="value">—</span>
+                    </div>
+                </div>
+
+                <div class="grid2" style="gap: 16px; margin-top: 16px;">
+                    <div class="info-item">
+                        <span class="label">Минимальный остаток</span>
+                        <span id="productViewMinStock" class="value">—</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Цена</span>
+                        <span id="productViewCostPrice" class="value">—</span>
+                    </div>
+                </div>
+
+                <div style="margin-top: 16px;">
+                    <span class="pill" id="productViewStatus">—</span>
+                </div>
+
+                <!-- Остатки по складам -->
+                <div style="margin-top: 24px;">
+                    <h4 style="margin-bottom: 12px;">📊 Остатки</h4>
+                    <div id="productViewStocks" class="table-wrapper">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Склад</th>
+                                    <th>Локация</th>
+                                    <th>Количество</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productViewStocksBody">
+                                <tr><td colspan="3" class="muted">Нет данных</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Кнопки действий -->
+        <div class="toolbar" style="justify-content: flex-end; margin-top: 24px;">
+            <button type="button" class="btn btn-secondary" onclick="ProductView.close()">Закрыть</button>
+            <button type="button" class="btn btn-warning" onclick="ProductView.edit()">✏️ Редактировать</button>
+            <button type="button" class="btn btn-danger" onclick="ProductView.delete()">🗑️ Удалить</button>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ВЫБОРА КАТЕГОРИИ -->
+<div id="categorySelectModal" class="modal-overlay hidden">
+    <div class="modal" style="max-width: 600px;">
+        <div class="section-title">
+            <h3>📁 Выбор категории</h3>
+            <button class="btn btn-secondary" onclick="CategorySelect.close()">✕ Закрыть</button>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+            <input type="text" id="categorySearch" class="input" placeholder="🔍 Поиск категории..." oninput="CategorySelect.search()">
+        </div>
+
+        <div id="categoryTree" class="category-tree" style="max-height: 400px; overflow-y: auto;">
+            <!-- Категории рендерятся здесь -->
+        </div>
+
+        <div class="toolbar" style="justify-content: flex-end; margin-top: 16px;">
+            <button type="button" class="btn btn-secondary" onclick="CategorySelect.close()">Отмена</button>
+            <button type="button" class="btn btn-primary" onclick="CategorySelect.confirm()">✅ Выбрать</button>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ПРОСМОТРА ЯЧЕЙКИ -->
+<div id="locationViewModal" class="modal-overlay hidden">
+    <div class="modal" style="max-width: 900px; width: 95%;">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow">Ячейка</p>
+                <h3 id="locationViewTitle">📍 Ячейка</h3>
+            </div>
+            <div class="toolbar" style="gap: 8px;">
+                <button class="btn btn-warning" onclick="LocationView.openTransfer()" title="Переместить товар из ячейки">🔁 Переместить</button>
+                <button class="btn btn-danger" onclick="LocationView.openIssue()" title="Списать товар из ячейки">🗑️ Списать</button>
+                <button class="btn btn-secondary" onclick="LocationView.close()">✕ Закрыть</button>
+            </div>
+        </div>
+
+        <div id="locationViewContent">
+            <!-- Содержимое рендерится здесь -->
+        </div>
+    </div>
+</div>
+
+<style>
+/* Стили для модальных окон товаров */
+.required {
+    color: #dc3545;
+}
+
+.image-upload-container {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 16px;
+    background: #f8f9fa;
+}
+
+.image-upload-area {
+    position: relative;
+}
+
+.upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.upload-placeholder:hover {
+    background: #e9ecef;
+}
+
+.upload-icon {
+    font-size: 48px;
+    margin-bottom: 8px;
+}
+
+.upload-text {
+    font-weight: 500;
+    color: #495057;
+}
+
+.upload-hint {
+    font-size: 13px;
+    color: #6c757d;
+    margin-top: 4px;
+}
+
+/* Modal z-index - должен быть выше всех элементов */
+.modal-overlay {
+    z-index: 10000 !important;
+}
+
+.modal {
+    z-index: 10001 !important;
+}
+
+.upload-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+}
+
+.progress-bar {
+    width: 200px;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-bar::after {
+    content: '';
+    display: block;
+    width: 50%;
+    height: 100%;
+    background: var(--primary);
+    animation: progress 1s infinite;
+}
+
+@keyframes progress {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+}
+
+.image-preview {
+    position: relative;
+    margin-bottom: 16px;
+}
+
+.image-preview img {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto;
+}
+
+.image-preview button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
+
+.no-image-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.product-image-large {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.product-card {
+    margin-top: 16px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-item .label {
+    font-size: 13px;
+    color: #6c757d;
+    margin-bottom: 4px;
+}
+
+.info-item .value {
+    font-size: 15px;
+    color: #212529;
+}
+
+.category-tree {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.category-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.category-item:hover {
+    background: #e9ecef;
+}
+
+.category-item.selected {
+    background: #e3f2fd;
+}
+
+.category-item .icon {
+    margin-right: 8px;
+}
+
+.category-item .name {
+    flex: 1;
+}
+
+.category-children {
+    margin-left: 24px;
+}
+</style>
+
+<script>
+// ============================================
+// PRODUCT FORM - Управление формой товара
+// ============================================
+window.ProductForm = {
+    currentMode: 'create', // 'create' or 'edit'
+    categories: [],
+    currentImageUrl: null,
+
+    init() {
+        this.loadCategories();
+    },
+
+    async loadCategories() {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/api/categories', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const page = await res.json();
+            this.categories = page.content || [];
+        } catch (e) {
+            console.error('[ProductForm] Failed to load categories:', e);
+        }
+    },
+
+    open(mode = 'create', productId = null) {
+        this.currentMode = mode;
+        this.currentImageUrl = null;
+
+        const modal = document.getElementById('productFormModal');
+        const header = document.getElementById('productFormHeader');
+        const form = document.getElementById('productForm');
+
+        if (mode === 'edit' && productId) {
+            header.textContent = 'Редактирование товара';
+            this.loadProduct(productId);
+        } else {
+            header.textContent = 'Создание товара';
+            form.reset();
+            document.getElementById('productId').value = '';
+            document.getElementById('productImagePreview').style.display = 'none';
+            document.getElementById('productImageUpload').style.display = 'block';
+        }
+
+        modal.classList.remove('hidden');
+        this.renderCategories();
+    },
+
+    close() {
+        document.getElementById('productFormModal').classList.add('hidden');
+        document.getElementById('productForm').reset();
+    },
+
+    renderCategories() {
+        const select = document.getElementById('productCategory');
+        select.innerHTML = '<option value="">Выберите категорию</option>' +
+            this.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    },
+
+    async loadProduct(productId) {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/products/${productId}`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const product = await res.json();
+
+            document.getElementById('productId').value = product.id;
+            document.getElementById('productSku').value = product.sku;
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productBarcode').value = product.barcode || '';
+            document.getElementById('productCategory').value = product.categoryId;
+            document.getElementById('productUnit').value = product.unit;
+            document.getElementById('productMinStock').value = product.minStock;
+            document.getElementById('productCostPrice').value = product.costPrice;
+            document.getElementById('productIsActive').checked = product.isActive;
+
+            if (product.imageUrl) {
+                this.currentImageUrl = product.imageUrl;
+                document.getElementById('productImageUrl').value = product.imageUrl;
+                document.getElementById('productImagePreviewImg').src = product.imageUrl;
+                document.getElementById('productImagePreview').style.display = 'block';
+                document.getElementById('productImageUpload').style.display = 'none';
+            }
+        } catch (e) {
+            console.error('[ProductForm] Failed to load product:', e);
+            alert('Ошибка загрузки товара: ' + e.message);
+        }
+    },
+
+    handleImageSelect(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        // Проверка размера
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Файл слишком большой. Максимум 5MB');
+            input.value = '';
+            return;
+        }
+
+        // Проверка типа
+        if (!file.type.startsWith('image/')) {
+            alert('Только изображения');
+            input.value = '';
+            return;
+        }
+
+        this.uploadImage(file);
+    },
+
+    async uploadImage(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const token = localStorage.getItem('token');
+        const progress = document.getElementById('productImageProgress');
+        const placeholder = document.querySelector('.upload-placeholder');
+
+        try {
+            placeholder.style.display = 'none';
+            progress.style.display = 'flex';
+
+            const res = await fetch('/api/files/upload', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token },
+                body: formData
+            });
+
+            if (!res.ok) {
+                throw new Error('Ошибка загрузки: ' + res.status);
+            }
+
+            const data = await res.json();
+            this.currentImageUrl = data.url;
+            document.getElementById('productImageUrl').value = data.url;
+
+            // Показываем превью
+            document.getElementById('productImagePreviewImg').src = data.url;
+            document.getElementById('productImagePreview').style.display = 'block';
+            document.getElementById('productImageUpload').style.display = 'none';
+
+        } catch (e) {
+            console.error('[ProductForm] Upload error:', e);
+            alert('Ошибка загрузки изображения: ' + e.message);
+        } finally {
+            progress.style.display = 'none';
+            placeholder.style.display = 'flex';
+        }
+    },
+
+    removeImage() {
+        this.currentImageUrl = null;
+        document.getElementById('productImageUrl').value = '';
+        document.getElementById('productImageFile').value = '';
+        document.getElementById('productImagePreview').style.display = 'none';
+        document.getElementById('productImageUpload').style.display = 'block';
+    },
+
+    async handleSubmit(event) {
+        event.preventDefault();
+
+        const token = localStorage.getItem('token');
+        const productId = document.getElementById('productId').value;
+        const isEdit = productId && productId !== '';
+
+        const data = {
+            createdById: Number(localStorage.getItem('userId') || 1),
+            sku: document.getElementById('productSku').value,
+            name: document.getElementById('productName').value,
+            barcode: document.getElementById('productBarcode').value || null,
+            categoryId: Number(document.getElementById('productCategory').value),
+            unit: document.getElementById('productUnit').value,
+            minStock: Number(document.getElementById('productMinStock').value),
+            costPrice: parseFloat(document.getElementById('productCostPrice').value) || 0,
+            isActive: document.getElementById('productIsActive').checked,
+            imageUrl: this.currentImageUrl
+        };
+
+        try {
+            const url = isEdit ? `/api/products/${productId}` : '/api/products';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method,
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.message || 'Ошибка сохранения');
+            }
+
+            const result = await res.json();
+            
+            if (isEdit) {
+                alert('Товар обновлён: ' + result.name);
+                if (window.ProductsPage) {
+                    window.ProductsPage.refresh();
+                }
+            } else {
+                alert('Товар создан: ' + result.name);
+                if (window.ProductsPage) {
+                    window.ProductsPage.refresh();
+                }
+            }
+
+            this.close();
+
+        } catch (e) {
+            console.error('[ProductForm] Save error:', e);
+            alert('Ошибка сохранения: ' + e.message);
+        }
+    }
+};
+
+// ============================================
+// PRODUCT VIEW - Просмотр товара
+// ============================================
+window.ProductView = {
+    currentProduct: null,
+
+    open(productId) {
+        this.loadProduct(productId);
+        document.getElementById('productViewModal').classList.remove('hidden');
+    },
+
+    close() {
+        document.getElementById('productViewModal').classList.add('hidden');
+    },
+
+    async loadProduct(productId) {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/products/${productId}`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            this.currentProduct = await res.json();
+            this.render();
+            this.loadStocks();
+        } catch (e) {
+            console.error('[ProductView] Load error:', e);
+            alert('Ошибка загрузки: ' + e.message);
+        }
+    },
+
+    render() {
+        const p = this.currentProduct;
+        
+        document.getElementById('productViewTitle').textContent = p.name;
+        document.getElementById('productViewSku').textContent = p.sku;
+        document.getElementById('productViewBarcode').textContent = p.barcode || '—';
+        document.getElementById('productViewName').textContent = p.name;
+        document.getElementById('productViewCategory').textContent = p.categoryName || '—';
+        document.getElementById('productViewUnit').textContent = this.formatUnit(p.unit);
+        document.getElementById('productViewMinStock').textContent = p.minStock + ' ' + this.formatUnit(p.unit);
+        document.getElementById('productViewCostPrice').textContent = this.formatPrice(p.costPrice);
+        
+        // Статус
+        const statusEl = document.getElementById('productViewStatus');
+        statusEl.textContent = p.isActive ? '✅ Активен' : '❌ Неактивен';
+        statusEl.className = 'pill ' + (p.isActive ? 'pill-success' : 'pill-muted');
+
+        // Изображение
+        const img = document.getElementById('productViewImage');
+        const noImg = document.getElementById('productViewNoImage');
+        
+        if (p.imageUrl) {
+            img.src = p.imageUrl;
+            img.style.display = 'block';
+            noImg.style.display = 'none';
+        } else {
+            img.style.display = 'none';
+            noImg.style.display = 'flex';
+        }
+
+        // QR код
+        this.renderQrCode(p);
+    },
+
+    renderQrCode(product) {
+        const container = document.getElementById('productViewQrCode');
+        
+        // Используем штрих-код если есть, иначе ID товара
+        if (product.barcode) {
+            container.innerHTML = `
+                <img src="/api/qr/barcode/${encodeURIComponent(product.barcode)}.png?size=150" alt="QR" style="width: 150px; height: 150px;">
+                <div style="margin-top: 8px; font-weight: 600; font-size: 13px;">${product.barcode}</div>
+            `;
+        } else {
+            const qrPayload = `PRODUCT:${product.id}:SKU:${product.sku}`;
+            container.innerHTML = `
+                <img src="/api/qr/product/${product.id}.png?size=150" alt="QR" style="width: 150px; height: 150px;">
+                <div style="margin-top: 8px; font-weight: 600; font-size: 13px;">${product.sku}</div>
+            `;
+        }
+    },
+
+    async loadStocks() {
+        const token = localStorage.getItem('token');
+        const productId = this.currentProduct.id;
+
+        try {
+            const res = await fetch(`/api/stocks?productId=${productId}`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const stocks = await res.json();
+
+            const tbody = document.getElementById('productViewStocksBody');
+
+            if (stocks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="muted">Нет остатков</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = stocks.map(s => `
+                <tr style="cursor: pointer;" onclick="LocationView.open(${s.locationId}, ${s.warehouseId})" title="Нажмите для просмотра содержимого ячейки">
+                    <td>${s.warehouseName || 'Склад #' + s.warehouseId}</td>
+                    <td>📍 ${s.locationCode || '—'}</td>
+                    <td><strong>${s.qty}</strong> ${this.formatUnit(this.currentProduct.unit)}</td>
+                </tr>
+            `).join('');
+
+        } catch (e) {
+            console.error('[ProductView] Stocks load error:', e);
+        }
+    },
+
+    formatUnit(unit) {
+        const units = {
+            'pcs': 'шт.',
+            'kg': 'кг',
+            'g': 'г',
+            'l': 'л',
+            'ml': 'мл',
+            'm': 'м',
+            'cm': 'см',
+            'pack': 'упак.',
+            'box': 'кор.'
+        };
+        return units[unit] || unit;
+    },
+
+    formatPrice(price) {
+        return new Intl.NumberFormat('ru-RU', { 
+            style: 'currency', 
+            currency: 'RUB' 
+        }).format(price || 0);
+    },
+
+    edit() {
+        this.close();
+        ProductForm.open('edit', this.currentProduct.id);
+    },
+
+    async delete() {
+        const p = this.currentProduct;
+        if (!confirm(`Удалить товар "${p.name}" (${p.sku})?\n\nВсе связанные записи (остатки, партии) будут удалены.`)) {
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/products/${p.id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (!res.ok) {
+                throw new Error('Ошибка удаления');
+            }
+
+            alert('Товар удалён');
+            this.close();
+            
+            if (window.ProductsPage) {
+                window.ProductsPage.refresh();
+            }
+
+        } catch (e) {
+            console.error('[ProductView] Delete error:', e);
+            alert('Ошибка удаления: ' + e.message);
+        }
+    }
+};
+
+// ============================================
+// CATEGORY SELECT - Выбор категории
+// ============================================
+window.CategorySelect = {
+    categories: [],
+    selectedId: null,
+    callback: null,
+
+    open(callback) {
+        this.callback = callback;
+        this.selectedId = null;
+        this.loadCategories();
+        document.getElementById('categorySelectModal').classList.remove('hidden');
+    },
+
+    close() {
+        document.getElementById('categorySelectModal').classList.add('hidden');
+    },
+
+    async loadCategories() {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/api/categories', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const page = await res.json();
+            this.categories = page.content || [];
+            this.render();
+        } catch (e) {
+            console.error('[CategorySelect] Load error:', e);
+        }
+    },
+
+    render(filter = '') {
+        const container = document.getElementById('categoryTree');
+        const q = filter.toLowerCase();
+        
+        const filtered = this.categories.filter(c => 
+            !q || c.name.toLowerCase().includes(q)
+        );
+
+        // Строим дерево
+        const roots = filtered.filter(c => !c.parentId);
+        
+        container.innerHTML = roots.map(r => this.renderNode(r, filtered)).join('');
+    },
+
+    renderNode(node, all) {
+        const children = all.filter(c => c.parentId === node.id);
+        const hasChildren = children.length > 0;
+        const isSelected = this.selectedId === node.id;
+
+        let html = `
+            <div class="category-item ${isSelected ? 'selected' : ''}" 
+                 onclick="CategorySelect.select(${node.id})">
+                <span class="icon">📁</span>
+                <span class="name">${node.name}</span>
+            </div>
+        `;
+
+        if (hasChildren) {
+            html += `<div class="category-children">` +
+                children.map(c => this.renderNode(c, all)).join('') +
+                `</div>`;
+        }
+
+        return html;
+    },
+
+    select(id) {
+        this.selectedId = id;
+        this.render(document.getElementById('categorySearch').value);
+    },
+
+    confirm() {
+        if (!this.selectedId) {
+            alert('Выберите категорию');
+            return;
+        }
+
+        const category = this.categories.find(c => c.id === this.selectedId);
+
+        if (this.callback) {
+            this.callback(category);
+        }
+
+        this.close();
+    },
+
+    search() {
+        const query = document.getElementById('categorySearch').value;
+        this.render(query);
+    }
+};
+
+// ============================================
+// LOCATION VIEW - Просмотр содержимого ячейки
+// ============================================
+window.LocationView = {
+    currentLocation: null,
+    currentStocks: [],
+    currentWarehouseId: null,
+
+    open(locationId, warehouseId = null) {
+        const modal = document.getElementById('locationViewModal');
+        if (!modal) {
+            console.error('[LocationView] Modal not found!');
+            alert('Ошибка: модальное окно не загружено. Обновите страницу.');
+            return;
+        }
+        this.currentWarehouseId = warehouseId;
+        this.loadLocation(locationId, warehouseId);
+        modal.classList.remove('hidden');
+    },
+
+    close() {
+        const modal = document.getElementById('locationViewModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    },
+
+    openTransfer() {
+        if (!this.currentLocation || this.currentStocks.length === 0) {
+            alert('В ячейке нет товаров для перемещения');
+            return;
+        }
+        // Открываем страницу перемещений с предустановленной локацией
+        const params = new URLSearchParams({
+            fromLocation: this.currentLocation.id,
+            warehouse: this.currentWarehouseId || ''
+        });
+        window.location.href = '/pages/transfers.html?' + params.toString();
+    },
+
+    openIssue() {
+        if (!this.currentLocation || this.currentStocks.length === 0) {
+            alert('В ячейке нет товаров для списания');
+            return;
+        }
+        // Открываем страницу списаний с предустановленной локацией
+        const params = new URLSearchParams({
+            fromLocation: this.currentLocation.id,
+            warehouse: this.currentWarehouseId || ''
+        });
+        window.location.href = '/pages/issues.html?' + params.toString();
+    },
+
+    async loadLocation(locationId, warehouseId) {
+        const token = localStorage.getItem('token');
+        try {
+            // Загружаем информацию о локации
+            const locRes = await fetch(`/api/locations/${locationId}`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            this.currentLocation = await locRes.json();
+
+            // Загружаем остатки в этой локации
+            const stocksRes = await fetch(`/api/stocks?locationId=${locationId}`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            this.currentStocks = await stocksRes.json();
+
+            this.render(this.currentStocks);
+        } catch (e) {
+            console.error('[LocationView] Load error:', e);
+            const container = document.getElementById('locationViewContent');
+            if (container) {
+                container.innerHTML = `
+                    <div class="alert alert-error" style="padding: 16px; background: #ffebee; border-radius: 8px; color: #c62828;">
+                       Ошибка загрузки: ${e.message}
+                    </div>
+                `;
+            }
+        }
+    },
+
+    render(stocks) {
+        const loc = this.currentLocation;
+        const container = document.getElementById('locationViewContent');
+        
+        if (!container) {
+            console.error('[LocationView] Container not found!');
+            return;
+        }
+
+        let html = `
+            <div class="card" style="margin-bottom: 16px;">
+                <div class="grid3" style="gap: 16px;">
+                    <div class="info-item">
+                        <span class="label">Код</span>
+                        <div class="value" style="font-weight: 600; font-size: 18px;">${loc.code}</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Название</span>
+                        <div class="value">${loc.name || '—'}</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Тип</span>
+                        <div class="value">${loc.type ? this.formatLocationType(loc.type) : '—'}</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Склад</span>
+                        <div class="value">${loc.warehouseName || '—'}</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Родитель</span>
+                        <div class="value">${loc.parentName || '—'}</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Заполнено</span>
+                        <div class="value">${stocks.reduce((sum, s) => sum + s.qty, 0)} ед.</div>
+                    </div>
+                </div>
+            </div>
+
+            <h4 style="margin: 16px 0 12px;">📦 Товары в ячейке</h4>
+        `;
+
+        if (stocks.length === 0) {
+            html += `
+                <div class="empty-state" style="padding: 32px; text-align: center;">
+                    <span class="empty-icon" style="font-size: 48px;">📦</span>
+                    <div class="empty-title">Ячейка пуста</div>
+                    <div class="empty-text">В этой ячейке нет товаров</div>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Товар</th>
+                                <th>Артикул</th>
+                                <th>Партия</th>
+                                <th>Количество</th>
+                                <th>Ед. изм.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            stocks.forEach(s => {
+                html += `
+                    <tr>
+                        <td>
+                            <strong>${s.productName || 'Товар #' + s.productId}</strong>
+                            ${s.barcode ? `<br><small class="muted">Штрих-код: ${s.barcode}</small>` : ''}
+                        </td>
+                        <td>${s.sku || '—'}</td>
+                        <td>${s.batchNumber || '—'}</td>
+                        <td><strong>${s.qty}</strong></td>
+                        <td>${s.unit || '—'}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // QR код ячейки
+        html += `
+            <div style="margin-top: 24px; padding: 16px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                <img src="/api/qr/loc/${loc.id}.png?size=150" alt="QR" style="width: 150px; height: 150px;">
+                <div style="margin-top: 8px; font-weight: 600;">QR-код ячейки</div>
+                <div class="muted" style="font-size: 13px;">${loc.code}</div>
+            </div>
+        `;
+
+        container.innerHTML = html;
+    },
+
+    formatLocationType(type) {
+        const types = {
+            'ZONE': '📍 Зона',
+            'RACK': '📚 Стеллаж',
+            'SHELF': '📋 Полка',
+            'BIN': '📦 Ячейка'
+        };
+        return types[type] || type;
+    }
+};
+
+// Инициализация
+ProductForm.init();
+</script>

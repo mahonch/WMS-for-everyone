@@ -105,4 +105,16 @@ public class SupplierController {
         supplierService.deleteById(id, actorId);
         return ResponseEntity.ok().build();
     }
+
+    /**
+     * Получить документы поставщика (приёмки).
+     */
+    @GetMapping("/{id}/documents")
+    public Page<SupplierDto.DocumentView> getDocuments(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size
+    ) {
+        return supplierService.findDocumentsBySupplierId(id, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+    }
 }

@@ -1,101 +1,386 @@
-<!doctype html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Списания — WMS</title>
+    <title>Списание — WMS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="/css/app-v2.css" rel="stylesheet">
-
+    <link href="/css/mobile.css" rel="stylesheet">
+    <script src="/js/modal.js"></script>
+    <script src="/js/location-explorer.js"></script>
     <script src="/js/auth-debug.js"></script>
     <script type="module" src="/js/issues.js"></script>
 </head>
+<body class="layout">
 
-<body>
+<!-- BOTTOM NAV (MOBILE) -->
+<nav class="bottom-nav">
+    <a href="/dashboard.html">
+        <span class="nav-icon">📊</span>
+        <span>Главная</span>
+    </a>
+    <a href="/pages/receipts.html">
+        <span class="nav-icon">📥</span>
+        <span>Приёмка</span>
+    </a>
+    <a href="/pages/issues.html" class="active">
+        <span class="nav-icon">📤</span>
+        <span>Списание</span>
+    </a>
+    <a href="/pages/transfers.html">
+        <span class="nav-icon">🔁</span>
+        <span>Перемещ.</span>
+    </a>
+    <a href="/pages/products.html">
+        <span class="nav-icon">📦</span>
+        <span>Товары</span>
+    </a>
+    <a href="/pages/suppliers.html">
+        <span class="nav-icon">🚚</span>
+        <span>Поставщ.</span>
+    </a>
+</nav>
 
-<header class="topbar">
-    <div class="brand">WMS</div>
-    <nav class="nav">
-        <a href="/dashboard.html" class="active">Главная</a>
-        <a href="/pages/receipts.html">Приёмка</a>
-        <a href="/pages/issues.html">Списание</a>
-        <a href="/pages/transfers.html">Перемещения</a>
-        <a href="/pages/locations.html">склады</a>
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="logo">📦 WMS</div>
+    <nav>
+        <a href="/dashboard.html">📊 Главная</a>
+        <a href="/pages/receipts.html">📥 Приёмка</a>
+        <a href="/pages/issues.html" class="active">📤 Списание</a>
+        <a href="/pages/transfers.html">🔁 Перемещения</a>
+        <a href="/pages/products.html">📦 Товары</a>
+        <a href="/pages/suppliers.html">🚚 Поставщики</a>
+        <a href="/pages/warehouses.html">🏢 Склады</a>
+        <a href="/scan.html">📷 Скан QR</a>
     </nav>
-
-    <div class="user">
+    <div class="user-chip">
         <span id="usernameLabel">—</span>
-        <button id="logoutBtn" class="btn">Выйти</button>
+        <button id="logoutBtn" class="btn btn-secondary">Выйти</button>
     </div>
-</header>
+</aside>
 
-<main class="container">
+<!-- PAGE -->
+<main class="content">
+    <header class="topbar">
+        <div>
+            <div class="tag-muted">Документы</div>
+            <strong>Списание товаров</strong>
+        </div>
+    </header>
 
-    <section id="alerts"></section>
+    <div id="alerts"></div>
 
-    <section class="panel">
-        <h3>Списания</h3>
-
-        <div class="actions">
-            <button class="btn" id="btnCreate">Новое списание</button>
+    <!-- СПИСОК ДОКУМЕНТОВ -->
+    <section class="card">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow">Журнал</p>
+                <h3>Все списания</h3>
+            </div>
+            <div class="toolbar">
+                <input id="filterInput" class="input" placeholder="🔍 Поиск по номеру..." style="flex: 1;">
+                <button class="btn btn-primary" id="btnCreate">➕ Новое списание</button>
+            </div>
         </div>
 
-        <table class="table" id="issuesTable">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Номер</th>
-                <th>Статус</th>
-                <th>Создал</th>
-                <th>Причина</th>
-                <th>Дата</th>
-                <th></th>
-            </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </section>
-
-    <!-- ПАНЕЛЬ ДЕТАЛЕЙ -->
-    <!-- ====== ПАНЕЛЬ ДЕТАЛЕЙ (как модалка) ====== -->
-    <div id="detailOverlay" class="overlay hidden">
-        <section id="detailPanel" class="panel modal-panel">
-
-            <h3>Списание <span id="d_number"></span></h3>
-
-            <div class="grid2">
-                <div><b>ID:</b> <span id="d_id">—</span></div>
-                <div><b>Статус:</b> <span id="d_status">—</span></div>
-                <div><b>Создал:</b> <span id="d_createdBy">—</span></div>
-                <div><b>Причина:</b> <span id="d_reason">—</span></div>
-                <div><b>Дата:</b> <span id="d_date">—</span></div>
-            </div>
-
-            <h4>Позиции</h4>
-            <table class="table" id="itemsTable">
+        <div class="table-wrapper">
+            <table class="table" id="issuesTable">
                 <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Товар</th>
-                    <th>Партия</th>
-                    <th>Кол-во</th>
+                    <th>№</th>
+                    <th>Статус</th>
+                    <th>Тип</th>
+                    <th>Откуда</th>
+                    <th>Куда</th>
+                    <th>Дата</th>
                     <th></th>
                 </tr>
                 </thead>
                 <tbody></tbody>
             </table>
-
-            <div class="actions">
-                <button class="btn" id="btnAddItem">Добавить позицию</button>
-                <button class="btn btn-success" id="btnCommit">Провести</button>
-                <button class="btn btn-danger" id="btnDeleteDraft">Удалить черновик</button>
-                <button class="btn btn-secondary" id="btnCloseDetail">Закрыть</button>
-            </div>
-
-        </section>
-    </div>
-
-
+        </div>
+    </section>
 </main>
 
-</body>
+<!-- ВЫБОР ТИПА ОПЕРАЦИИ -->
+<div id="typeSelectOverlay" class="modal-overlay hidden">
+    <div class="modal" style="max-width: 800px;">
+        <div class="section-title">
+            <h3>📤 Выберите тип операции</h3>
+            <button class="btn btn-secondary" onclick="closeTypeSelect()">✕</button>
+        </div>
+
+        <div class="radio-group" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 24px 0;">
+            <label class="radio-card" onclick="selectIssueType('TRANSFER_OUT')">
+                <input type="radio" name="issueТип" value="TRANSFER_OUT">
+                <div class="radio-content" style="flex-direction: column; text-align: center;">
+                    <span class="radio-icon" style="font-size: 48px;">🔁</span>
+                    <div style="font-weight: 700; font-size: 16px; margin: 8px 0;">Перемещение</div>
+                    <div class="muted" style="font-size: 13px;">Перенос на другой склад/локацию</div>
+                </div>
+            </label>
+
+            <label class="radio-card" onclick="selectIssueType('DAMAGE')">
+                <input type="radio" name="issueТип" value="DAMAGE">
+                <div class="radio-content" style="flex-direction: column; text-align: center;">
+                    <span class="radio-icon" style="font-size: 48px;">🗑️</span>
+                    <div style="font-weight: 700; font-size: 16px; margin: 8px 0;">Утиль</div>
+                    <div class="muted" style="font-size: 13px;">Списание брака/истёк срока</div>
+                </div>
+            </label>
+
+            <label class="radio-card" onclick="selectIssueType('SALE')">
+                <input type="radio" name="issueТип" value="SALE">
+                <div class="radio-content" style="flex-direction: column; text-align: center;">
+                    <span class="radio-icon" style="font-size: 48px;">💰</span>
+                    <div style="font-weight: 700; font-size: 16px; margin: 8px 0;">Продажа</div>
+                    <div class="muted" style="font-size: 13px;">Списание по заказу клиента</div>
+                </div>
+            </label>
+        </div>
+    </div>
+</div>
+
+<!-- ПЕРЕМЕЩЕНИЕ -->
+<div id="transferOverlay" class="modal-overlay hidden">
+    <div class="modal" style="max-width: 1100px; width: 95%;">
+        <div class="section-title">
+            <h3>🔁 Перемещение между складами</h3>
+            <button class="btn btn-secondary" onclick="closeTransfer()">✕ Закрыть</button>
+        </div>
+
+        <div class="grid2" style="margin-bottom: 16px; gap: 24px;">
+            <div style="padding: 16px; background: #ffebee; border-radius: 8px;">
+                <label style="color: #c62828; font-weight: 700;">📍 ОТКУДА</label>
+                <select id="transfer_fromWarehouse" class="input" style="margin: 8px 0;" onchange="onTransferFromWarehouseChange()"></select>
+                <div class="input-row">
+                    <input id="transfer_fromLocation" class="input" readonly placeholder="Выберите локацию">
+                    <button class="btn btn-secondary" onclick="openTransferLocationExplorer('from')">🗺️</button>
+                </div>
+                <input type="hidden" id="transfer_fromLocationId">
+            </div>
+            
+            <div style="padding: 16px; background: #e8f5e9; border-radius: 8px;">
+                <label style="color: #2e7d32; font-weight: 700;">📍 КУДА</label>
+                <select id="transfer_toWarehouse" class="input" style="margin: 8px 0;" onchange="onTransferToWarehouseChange()"></select>
+                <div class="input-row">
+                    <input id="transfer_toLocation" class="input" readonly placeholder="Выберите локацию">
+                    <button class="btn btn-secondary" onclick="openTransferLocationExplorer('to')">🗺️</button>
+                </div>
+                <input type="hidden" id="transfer_toLocationId">
+            </div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+            <label>🔍 Поиск товаров</label>
+            <input id="transfer_productSearch" class="input" placeholder="Поиск по названию, SKU..." oninput="searchTransferТоварs()">
+        </div>
+
+        <div style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
+            <table class="table" id="transfer_productsTable">
+                <thead style="position: sticky; top: 0; background: #f0f1f7;">
+                <tr>
+                    <th>Товар</th>
+                    <th>Доступно</th>
+                    <th>Перемещаем</th>
+                    <th>Останется</th>
+                </tr>
+                </thead>
+                <tbody id="transfer_productsBody"></tbody>
+            </table>
+        </div>
+
+        <div class="total-row" style="margin-top: 16px; background: #e8f0fe; padding: 12px; border-radius: 8px;">
+            <span>Итого к перемещению:</span>
+            <strong id="transfer_selectedCount">0</strong>
+            <span style="margin-left: 24px;">единиц</span>
+        </div>
+
+        <div class="toolbar" style="justify-content: flex-end; margin-top: 16px;">
+            <button class="btn btn-secondary" onclick="closeTransfer()">Отмена</button>
+            <button class="btn btn-primary" onclick="createTransfer()">🔁 Переместить</button>
+        </div>
+    </div>
+</div>
+
+<!-- УТИЛЬ -->
+<div id="damageOverlay" class="modal-overlay hidden">
+    <div class="modal" style="max-width: 1000px; width: 95%;">
+        <div class="section-title">
+            <h3>🗑️ Списание в утиль</h3>
+            <button class="btn btn-secondary" onclick="closeDamage()">✕ Закрыть</button>
+        </div>
+
+        <div class="grid2" style="margin-bottom: 16px;">
+            <div>
+                <label>🏢 Склад</label>
+                <select id="damage_warehouse" class="input" onchange="onDamageWarehouseChange()"></select>
+            </div>
+            <div>
+                <label>⚠️ Причина</label>
+                <select id="damage_reason" class="input">
+                    <option value="Брак при распаковке">Брак при распаковке</option>
+                    <option value="Истёк срок годности">Истёк срок годности</option>
+                    <option value="Бой/Повреждение">Бой/Повреждение</option>
+                    <option value="Иное">Иное</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 16px; padding: 16px; background: #fff3cd; border-radius: 8px;">
+            <label>📍 Локация</label>
+            <div class="input-row">
+                <input id="damage_location" class="input" readonly placeholder="Выберите локацию">
+                <button class="btn btn-secondary" onclick="openDamageLocationExplorer()">🗺️</button>
+            </div>
+            <input type="hidden" id="damage_locationId">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+            <label>🔍 Поиск по товарам в ячейке</label>
+            <input id="damage_productSearch" class="input" placeholder="Поиск по названию, SKU..." oninput="searchDamageТоварs()">
+        </div>
+
+        <div style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
+            <table class="table" id="damage_productsTable">
+                <thead style="position: sticky; top: 0; background: #f0f1f7;">
+                <tr>
+                    <th>Товар</th>
+                    <th>Доступно</th>
+                    <th>К списанию</th>
+                    <th>Причина</th>
+                </tr>
+                </thead>
+                <tbody id="damage_productsBody"></tbody>
+            </table>
+        </div>
+
+        <div style="margin-top: 16px;">
+            <label>💬 Комментарий к утилю</label>
+            <input id="damage_comment" class="input" placeholder="Опишите причину списания...">
+        </div>
+
+        <div class="total-row" style="margin-top: 16px; background: #ffebee; padding: 12px; border-radius: 8px;">
+            <span>Итого к списанию:</span>
+            <strong id="damage_selectedCount">0</strong>
+            <span style="margin-left: 24px;">единиц</span>
+        </div>
+
+        <div class="toolbar" style="justify-content: flex-end; margin-top: 16px;">
+            <button class="btn btn-secondary" onclick="closeDamage()">Отмена</button>
+            <button class="btn btn-danger" onclick="createDamage()">🗑️ Списать в утиль</button>
+        </div>
+    </div>
+</div>
+
+<!-- ПРОДАЖА -->
+<div id="saleOverlay" class="modal-overlay hidden">
+    <div class="modal" style="max-width: 1000px; width: 95%;">
+        <div class="section-title">
+            <h3>💰 Продажа товаров</h3>
+            <button class="btn btn-secondary" onclick="closeSale()">✕ Закрыть</button>
+        </div>
+
+        <div class="grid2" style="margin-bottom: 16px;">
+            <div>
+                <label>🏢 Склад</label>
+                <select id="sale_warehouse" class="input" onchange="onSaleWarehouseChange()"></select>
+            </div>
+            <div>
+                <label>👤 Покупатель</label>
+                <input id="sale_buyer" class="input" placeholder="Физлицо / ООО">
+            </div>
+        </div>
+
+        <div style="margin-bottom: 16px; padding: 16px; background: #e8f5e9; border-radius: 8px;">
+            <label>📍 Локация отгрузки</label>
+            <div class="input-row">
+                <input id="sale_location" class="input" readonly placeholder="Выберите локацию">
+                <button class="btn btn-secondary" onclick="openSaleLocationExplorer()">🗺️</button>
+            </div>
+            <input type="hidden" id="sale_locationId">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+            <label>🔍 Поиск товаров</label>
+            <input id="sale_productSearch" class="input" placeholder="Поиск по названию, SKU..." oninput="searchSaleТоварs()">
+        </div>
+
+        <div style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
+            <table class="table" id="sale_productsTable">
+                <thead style="position: sticky; top: 0; background: #f0f1f7;">
+                <tr>
+                    <th>Товар</th>
+                    <th>Доступно</th>
+                    <th>Кол-во</th>
+                    <th>Цена</th>
+                    <th>Сумма</th>
+                </tr>
+                </thead>
+                <tbody id="sale_productsBody"></tbody>
+            </table>
+        </div>
+
+        <div class="total-row" style="margin-top: 16px; background: #e8f5e9; padding: 16px; border-radius: 8px;">
+            <div>
+                <div>Итого по продаже:</div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--primary);" id="sale_totalСумма">0 ₽</div>
+            </div>
+            <div style="margin-left: 24px;">
+                <div>Всего единиц:</div>
+                <div style="font-size: 20px; font-weight: 700;" id="sale_selectedCount">0</div>
+            </div>
+        </div>
+
+        <div class="toolbar" style="justify-content: flex-end; margin-top: 16px;">
+            <button class="btn btn-secondary" onclick="closeSale()">Отмена</button>
+            <button class="btn btn-success" onclick="createSale()">💰 Оформить продажу</button>
+        </div>
+    </div>
+</div>
+
+<!-- LOCATION EXPLORER -->
+<div id="locationExplorerOverlay" class="modal-overlay hidden">
+    <div class="location-explorer-modal">
+        <div class="explorer-header">
+            <div class="explorer-title">
+                <h3>📍 Выбор локации</h3>
+                <button class="btn btn-secondary btn-sm" onclick="LocationExplorer.close()">✕</button>
+            </div>
+            <div class="explorer-search">
+                <input id="locationExplorerSearch" class="input" placeholder="🔍 Поиск по коду или названию..." oninput="onLocationSearch()">
+                <button class="btn btn-secondary" onclick="clearLocationSearch()">✕</button>
+            </div>
+        </div>
+        <div class="explorer-body">
+            <div class="explorer-panel explorer-tree-panel">
+                <div class="panel-header">
+                    <strong>🌲 Дерево склада</strong>
+                    <span class="panel-hint">Навигация</span>
+                </div>
+                <div class="explorer-tree" id="locationTree"></div>
+            </div>
+            <div class="explorer-panel explorer-content-panel">
+                <div class="panel-header">
+                    <strong>📂 Содержимое</strong>
+                    <span class="panel-hint" id="contentHint">Выберите узел</span>
+                </div>
+                <div class="explorer-content" id="locationContent"></div>
+            </div>
+        </div>
+        <div class="explorer-footer">
+            <div class="selected-info">
+                <span class="selected-label">Выбрано:</span>
+                <span class="selected-value" id="selectedLocation">—</span>
+            </div>
+            <div class="explorer-actions">
+                <button class="btn btn-secondary" onclick="LocationExplorer.close()">Отмена</button>
+                <button class="btn btn-primary" id="btnConfirmLocation" onclick="confirmLocationSelection()" disabled>✅ Выбрать</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="detailOverlay" class="modal-overlay hidden"><div class="modal modal-lg"><div class="section-title"><div><p class="eyebrow">Документ</p><h3>Списание <span id="d_number"></span></h3></div><button class="btn btn-secondary" id="btnCloseDetail">Закрыть</button></div><div class="card card-inline"><div class="grid4"><div class="info-item"><span class="label">ID</span><span id="d_id">-</span></div><div class="info-item"><span class="label">Статус</span><span id="d_status">-</span></div><div class="info-item"><span class="label">Тип</span><span id="d_reasonCode">-</span></div><div class="info-item"><span class="label">Дата</span><span id="d_date">-</span></div></div><div class="grid4" style="margin-top:12px;"><div class="info-item"><span class="label">Склад назначения</span><span id="d_targetWh">-</span></div><div class="info-item"><span class="label">Локация назначения</span><span id="d_targetLoc">-</span></div><div class="info-item"><span class="label">Причина</span><span id="d_reason">-</span></div><div class="info-item"><span class="label">Комментарий</span><span id="d_comment">-</span></div></div></div><div class="card" style="margin-top:16px"><div class="section-title"><h4>Позиции</h4></div><div class="table-wrapper"><table class="table" id="detailItemsTable"><thead><tr><th>Товар</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead><tbody></tbody></table></div><div class="total-row"><span>Итого:</span><strong id="d_total">0</strong></div></div><div class="toolbar" style="justify-content:flex-end;margin-top:16px"><button class="btn btn-success" id="btnCommit">Провести</button><button class="btn btn-danger" id="btnDeleteDraft">Удалить</button></div></div></div></body>
 </html>

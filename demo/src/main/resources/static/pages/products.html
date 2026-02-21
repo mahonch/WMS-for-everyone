@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Товары — WMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="/css/app-v2.css" rel="stylesheet">
+    <link href="/css/mobile.css" rel="stylesheet">
+    <script src="/js/modal.js"></script>
+    <script src="/js/auth-debug.js"></script>
+</head>
+<body class="layout">
+
+<!-- BOTTOM NAV (MOBILE) -->
+<nav class="bottom-nav">
+    <a href="/dashboard.html">
+        <span class="nav-icon">📊</span>
+        <span>Главная</span>
+    </a>
+    <a href="/pages/receipts.html">
+        <span class="nav-icon">📥</span>
+        <span>Приёмка</span>
+    </a>
+    <a href="/pages/issues.html">
+        <span class="nav-icon">📤</span>
+        <span>Списание</span>
+    </a>
+    <a href="/pages/transfers.html">
+        <span class="nav-icon">🔁</span>
+        <span>Перемещ.</span>
+    </a>
+    <a href="/pages/products.html" class="active">
+        <span class="nav-icon">📦</span>
+        <span>Товары</span>
+    </a>
+    <a href="/pages/suppliers.html">
+        <span class="nav-icon">🚚</span>
+        <span>Поставщ.</span>
+    </a>
+</nav>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="logo">📦 WMS</div>
+    <nav>
+        <a href="/dashboard.html">📊 Главная</a>
+        <a href="/pages/receipts.html">📥 Приёмка</a>
+        <a href="/pages/issues.html">📤 Списание</a>
+        <a href="/pages/transfers.html">🔁 Перемещения</a>
+        <a href="/pages/products.html" class="active">📦 Товары</a>
+        <a href="/pages/suppliers.html">🚚 Поставщики</a>
+        <a href="/pages/warehouses.html">🏢 Склады</a>
+        <a href="/scan.html">📷 Скан QR</a>
+    </nav>
+    <div class="user-chip">
+        <span id="usernameLabel">—</span>
+        <button id="logoutBtn" class="btn btn-secondary">Выйти</button>
+    </div>
+</aside>
+
+<!-- PAGE -->
+<main class="content">
+    <header class="topbar">
+        <div>
+            <div class="tag-muted">Справочники</div>
+            <strong>Товары</strong>
+        </div>
+    </header>
+
+    <div id="alerts"></div>
+
+    <div class="products-layout" style="display: grid; grid-template-columns: 280px 1fr; gap: 24px; height: calc(100vh - 140px);">
+        
+        <!-- ЛЕВАЯ ПАНЕЛЬ - ДЕРЕВО КАТЕГОРИЙ -->
+        <aside class="card" style="overflow: hidden; display: flex; flex-direction: column;">
+            <div class="section-title" style="padding: 16px; border-bottom: 1px solid var(--border);">
+                <h3>📁 Категории</h3>
+                <button class="btn btn-sm btn-secondary" onclick="ProductsPage.toggleCategoryTree()">🗺️</button>
+            </div>
+            
+            <div style="padding: 16px; border-bottom: 1px solid var(--border);">
+                <input type="text" id="categorySearch" class="input" placeholder="🔍 Поиск категории..." 
+                       oninput="ProductsPage.filterCategories()" style="font-size: 14px;">
+            </div>
+
+            <div id="categoryTree" class="category-tree" style="flex: 1; overflow-y: auto; padding: 8px;">
+                <!-- Категории рендерятся здесь -->
+            </div>
+
+            <div style="padding: 16px; border-top: 1px solid var(--border); background: #f8f9fa;">
+                <div class="info-item">
+                    <span class="label">Выбрано</span>
+                    <span id="selectedCategoryName" class="value" style="font-weight: 600;">Все категории</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ПРАВАЯ ПАНЕЛЬ - СПИСОК ТОВАРОВ -->
+        <section class="card" style="overflow: hidden; display: flex; flex-direction: column;">
+            <div class="section-title" style="padding: 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+                    <div>
+                        <p class="eyebrow" id="productsSectionTitle">Все товары</p>
+                        <h3 id="productsCount">0 товаров</h3>
+                    </div>
+                    <div class="toolbar" style="gap: 12px; flex-wrap: wrap;">
+                        <input id="searchInput" class="input" placeholder="🔍 Поиск..." style="width: 220px;">
+                        <select id="productsSort" class="input" onchange="ProductsPage.sortProducts()" style="width: 180px;">
+                            <option value="name_asc">По названию (А-Я)</option>
+                            <option value="name_desc">По названию (Я-А)</option>
+                            <option value="price_asc">По цене ↑</option>
+                            <option value="price_desc">По цене ↓</option>
+                            <option value="created_desc">Сначала новые</option>
+                            <option value="created_asc">Сначала старые</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="ProductsPage.openCreate()">➕ Новый товар</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="productsTableContainer" style="flex: 1; overflow-y: auto;">
+                <table class="table" id="productsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Фото</th>
+                            <th>Артикул</th>
+                            <th>Название</th>
+                            <th>Категория</th>
+                            <th>Остаток</th>
+                            <th>Цена</th>
+                            <th>Статус</th>
+                            <th style="width: 120px;">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsTableBody">
+                        <!-- Товары рендерятся здесь -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</main>
+
+<!-- Подключаем модальные окна товаров -->
+<link rel="import" href="/components/product-modals.html" id="productModalsImport">
+
+<script>
+// Инициализация страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // Загружаем модальные окна
+    fetch('/components/product-modals.html')
+        .then(res => res.text())
+        .then(html => {
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+            
+            // Копируем стили
+            const styles = temp.querySelectorAll('style');
+            styles.forEach(style => document.head.appendChild(style.cloneNode(true)));
+            
+            // Копируем модальные окна в body
+            const modals = temp.querySelectorAll('#productFormModal, #productViewModal, #categorySelectModal, #locationViewModal');
+            modals.forEach(modal => document.body.appendChild(modal.cloneNode(true)));
+            
+            // Выполняем скрипты из модальных окон
+            const scripts = temp.querySelectorAll('script');
+            scripts.forEach(script => {
+                const newScript = document.createElement('script');
+                if (script.src) {
+                    newScript.src = script.src;
+                } else {
+                    newScript.textContent = script.textContent;
+                }
+                document.body.appendChild(newScript);
+            });
+            
+            // Инициализируем страницу после загрузки модальных окон
+            ProductsPage.init();
+        })
+        .catch(err => {
+            console.error('Failed to load product modals:', err);
+            ProductsPage.init();
+        });
+});
+
+window.ProductsPage = {
+    categories: [],
+    products: [],
+    filteredProducts: [],
+    stocksByProduct: {},
+    selectedCategoryId: null,
+    currentSort: 'name_asc',
+
+    async init() {
+        console.log('[ProductsPage] init...');
+        
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/index.html';
+            return;
+        }
+
+        document.getElementById('usernameLabel').textContent = localStorage.getItem('username') || 'user';
+        document.getElementById('logoutBtn').onclick = () => {
+            localStorage.clear();
+            window.location.href = '/index.html';
+        };
+
+        // Поиск товаров
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            this.searchQuery = e.target.value;
+            this.filterProducts();
+        });
+
+        await this.loadCategories();
+        await this.loadProducts();
+        this.renderCategoryTree();
+        this.renderProducts();
+    },
+
+    async loadCategories() {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/api/categories', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const page = await res.json();
+            this.categories = page.content || [];
+        } catch (e) {
+            console.error('[ProductsPage] Failed to load categories:', e);
+        }
+    },
+
+    async loadProducts() {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/api/products?page=0&size=1000', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const page = await res.json();
+            this.products = page.content || [];
+            this.filteredProducts = [...this.products];
+            
+            // Загружаем остатки для всех товаров
+            await this.loadAllStocks();
+        } catch (e) {
+            console.error('[ProductsPage] Failed to load products:', e);
+        }
+    },
+
+    async loadAllStocks() {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/api/stocks', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const stocks = await res.json();
+            
+            // Группируем остатки по товарам
+            this.stocksByProduct = {};
+            stocks.forEach(s => {
+                if (!this.stocksByProduct[s.productId]) {
+                    this.stocksByProduct[s.productId] = 0;
+                }
+                this.stocksByProduct[s.productId] += s.qty;
+            });
+            
+            // Добавляем общий остаток к каждому товару
+            this.products.forEach(p => {
+                p.totalQty = this.stocksByProduct[p.id] || 0;
+            });
+        } catch (e) {
+            console.error('[ProductsPage] Failed to load stocks:', e);
+        }
+    },
+
+    renderCategoryTree() {
+        const container = document.getElementById('categoryTree');
+        const roots = this.categories.filter(c => !c.parentId);
+        
+        let html = `
+            <div class="category-tree-item ${this.selectedCategoryId === null ? 'selected' : ''}" 
+                 onclick="ProductsPage.selectCategory(null)">
+                <span class="icon">📂</span>
+                <span class="name">Все категории</span>
+            </div>
+        `;
+        
+        roots.forEach(root => {
+            html += this.renderCategoryNode(root);
+        });
+        
+        container.innerHTML = html;
+    },
+
+    renderCategoryNode(node, level = 0) {
+        const children = this.categories.filter(c => c.parentId === node.id);
+        const hasChildren = children.length > 0;
+        const isSelected = this.selectedCategoryId === node.id;
+        const indent = level * 16;
+
+        let html = `
+            <div class="category-tree-item ${isSelected ? 'selected' : ''}" 
+                 style="padding-left: ${indent + 8}px;"
+                 onclick="ProductsPage.selectCategory(${node.id})">
+                <span class="icon">${hasChildren ? '📁' : '📄'}</span>
+                <span class="name">${node.name}</span>
+            </div>
+        `;
+
+        children.forEach(child => {
+            html += this.renderCategoryNode(child, level + 1);
+        });
+
+        return html;
+    },
+
+    selectCategory(categoryId) {
+        this.selectedCategoryId = categoryId;
+        
+        const selectedName = categoryId === null 
+            ? 'Все категории' 
+            : this.categories.find(c => c.id === categoryId)?.name || 'Неизвестно';
+        
+        document.getElementById('selectedCategoryName').textContent = selectedName;
+        document.getElementById('productsSectionTitle').textContent = categoryId === null ? 'Все товары' : selectedName;
+        
+        this.renderCategoryTree();
+        this.filterProducts();
+    },
+
+    filterProducts() {
+        const searchQuery = (document.getElementById('searchInput').value || '').toLowerCase();
+        
+        this.filteredProducts = this.products.filter(p => {
+            // Фильтр по категории
+            if (this.selectedCategoryId !== null && p.categoryId !== this.selectedCategoryId) {
+                return false;
+            }
+            
+            // Поиск по названию и артикулу
+            if (searchQuery) {
+                const matchName = p.name.toLowerCase().includes(searchQuery);
+                const matchSku = p.sku.toLowerCase().includes(searchQuery);
+                const matchBarcode = p.barcode && p.barcode.toLowerCase().includes(searchQuery);
+                if (!matchName && !matchSku && !matchBarcode) {
+                    return false;
+                }
+            }
+            
+            return true;
+        });
+
+        this.sortProducts();
+    },
+
+    sortProducts() {
+        const sort = document.getElementById('productsSort').value;
+        
+        this.filteredProducts.sort((a, b) => {
+            switch(sort) {
+                case 'name_asc': return a.name.localeCompare(b.name);
+                case 'name_desc': return b.name.localeCompare(a.name);
+                case 'price_asc': return (a.costPrice || 0) - (b.costPrice || 0);
+                case 'price_desc': return (b.costPrice || 0) - (a.costPrice || 0);
+                case 'created_desc': return (b.id || 0) - (a.id || 0);
+                case 'created_asc': return (a.id || 0) - (b.id || 0);
+                default: return 0;
+            }
+        });
+
+        this.renderProducts();
+    },
+
+    renderProducts() {
+        const tbody = document.getElementById('productsTableBody');
+        const countEl = document.getElementById('productsCount');
+        
+        countEl.textContent = `${this.filteredProducts.length} товаров`;
+
+        if (this.filteredProducts.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="muted" style="padding: 48px; text-align: center;">
+                        📦 Нет товаров
+                        ${this.selectedCategoryId !== null ? '<br>Выбранная категория пуста' : ''}
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = this.filteredProducts.map(p => `
+            <tr onclick="ProductsPage.viewProduct(${p.id})" style="cursor: pointer;">
+                <td>
+                    ${p.imageUrl
+                        ? `<img src="${p.imageUrl}" alt="" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                           <div style="width: 50px; height: 50px; background: #f0f1f7; border-radius: 4px; display: none; align-items: center; justify-content: center;">📦</div>`
+                        : '<div style="width: 50px; height: 50px; background: #f0f1f7; border-radius: 4px; display: flex; align-items: center; justify-content: center;">📦</div>'
+                    }
+                </td>
+                <td><strong>${p.sku}</strong></td>
+                <td>${p.name}</td>
+                <td>${p.categoryName || '—'}</td>
+                <td>
+                    <span class="pill ${p.totalQty > 0 ? 'pill-success' : 'pill-muted'}">
+                        ${p.totalQty !== undefined ? p.totalQty + ' шт.' : '—'}
+                    </span>
+                </td>
+                <td>${this.formatPrice(p.costPrice)}</td>
+                <td>
+                    <span class="pill ${p.totalQty <= (p.minStock || 0) ? 'pill-warning' : p.isActive ? 'pill-success' : 'pill-muted'}">
+                        ${p.totalQty <= (p.minStock || 0) ? '⚠️ Мало' : p.isActive ? '✅ В норме' : '❌ Неактивен'}
+                    </span>
+                </td>
+                <td onclick="event.stopPropagation()">
+                    <button class="btn btn-sm btn-secondary" onclick="ProductsPage.viewProduct(${p.id})">👁</button>
+                    <button class="btn btn-sm btn-warning" onclick="ProductsPage.editProduct(${p.id})">✏️</button>
+                </td>
+            </tr>
+        `).join('');
+    },
+
+    formatPrice(price) {
+        return new Intl.NumberFormat('ru-RU', { 
+            style: 'currency', 
+            currency: 'RUB',
+            minimumFractionDigits: 0
+        }).format(price || 0);
+    },
+
+    viewProduct(id) {
+        if (window.ProductView) {
+            ProductView.open(id);
+        }
+    },
+
+    editProduct(id) {
+        if (window.ProductForm) {
+            ProductForm.open('edit', id);
+        }
+    },
+
+    openCreate() {
+        if (window.ProductForm) {
+            ProductForm.open('create');
+        }
+    },
+
+    refresh() {
+        this.loadProducts().then(() => {
+            this.filterProducts();
+        });
+    },
+
+    filterCategories() {
+        const query = document.getElementById('categorySearch').value.toLowerCase();
+        const container = document.getElementById('categoryTree');
+        
+        const filtered = this.categories.filter(c => 
+            !query || c.name.toLowerCase().includes(query)
+        );
+
+        const roots = filtered.filter(c => !c.parentId);
+        
+        let html = `
+            <div class="category-tree-item ${this.selectedCategoryId === null ? 'selected' : ''}" 
+                 onclick="ProductsPage.selectCategory(null)">
+                <span class="icon">📂</span>
+                <span class="name">Все категории</span>
+            </div>
+        `;
+        
+        roots.forEach(root => {
+            html += this.renderCategoryNode(root);
+        });
+        
+        container.innerHTML = html;
+    },
+
+    toggleCategoryTree() {
+        // Можно добавить сворачивание/разворачивание дерева
+        console.log('Toggle category tree');
+    }
+};
+
+// Стили для дерева категорий
+const categoryTreeStyles = document.createElement('style');
+categoryTreeStyles.textContent = `
+    .category-tree-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background 0.2s;
+        margin: 2px 0;
+    }
+
+    .category-tree-item:hover {
+        background: #e9ecef;
+    }
+
+    .category-tree-item.selected {
+        background: #e3f2fd;
+    }
+
+    .category-tree-item .icon {
+        margin-right: 8px;
+        font-size: 16px;
+    }
+
+    .category-tree-item .name {
+        flex: 1;
+        font-size: 14px;
+    }
+
+    .products-layout {
+        padding: 24px;
+    }
+
+    /* Статусы остатков */
+    .pill-warning {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    /* Адаптивность для toolbar */
+    .section-title .toolbar {
+        justify-content: flex-end;
+    }
+
+    @media (max-width: 900px) {
+        .section-title > div {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .section-title .toolbar {
+            justify-content: stretch;
+        }
+
+        .section-title .toolbar .input,
+        .section-title .toolbar select,
+        .section-title .toolbar button {
+            flex: 1;
+            min-width: 0;
+        }
+    }
+
+    /* Исправление для таблицы - убираем sticky thead */
+    #productsTable thead {
+        position: static;
+        background: #f0f1f7;
+    }
+
+    #productsTableContainer {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+    }
+
+    #productsTable thead tr {
+        background: #f0f1f7;
+    }
+
+    #productsTable tbody tr:hover {
+        background: #f8f9fa;
+    }
+
+    /* Modal overlay должен быть выше всего */
+    .modal-overlay {
+        z-index: 10000 !important;
+    }
+
+    .modal {
+        z-index: 10001 !important;
+    }
+
+    @media (max-width: 1024px) {
+        .products-layout {
+            grid-template-columns: 1fr !important;
+        }
+
+        .card:first-child {
+            display: none;
+        }
+    }
+`;
+document.head.appendChild(categoryTreeStyles);
+</script>
+
+</body>
+</html>

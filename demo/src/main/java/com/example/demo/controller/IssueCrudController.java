@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.dto.doc.IssueDtos;
 import com.example.demo.entity.*;
 import com.example.demo.entity.enums.DocStatus;
+import com.example.demo.entity.enums.IssueReason;
 import com.example.demo.exception.NotFoundException;
 import com.example.demo.repository.*;
 import com.example.demo.util.NumberGenerator;
@@ -26,6 +27,8 @@ public class IssueCrudController {
     private final ProductRepository productRepository;
     private final BatchRepository batchRepository;
     private final UserRepository userRepository;
+    private final WarehouseRepository warehouseRepository;
+    private final LocationRepository locationRepository;
     private final NumberGenerator numberGenerator;
 
     @GetMapping
@@ -54,11 +57,37 @@ public class IssueCrudController {
                 ? numberGenerator.next("I")
                 : dto.number();
 
+        // Находим targetWarehouse и targetLocation до создания Issue
+        Warehouse targetWarehouse = null;
+        if (dto.targetWarehouseId() != null) {
+            targetWarehouse = warehouseRepository.findById(dto.targetWarehouseId())
+                    .orElseThrow(() -> new NotFoundException("Target warehouse not found: " + dto.targetWarehouseId()));
+        }
+
+        Location targetLocation = null;
+        if (dto.targetLocationId() != null) {
+            targetLocation = locationRepository.findById(dto.targetLocationId())
+                    .orElseThrow(() -> new NotFoundException("Target location not found: " + dto.targetLocationId()));
+        }
+
+        // Устанавливаем reasonCode если передан (для TRANSFER_OUT и т.д.)
+        IssueReason reasonCode = IssueReason.DAMAGE; // значение по умолчанию
+        if (dto.reasonCode() != null && !dto.reasonCode().isBlank()) {
+            try {
+                reasonCode = IssueReason.valueOf(dto.reasonCode());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid reasonCode: " + dto.reasonCode());
+            }
+        }
+
         Issue doc = Issue.builder()
                 .number(number)
                 .createdBy(createdBy)
                 .reason(dto.reason())
                 .status(DocStatus.DRAFT)
+                .reasonCode(reasonCode)
+                .targetWarehouse(targetWarehouse)
+                .targetLocation(targetLocation)
                 .build();
 
         issueRepository.save(doc);
@@ -195,7 +224,11 @@ public class IssueCrudController {
                 d.getReason(),
                 d.getReasonCode() != null ? d.getReasonCode().name() : null,
                 d.getCreatedAt(),
-                itemViews
+                itemViews,
+                d.getTargetWarehouse() != null ? d.getTargetWarehouse().getId() : null,
+                d.getTargetWarehouse() != null ? d.getTargetWarehouse().getName() : null,
+                d.getTargetLocation() != null ? d.getTargetLocation().getId() : null,
+                d.getTargetLocation() != null ? d.getTargetLocation().getCode() : null
         );
     }
 

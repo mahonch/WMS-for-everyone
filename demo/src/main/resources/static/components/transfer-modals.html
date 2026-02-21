@@ -1,0 +1,760 @@
+<!-- ============================================
+     МОДАЛЬНЫЕ ОКНА ПЕРЕМЕЩЕНИЙ
+     Переиспользуемые компоненты для перемещений
+     ============================================ -->
+
+<!-- МОДАЛЬНОЕ ОКНО СОЗДАНИЯ/РЕДАКТИРОВАНИЯ ПЕРЕМЕЩЕНИЯ -->
+<div id="transferFormModal" class="modal-overlay hidden">
+    <div class="modal modal-xl">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow" id="transferFormTitle">Перемещение</p>
+                <h3 id="transferFormHeader">Создание перемещения</h3>
+            </div>
+            <button class="btn btn-secondary" onclick="TransferForm.close()">✕ Закрыть</button>
+        </div>
+
+        <form id="transferForm" onsubmit="TransferForm.handleSubmit(event)">
+            <input type="hidden" id="transferId">
+
+            <!-- ИНФО БЛОК -->
+            <div class="card card-inline" style="margin-bottom: 16px;">
+                <div class="grid4">
+                    <div class="info-item">
+                        <span class="label">Склад <span class="required">*</span></span>
+                        <div class="input-row">
+                            <input type="text" id="transferWarehouse" class="input" readonly placeholder="Выберите склад">
+                            <input type="hidden" id="transferWarehouseId">
+                            <button type="button" class="btn btn-secondary" onclick="TransferForm.selectWarehouse()">🔍</button>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Статус</span>
+                        <span id="transferStatus" class="pill pill-draft">📝 Черновик</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Дата</span>
+                        <span id="transferDate">—</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Создал</span>
+                        <span id="transferCreatedBy">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ПОЗИЦИИ -->
+            <div class="card" style="margin-bottom: 16px;">
+                <div class="section-title">
+                    <h4>Позиции для перемещения</h4>
+                    <div class="toolbar">
+                        <button type="button" class="btn btn-primary" onclick="TransferForm.openProductSelector()">➕ Добавить товар</button>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table class="table" id="transferItemsTable">
+                        <thead>
+                        <tr>
+                            <th>№</th>
+                            <th>Товар</th>
+                            <th>Откуда (локация)</th>
+                            <th>Кол-во</th>
+                            <th>Куда (локация)</th>
+                            <th style="width: 100px;"></th>
+                        </tr>
+                        </thead>
+                        <tbody id="transferItemsBody">
+                            <tr><td colspan="6" class="muted" style="padding: 2rem; text-align: center;">Нет позиций</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="total-row">
+                    <span>Итого к перемещению:</span>
+                    <strong id="transferTotalQty">0</strong> ед.
+                </div>
+            </div>
+
+            <!-- КНОПКИ -->
+            <div class="toolbar" style="justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn btn-secondary" onclick="TransferForm.close()">Отмена</button>
+                <button type="button" class="btn btn-danger" id="btnDeleteTransfer" onclick="TransferForm.delete()">🗑️ Удалить</button>
+                <button type="button" class="btn btn-success" id="btnCommitTransfer" onclick="TransferForm.commit()">✅ Провести</button>
+                <button type="submit" class="btn btn-primary" id="btnSaveTransfer">💾 Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ВЫБОРА ТОВАРА ДЛЯ ПЕРЕМЕЩЕНИЯ -->
+<div id="transferProductSelectModal" class="modal-overlay hidden">
+    <div class="modal" style="max-width: 1100px; width: 95%;">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow">Выбор товара</p>
+                <h3>📦 Добавить товар в перемещение</h3>
+            </div>
+            <button class="btn btn-secondary" onclick="TransferProductSelector.close()">✕ Закрыть</button>
+        </div>
+
+        <!-- Фильтры -->
+        <div class="card" style="margin-bottom: 16px;">
+            <div class="toolbar" style="gap: 12px; flex-wrap: wrap;">
+                <input type="text" id="transferProductSearch" class="input" placeholder="🔍 Поиск по названию, SKU..." style="flex: 1; min-width: 250px;" oninput="TransferProductSelector.search()">
+                <select id="transferProductCategoryFilter" class="input" style="width: 200px;" onchange="TransferProductSelector.filter()">
+                    <option value="">Все категории</option>
+                </select>
+                <select id="transferProductSort" class="input" style="width: 200px;" onchange="TransferProductSelector.sort()">
+                    <option value="name_asc">По названию (А-Я)</option>
+                    <option value="name_desc">По названию (Я-А)</option>
+                    <option value="price_asc">По цене (возрастание)</option>
+                    <option value="price_desc">По цене (убывание)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Дерево категорий -->
+        <div style="display: grid; grid-template-columns: 280px 1fr; gap: 16px; max-height: 500px;">
+            <aside class="card" style="overflow-y: auto;">
+                <div class="section-title">
+                    <h4>📁 Категории</h4>
+                </div>
+                <div id="transferProductCategoryTree" style="padding: 8px;">
+                    <!-- Категории -->
+                </div>
+            </aside>
+
+            <div class="card" style="overflow-y: auto;">
+                <div class="section-title">
+                    <h4>📦 Товары с остатками</h4>
+                    <span class="muted" id="transferProductCount">0 товаров</span>
+                </div>
+                <div class="table-wrapper">
+                    <table class="table" id="transferProductsTable">
+                        <thead>
+                        <tr>
+                            <th>Фото</th>
+                            <th>Артикул</th>
+                            <th>Название</th>
+                            <th>Доступно</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody id="transferProductsBody">
+                            <!-- Товары -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ВЫБОРА СКЛАДА -->
+<div id="transferWarehouseSelectModal" class="modal-overlay hidden">
+    <div class="modal" style="max-width: 700px;">
+        <div class="section-title">
+            <h3>🏢 Выбор склада</h3>
+            <button class="btn btn-secondary" onclick="TransferWarehouseSelector.close()">✕ Закрыть</button>
+        </div>
+
+        <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
+            <table class="table" id="transferWarehousesTable">
+                <thead>
+                <tr>
+                    <th>Название</th>
+                    <th>Адрес</th>
+                </tr>
+                </thead>
+                <tbody id="transferWarehousesBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Стили для модальных окон перемещений */
+.pill-draft {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.pill-committed {
+    background: #d4edda;
+    color: #155724;
+}
+
+/* Стили для дерева категорий */
+.transfer-category-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s;
+    margin: 2px 0;
+}
+
+.transfer-category-item:hover {
+    background: #e9ecef;
+}
+
+.transfer-category-item.selected {
+    background: #e3f2fd;
+}
+
+.transfer-category-item .icon {
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+.transfer-category-item .name {
+    flex: 1;
+    font-size: 14px;
+}
+</style>
+
+<script>
+// ============================================
+// TRANSFER FORM - Создание/редактирование перемещения
+// ============================================
+window.TransferForm = {
+    items: [],
+    currentSourceLocationCallback: null,
+    currentDestLocationCallback: null,
+    warehouseId: null,
+
+    open(transferId = null) {
+        this.items = [];
+        this.warehouseId = null;
+        const modal = document.getElementById("transferFormModal");
+        const form = document.getElementById("transferForm");
+        
+        if (transferId) {
+            document.getElementById("transferFormHeader").textContent = "Редактирование перемещения";
+            document.getElementById("transferFormTitle").textContent = "Перемещение";
+            this.loadTransfer(transferId);
+        } else {
+            document.getElementById("transferFormHeader").textContent = "Создание перемещения";
+            document.getElementById("transferFormTitle").textContent = "Новое перемещение";
+            form.reset();
+            document.getElementById("transferId").value = "";
+            document.getElementById("transferWarehouse").value = "";
+            document.getElementById("transferWarehouseId").value = "";
+            document.getElementById("transferStatus").textContent = "📝 Черновик";
+            document.getElementById("transferStatus").className = "pill pill-draft";
+            document.getElementById("transferDate").textContent = new Date().toLocaleString("ru-RU");
+            document.getElementById("transferCreatedBy").textContent = localStorage.getItem("username") || "—";
+            document.getElementById("btnDeleteTransfer").style.display = "none";
+            document.getElementById("btnCommitTransfer").style.display = "none";
+            document.getElementById("btnSaveTransfer").style.display = "inline-block";
+            this.items = [];
+            this.renderItems();
+        }
+        
+        modal.classList.remove("hidden");
+    },
+
+    close() {
+        document.getElementById("transferFormModal").classList.add("hidden");
+    },
+
+    async loadTransfer(id) {
+        try {
+            const transfer = await api("GET", `/api/transfers/${id}`);
+            
+            document.getElementById("transferId").value = transfer.id;
+            document.getElementById("transferStatus").textContent = transfer.status === "COMMITTED" ? "✅ Проведён" : "📝 Черновик";
+            document.getElementById("transferStatus").className = `pill ${transfer.status === "COMMITTED" ? "pill-committed" : "pill-draft"}`;
+            document.getElementById("transferDate").textContent = fmtDate(transfer.createdAt);
+            document.getElementById("transferCreatedBy").textContent = transfer.createdByName || "—";
+            
+            // Сохраняем склад из первой позиции
+            if (transfer.items && transfer.items.length > 0) {
+                this.warehouseId = transfer.items[0].sourceWarehouseId;
+                if (this.warehouseId) {
+                    const warehouse = await api("GET", `/api/warehouses/${this.warehouseId}`);
+                    document.getElementById("transferWarehouse").value = warehouse.name;
+                    document.getElementById("transferWarehouseId").value = warehouse.id;
+                }
+            }
+            
+            this.items = transfer.items || [];
+            this.renderItems();
+            
+            const isDraft = transfer.status === "DRAFT";
+            document.getElementById("btnDeleteTransfer").style.display = isDraft ? "inline-block" : "none";
+            document.getElementById("btnCommitTransfer").style.display = isDraft ? "inline-block" : "none";
+            document.getElementById("btnSaveTransfer").style.display = isDraft ? "inline-block" : "none";
+            
+        } catch (e) {
+            alertBox("error", "Ошибка загрузки: " + e.message);
+        }
+    },
+
+    selectWarehouse() {
+        TransferWarehouseSelector.open((warehouse) => {
+            document.getElementById("transferWarehouse").value = warehouse.name;
+            document.getElementById("transferWarehouseId").value = warehouse.id;
+            this.warehouseId = warehouse.id;
+        });
+    },
+
+    openProductSelector() {
+        if (!this.warehouseId) {
+            alertBox("error", "Сначала выберите склад");
+            return;
+        }
+        TransferProductSelector.open((product, location) => {
+            this.addProduct(product, location);
+        }, this.warehouseId);
+    },
+
+    addProduct(product, location) {
+        this.items.push({
+            productId: product.id,
+            productName: product.name,
+            productSku: product.sku,
+            sourceLocationId: location.id,
+            sourceLocationCode: location.code,
+            destLocationId: null,
+            destLocationCode: null,
+            qty: 1,
+            maxQty: location.qty || 100
+        });
+        this.renderItems();
+    },
+
+    renderItems() {
+        const tbody = document.getElementById("transferItemsBody");
+        
+        if (this.items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding: 2rem; text-align: center;">Нет позиций</td></tr>';
+            document.getElementById("transferTotalQty").textContent = "0";
+            return;
+        }
+
+        let totalQty = 0;
+        tbody.innerHTML = this.items.map((item, index) => {
+            totalQty += item.qty;
+            return `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>
+                        <strong>${item.productName}</strong><br>
+                        <span class="muted" style="font-size: 12px;">${item.productSku}</span>
+                    </td>
+                    <td>
+                        <span class="muted" style="font-size: 12px;">${item.sourceLocationCode || 'Не выбрана'}</span>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="TransferForm.selectSourceLocation(${index})">🗺️</button>
+                    </td>
+                    <td>
+                        <input type="number" min="1" max="${item.maxQty}" value="${item.qty}" 
+                               onchange="TransferForm.updateItem(${index}, 'qty', this.value)"
+                               class="input" style="width: 80px;">
+                    </td>
+                    <td>
+                        <span class="muted" style="font-size: 12px;">${item.destLocationCode || 'Не выбрана'}</span>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="TransferForm.selectDestLocation(${index})">🗺️</button>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="TransferForm.removeItem(${index})">✕</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        document.getElementById("transferTotalQty").textContent = totalQty;
+    },
+
+    updateItem(index, field, value) {
+        this.items[index][field] = field === 'qty' ? parseInt(value) || 1 : value;
+        this.renderItems();
+    },
+
+    removeItem(index) {
+        this.items.splice(index, 1);
+        this.renderItems();
+    },
+
+    selectSourceLocation(index) {
+        this.currentSourceLocationCallback = index;
+        
+        if (window.LocationExplorer) {
+            LocationExplorer.open((location) => {
+                if (this.currentSourceLocationCallback !== null) {
+                    this.items[this.currentSourceLocationCallback].sourceLocationId = location.id;
+                    this.items[this.currentSourceLocationCallback].sourceLocationCode = location.code;
+                    this.renderItems();
+                }
+            }, this.warehouseId);
+        }
+    },
+
+    selectDestLocation(index) {
+        this.currentDestLocationCallback = index;
+        
+        if (window.LocationExplorer) {
+            LocationExplorer.open((location) => {
+                if (this.currentDestLocationCallback !== null) {
+                    this.items[this.currentDestLocationCallback].destLocationId = location.id;
+                    this.items[this.currentDestLocationCallback].destLocationCode = location.code;
+                    this.renderItems();
+                }
+            }, this.warehouseId);
+        }
+    },
+
+    async handleSubmit(event) {
+        event.preventDefault();
+        await this.save();
+    },
+
+    async save() {
+        if (this.items.length === 0) {
+            alertBox("error", "Добавьте хотя бы одну позицию");
+            return;
+        }
+
+        const data = {
+            items: this.items.map(item => ({
+                productId: item.productId,
+                qty: item.qty,
+                sourceLocationId: item.sourceLocationId,
+                destLocationId: item.destLocationId
+            }))
+        };
+
+        try {
+            const transferId = document.getElementById("transferId").value;
+            if (transferId) {
+                await api("PUT", `/api/transfers/${transferId}`, data);
+                alertBox("success", "Перемещение обновлено");
+            } else {
+                const created = await api("POST", "/api/transfers", data);
+                alertBox("success", "Перемещение создано: " + created.number);
+                document.getElementById("transferId").value = created.id;
+                this.loadTransfer(created.id);
+                return;
+            }
+            
+            this.close();
+            if (window.TransfersPage) TransfersPage.refresh();
+        } catch (e) {
+            console.error('[TransferForm] Save error:', e);
+        }
+    },
+
+    async delete() {
+        const transferId = document.getElementById("transferId").value;
+        if (!transferId || !confirm("Удалить документ?")) return;
+
+        try {
+            await api("DELETE", `/api/transfers/${transferId}`);
+            alertBox("success", "Перемещение удалено");
+            this.close();
+            if (window.TransfersPage) TransfersPage.refresh();
+        } catch (e) {
+            console.error('[TransferForm] Delete error:', e);
+        }
+    },
+
+    async commit() {
+        const transferId = document.getElementById("transferId").value;
+        if (!transferId) return;
+
+        // Проверяем, что у всех позиций есть локации
+        const missingSource = this.items.some(i => !i.sourceLocationId);
+        const missingDest = this.items.some(i => !i.destLocationId);
+        
+        if (missingSource) {
+            alertBox("error", "Укажите локацию 'Откуда' для всех позиций");
+            return;
+        }
+        if (missingDest) {
+            alertBox("error", "Укажите локацию 'Куда' для всех позиций");
+            return;
+        }
+
+        if (!confirm("Провести перемещение?")) return;
+
+        try {
+            await api("POST", `/api/transfers/${transferId}/commit`, {});
+            alertBox("success", "Перемещение проведено");
+            this.close();
+            if (window.TransfersPage) TransfersPage.refresh();
+        } catch (e) {
+            console.error('[TransferForm] Commit error:', e);
+        }
+    }
+};
+
+// ============================================
+// TRANSFER PRODUCT SELECTOR - Выбор товара для перемещения
+// ============================================
+window.TransferProductSelector = {
+    callback: null,
+    filteredProducts: [],
+    selectedCategoryId: null,
+    currentSort: 'name_asc',
+    productsWithStocks: [],
+    warehouseId: null,
+
+    open(callback, warehouseId = null) {
+        this.callback = callback;
+        this.warehouseId = warehouseId;
+        this.selectedCategoryId = null;
+        this.currentSort = 'name_asc';
+        document.getElementById("transferProductSort").value = 'name_asc';
+        this.loadProductsWithStocks();
+        this.renderCategoryTree();
+        this.renderCategoryFilter();
+        document.getElementById("transferProductSelectModal").classList.remove("hidden");
+    },
+
+    close() {
+        document.getElementById("transferProductSelectModal").classList.add("hidden");
+    },
+
+    async loadProductsWithStocks() {
+        try {
+            console.log('[TransferProductSelector] Loading products for warehouse:', this.warehouseId);
+            
+            // Загружаем все товары
+            const productsPage = await api("GET", "/api/products?page=0&size=1000");
+            const products = productsPage.content || [];
+            console.log('[TransferProductSelector] Loaded products:', products.length);
+            
+            // Загружаем все остатки
+            const stocksPage = await api("GET", "/api/stocks?page=0&size=2000");
+            let stocks = stocksPage.content || [];
+            console.log('[TransferProductSelector] Loaded stocks:', stocks.length);
+            
+            // Фильтруем по складу если указан
+            if (this.warehouseId) {
+                const beforeFilter = stocks.length;
+                stocks = stocks.filter(s => s.warehouseId == this.warehouseId);
+                console.log('[TransferProductSelector] Filtered stocks by warehouse:', beforeFilter, '->', stocks.length);
+            }
+            
+            // Группируем остатки по товарам и локациям
+            this.productsWithStocks = products.map(p => {
+                const productStocks = stocks.filter(s => s.productId === p.id && s.qty > 0);
+                return {
+                    ...p,
+                    totalQty: productStocks.reduce((sum, s) => sum + s.qty, 0),
+                    locations: productStocks
+                };
+            }).filter(p => p.totalQty > 0); // Только товары с остатками
+            
+            console.log('[TransferProductSelector] Products with stock:', this.productsWithStocks.length);
+            
+            this.filteredProducts = [...this.productsWithStocks];
+            this.renderProducts();
+        } catch (e) {
+            console.error('[TransferProductSelector] Load error:', e);
+        }
+    },
+
+    renderCategoryFilter() {
+        const select = document.getElementById("transferProductCategoryFilter");
+        // Загружаем категории если есть
+        api("GET", "/api/categories?page=0&size=100").then(page => {
+            const categories = page.content || [];
+            select.innerHTML = '<option value="">Все категории</option>' +
+                categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        }).catch(() => {});
+    },
+
+    renderCategoryTree() {
+        const container = document.getElementById("transferProductCategoryTree");
+        api("GET", "/api/categories?page=0&size=100").then(page => {
+            const categories = page.content || [];
+            const roots = categories.filter(c => !c.parentId);
+            
+            let html = `
+                <div class="transfer-category-item ${this.selectedCategoryId === null ? 'selected' : ''}" 
+                     onclick="TransferProductSelector.selectCategory(null)">
+                    <span class="icon">📂</span>
+                    <span class="name">Все категории</span>
+                </div>
+            `;
+            
+            roots.forEach(root => {
+                html += this.renderCategoryNode(root, categories);
+            });
+            
+            container.innerHTML = html;
+        }).catch(() => {});
+    },
+
+    renderCategoryNode(node, all, level = 0) {
+        const children = all.filter(c => c.parentId === node.id);
+        const isSelected = this.selectedCategoryId === node.id;
+        const indent = level * 16;
+
+        let html = `
+            <div class="transfer-category-item ${isSelected ? 'selected' : ''}" 
+                 style="padding-left: ${indent + 8}px;"
+                 onclick="TransferProductSelector.selectCategory(${node.id})">
+                <span class="icon">${children.length > 0 ? '📁' : '📄'}</span>
+                <span class="name">${node.name}</span>
+            </div>
+        `;
+
+        children.forEach(child => {
+            html += this.renderCategoryNode(child, all, level + 1);
+        });
+
+        return html;
+    },
+
+    selectCategory(categoryId) {
+        this.selectedCategoryId = categoryId;
+        document.getElementById("transferProductCategoryFilter").value = categoryId || '';
+        this.filter();
+        this.renderCategoryTree();
+    },
+
+    filter() {
+        const searchQuery = (document.getElementById("transferProductSearch").value || "").toLowerCase();
+        const categoryFilter = document.getElementById("transferProductCategoryFilter").value;
+        
+        this.filteredProducts = this.productsWithStocks.filter(p => {
+            if (categoryFilter && p.categoryId != categoryFilter) return false;
+            
+            if (searchQuery) {
+                const matchName = p.name.toLowerCase().includes(searchQuery);
+                const matchSku = p.sku.toLowerCase().includes(searchQuery);
+                if (!matchName && !matchSku) return false;
+            }
+            
+            return true;
+        });
+
+        this.sort();
+    },
+
+    sort() {
+        const sort = document.getElementById("transferProductSort").value;
+        
+        this.filteredProducts.sort((a, b) => {
+            switch(sort) {
+                case 'name_asc': return a.name.localeCompare(b.name);
+                case 'name_desc': return b.name.localeCompare(a.name);
+                case 'price_asc': return (a.costPrice || 0) - (b.costPrice || 0);
+                case 'price_desc': return (b.costPrice || 0) - (a.costPrice || 0);
+                default: return 0;
+            }
+        });
+
+        this.renderProducts();
+    },
+
+    renderProducts() {
+        const tbody = document.getElementById("transferProductsBody");
+        document.getElementById("transferProductCount").textContent = `${this.filteredProducts.length} товаров`;
+
+        if (this.filteredProducts.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="muted" style="padding: 2rem; text-align: center;">Нет товаров с остатками</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = this.filteredProducts.map(p => {
+            // Показываем первую локацию с остатком
+            const mainLocation = p.locations[0];
+            return `
+                <tr>
+                    <td>
+                        ${p.imageUrl 
+                            ? `<img src="${p.imageUrl}" alt="" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">`
+                            : '<div style="width: 40px; height: 40px; background: #f0f1f7; border-radius: 4px; display: flex; align-items: center; justify-content: center;">📦</div>'
+                        }
+                    </td>
+                    <td><strong>${p.sku}</strong></td>
+                    <td>${p.name}</td>
+                    <td>
+                        <strong>${p.totalQty}</strong> ед.<br>
+                        <span class="muted" style="font-size: 12px;">в ${p.locations.length} яч.</span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="TransferProductSelector.selectProduct(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.sku}', ${mainLocation ? mainLocation.id : 'null'}, '${mainLocation ? mainLocation.code.replace(/'/g, "\\'") : ''}', ${mainLocation ? mainLocation.qty : 0})">
+                            ➕
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    },
+
+    selectProduct(id, name, sku, locationId, locationCode, locationQty) {
+        if (this.callback) {
+            this.callback(
+                { id, name, sku },
+                { id: locationId, code: locationCode, qty: locationQty }
+            );
+        }
+        this.close();
+    },
+
+    search() {
+        this.filter();
+    }
+};
+
+// ============================================
+// TRANSFER WAREHOUSE SELECTOR - Выбор склада
+// ============================================
+window.TransferWarehouseSelector = {
+    callback: null,
+    warehouses: [],
+
+    async open(callback) {
+        this.callback = callback;
+        const modal = document.getElementById("transferWarehouseSelectModal");
+        if (!modal) {
+            console.error('[TransferWarehouseSelector] Modal not found!');
+            alertBox("error", "Модальное окно не загружено. Обновите страницу.");
+            return;
+        }
+        await this.loadWarehouses();
+        modal.classList.remove("hidden");
+    },
+
+    close() {
+        document.getElementById("transferWarehouseSelectModal").classList.add("hidden");
+    },
+
+    async loadWarehouses() {
+        try {
+            const page = await api("GET", "/api/warehouses?page=0&size=100");
+            this.warehouses = page.content || [];
+            this.render();
+        } catch (e) {
+            console.error('[TransferWarehouseSelector] Load error:', e);
+        }
+    },
+
+    render() {
+        const tbody = document.getElementById("transferWarehousesBody");
+        
+        if (this.warehouses.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="2" class="muted" style="padding: 2rem; text-align: center;">Складов нет</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = this.warehouses.map(w => `
+            <tr style="cursor: pointer;" onclick="TransferWarehouseSelector.select(${w.id}, '${w.name.replace(/'/g, "\\'")}')">
+                <td><strong>${w.name}</strong></td>
+                <td>${w.address || '—'}</td>
+            </tr>
+        `).join('');
+    },
+
+    select(id, name) {
+        if (this.callback) this.callback({ id, name });
+        this.close();
+    }
+};
+</script>

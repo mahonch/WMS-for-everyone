@@ -61,6 +61,32 @@ public class QrController {
         return qrGeneric("product", id, size);
     }
 
+    @GetMapping("/product/barcode/{barcode}.png")
+    public ResponseEntity<byte[]> qrProductByBarcode(@PathVariable String barcode,
+                                                     @RequestParam(defaultValue = "300") int size) {
+        return qrGeneric("barcode", 0, size);
+    }
+
+    @GetMapping("/barcode/{barcode}.png")
+    public ResponseEntity<byte[]> qrByBarcode(@PathVariable String barcode,
+                                              @RequestParam(defaultValue = "300") int size) {
+        try {
+            // Генерируем QR с данными штрих-кода
+            var node = om.createObjectNode();
+            node.put("t", "barcode");
+            node.put("barcode", barcode);
+            String json = om.writeValueAsString(node);
+            byte[] png = qrService.generatePng(json, size);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.IMAGE_PNG)
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "inline; filename=\"qr_barcode_%s.png\"".formatted(barcode))
+                    .body(png);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     @GetMapping("/loc/{id}.png")
     public ResponseEntity<byte[]> qrLoc(@PathVariable long id,
                                         @RequestParam(defaultValue = "300") int size) {

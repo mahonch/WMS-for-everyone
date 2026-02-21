@@ -17,8 +17,8 @@ public class CategoryController {
 
     @GetMapping
     public Page<CategoryDto> list(@RequestParam(defaultValue = "0") int page,
-                                  @RequestParam(defaultValue = "20") int size) {
-        return categoryRepository.findAll(PageRequest.of(page, size, Sort.by("id").descending()))
+                                  @RequestParam(defaultValue = "100") int size) {
+        return categoryRepository.findAll(PageRequest.of(page, size, Sort.by("id").ascending()))
                 .map(c -> new CategoryDto(c.getId(), c.getName(), c.getParent() != null ? c.getParent().getId() : null));
     }
 

@@ -55,6 +55,7 @@ public class Issue {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "reason_code", nullable = false)
+    @Builder.Default
     private IssueReason reasonCode = IssueReason.DAMAGE;
 
     @OneToMany(mappedBy = "issue", cascade = CascadeType.ALL, orphanRemoval = true)

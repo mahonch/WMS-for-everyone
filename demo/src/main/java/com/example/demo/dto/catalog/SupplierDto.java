@@ -2,6 +2,8 @@ package com.example.demo.dto.catalog;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * DTO для поставщиков.
@@ -40,5 +42,20 @@ public class SupplierDto {
             String phone,
             String email,
             String address
+    ) {}
+
+    /**
+     * DTO для отображения документа поставщика.
+     */
+    public record DocumentView(
+            Long id,
+            String number,
+            String docType,
+            String status,
+            LocalDateTime createdAt,
+            LocalDateTime committedAt,
+            String warehouseName,
+            Integer itemsCount,
+            BigDecimal totalSum
     ) {}
 }

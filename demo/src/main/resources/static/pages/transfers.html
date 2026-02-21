@@ -1,103 +1,429 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>Перемещения — WMS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
     <link href="/css/app-v2.css" rel="stylesheet">
+    <link href="/css/mobile.css" rel="stylesheet">
+    <script src="/js/modal.js"></script>
     <script src="/js/auth-debug.js"></script>
-    <script type="module" src="/js/transfers.js"></script>
+    <script src="/js/location-explorer.js"></script>
+    <script>
+    // Загружаем модальные окна для перемещений
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('/components/transfer-modals.html')
+            .then(res => res.text())
+            .then(html => {
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                
+                // Копируем стили
+                const styles = temp.querySelectorAll('style');
+                styles.forEach(style => document.head.appendChild(style.cloneNode(true)));
+                
+                // Копируем модальные окна в body
+                const modals = temp.querySelectorAll('#transferFormModal, #transferProductSelectModal, #transferWarehouseSelectModal');
+                modals.forEach(modal => document.body.appendChild(modal.cloneNode(true)));
+                
+                // Выполняем скрипты
+                const scripts = temp.querySelectorAll('script');
+                scripts.forEach(script => {
+                    const newScript = document.createElement('script');
+                    if (script.src) {
+                        newScript.src = script.src;
+                    } else {
+                        newScript.textContent = script.textContent;
+                    }
+                    document.body.appendChild(newScript);
+                });
+                
+                console.log('[TRANSFERS] Modals loaded');
+            })
+            .catch(err => console.error('Failed to load transfer modals:', err));
+    });
+    </script>
+    <script src="/js/transfers.js"></script>
 </head>
+<body class="layout">
 
-<body>
+<!-- BOTTOM NAV (MOBILE) -->
+<nav class="bottom-nav">
+    <a href="/dashboard.html">
+        <span class="nav-icon">📊</span>
+        <span>Главная</span>
+    </a>
+    <a href="/pages/receipts.html">
+        <span class="nav-icon">📥</span>
+        <span>Приёмка</span>
+    </a>
+    <a href="/pages/issues.html">
+        <span class="nav-icon">📤</span>
+        <span>Списание</span>
+    </a>
+    <a href="/pages/transfers.html" class="active">
+        <span class="nav-icon">🔁</span>
+        <span>Перемещ.</span>
+    </a>
+    <a href="/pages/products.html">
+        <span class="nav-icon">📦</span>
+        <span>Товары</span>
+    </a>
+    <a href="/pages/suppliers.html">
+        <span class="nav-icon">🚚</span>
+        <span>Поставщ.</span>
+    </a>
+</nav>
 
-<header class="topbar">
-    <div class="brand">WMS</div>
-
-    <nav class="nav">
-        <a href="/dashboard.html">Главная</a>
-        <a href="/pages/receipts.html">Приёмка</a>
-        <a href="/pages/issues.html">Списание</a>
-        <a href="/pages/transfers.html" class="active">Перемещения</a>
-        <a href="/pages/locations.html">Склады</a>
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="logo">📦 WMS</div>
+    <nav>
+        <a href="/dashboard.html">📊 Главная</a>
+        <a href="/pages/receipts.html">📥 Приёмка</a>
+        <a href="/pages/issues.html">📤 Списание</a>
+        <a href="/pages/transfers.html" class="active">🔁 Перемещения</a>
+        <a href="/pages/products.html">📦 Товары</a>
+        <a href="/pages/suppliers.html">🚚 Поставщики</a>
+        <a href="/pages/warehouses.html">🏢 Склады</a>
+        <a href="/scan.html">📷 Скан QR</a>
     </nav>
-
-    <div class="user">
+    <div class="user-chip">
         <span id="usernameLabel">—</span>
-        <button id="logoutBtn" class="btn">Выйти</button>
+        <button id="logoutBtn" class="btn btn-secondary">Выйти</button>
     </div>
-</header>
+</aside>
 
-<main class="container">
+<main class="content">
+    <header class="topbar">
+        <div>
+            <div class="tag-muted">Документы</div>
+            <strong>Перемещение товаров</strong>
+        </div>
+    </header>
 
-    <section id="alerts"></section>
+    <div id="alerts"></div>
 
-    <section class="panel">
-        <h3>Перемещения</h3>
-
-        <div class="actions">
-            <button class="btn" id="btnCreate">Новое перемещение</button>
+    <!-- СПИСОК ДОКУМЕНТОВ -->
+    <section class="card">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow">Журнал</p>
+                <h3>Все перемещения</h3>
+            </div>
+            <div class="toolbar">
+                <input id="filterInput" class="input" placeholder="🔍 Поиск по номеру..." style="flex: 1;">
+                <button class="btn btn-primary" id="btnCreate">➕ Новое перемещение</button>
+            </div>
         </div>
 
-        <table class="table" id="transfersTable">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Номер</th>
-                <th>Статус</th>
-                <th>Из</th>
-                <th>В</th>
-                <th>Создал</th>
-                <th>Дата</th>
-                <th></th>
-            </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-
-    </section>
-
-    <!-- ============ МОДАЛКА ДЕТАЛЕЙ ============ -->
-    <div id="detailOverlay" class="modal-overlay hidden">
-        <section id="detailPanel" class="modal-window" style="max-width:900px">
-
-            <h3>Перемещение <span id="d_number"></span></h3>
-
-            <div class="grid2">
-                <div><b>ID:</b> <span id="d_id">—</span></div>
-                <div><b>Статус:</b> <span id="d_status">—</span></div>
-                <div><b>Из локации:</b> <span id="d_from">—</span></div>
-                <div><b>В локацию:</b> <span id="d_to">—</span></div>
-                <div><b>Создал:</b> <span id="d_createdBy">—</span></div>
-                <div><b>Дата:</b> <span id="d_date">—</span></div>
-            </div>
-
-            <h4>Позиции</h4>
-            <table class="table" id="itemsTable">
+        <div class="table-wrapper">
+            <table class="table" id="transfersTable">
                 <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Товар</th>
-                    <th>Партия</th>
-                    <th>Кол-во</th>
+                    <th>№</th>
+                    <th>Статус</th>
+                    <th>Откуда</th>
+                    <th>Куда</th>
+                    <th>Дата</th>
+                    <th>Позиций</th>
                     <th></th>
                 </tr>
                 </thead>
                 <tbody></tbody>
             </table>
-
-            <div class="actions">
-                <button class="btn" id="btnAddItem">Добавить</button>
-                <button class="btn btn-success" id="btnCommit">Провести</button>
-                <button class="btn btn-danger" id="btnDeleteDraft">Удалить</button>
-                <button class="btn btn-secondary" id="btnCloseDetail">Закрыть</button>
-            </div>
-
-        </section>
-    </div>
-
+        </div>
+    </section>
 </main>
+
+<!-- LOCATION EXPLORER OVERLAY -->
+<div id="locationExplorerOverlay" class="modal-overlay hidden">
+    <div class="location-explorer-modal">
+        <div class="explorer-header">
+            <div class="explorer-title">
+                <h3>📍 Выбор локации</h3>
+                <button class="btn btn-secondary btn-sm" onclick="LocationExplorer.close()">✕</button>
+            </div>
+        </div>
+        <div class="explorer-body">
+            <div class="explorer-panel explorer-tree-panel">
+                <div class="panel-header">
+                    <strong>🌲 Дерево склада</strong>
+                    <span class="panel-hint">Навигация</span>
+                </div>
+                <div class="explorer-tree" id="locationTree"></div>
+            </div>
+            <div class="explorer-panel explorer-content-panel">
+                <div class="panel-header">
+                    <strong>📂 Содержимое</strong>
+                    <span class="panel-hint" id="contentHint">Выберите узел</span>
+                </div>
+                <div class="explorer-content" id="locationContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Location Explorer Styles */
+.location-explorer-modal {
+    background: #fff;
+    border-radius: 12px;
+    width: 95%;
+    max-width: 1100px;
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.explorer-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.explorer-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.explorer-body {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 1px;
+    background: var(--border);
+    flex: 1;
+    overflow: hidden;
+}
+
+.explorer-panel {
+    background: #fff;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.explorer-panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.explorer-tree {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.explorer-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.tree-node {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.tree-node:hover {
+    background: #f0f1f7;
+}
+
+.tree-node.selected {
+    background: #e3f2fd;
+}
+
+.tree-toggle {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0 4px;
+    font-size: 10px;
+    color: #6c757d;
+}
+
+.tree-spacer {
+    width: 20px;
+    display: inline-block;
+}
+
+.tree-icon {
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+.tree-code {
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.tree-name {
+    color: #6c757d;
+    font-size: 13px;
+}
+
+.tree-badge {
+    margin-left: auto;
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.content-count {
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.type-group {
+    margin-bottom: 16px;
+}
+
+.type-header {
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.type-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+}
+
+.content-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.content-item:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+}
+
+.content-item.selectable:hover {
+    background: #e3f2fd;
+}
+
+.item-icon {
+    font-size: 24px;
+    margin-right: 12px;
+}
+
+.item-info {
+    flex: 1;
+}
+
+.item-code {
+    font-weight: 600;
+}
+
+.item-name {
+    font-size: 13px;
+    color: #6c757d;
+}
+
+.item-badge {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.btn-select {
+    margin-left: 8px;
+}
+
+.products-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.product-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.product-icon {
+    font-size: 24px;
+    margin-right: 12px;
+}
+
+.product-info {
+    flex: 1;
+}
+
+.product-name {
+    font-weight: 600;
+}
+
+.product-sku {
+    font-size: 13px;
+    color: #6c757d;
+}
+
+.product-qty {
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.location-actions {
+    margin-top: 16px;
+    text-align: center;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 48px 16px;
+}
+
+.empty-icon {
+    font-size: 64px;
+    display: block;
+    margin-bottom: 16px;
+}
+
+.empty-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.empty-text {
+    color: #6c757d;
+    font-size: 14px;
+}
+</style>
 
 </body>
 </html>
