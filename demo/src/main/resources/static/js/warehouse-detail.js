@@ -48,7 +48,7 @@ if (!toastContainer) {
 function showNotification(type, title, message) {
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
-    const icon = type === "success" ? "✅" : type === "error" ? "❌" : type === "warning" ? "⚠️" : "ℹ️";
+    const icon = type === "success" ? "" : type === "error" ? "" : type === "warning" ? "" : "ℹ";
     toast.innerHTML = `
         <span class="toast-icon">${icon}</span>
         <div class="toast-content">
@@ -74,10 +74,10 @@ const fmtMoney = (n) => new Intl.NumberFormat("ru-RU", { style: "currency", curr
 const fmtNum = (n) => new Intl.NumberFormat("ru-RU").format(n || 0);
 
 const typeIcons = {
-    "ZONE": "📍",
-    "RACK": "📚",
-    "SHELF": "📋",
-    "BIN": "📦"
+    "ZONE": "",
+    "RACK": "",
+    "SHELF": "",
+    "BIN": ""
 };
 
 const typeNames = {
@@ -122,7 +122,7 @@ async function api(method, url, body) {
 async function loadWarehouse() {
     try {
         warehouse = await api("GET", `/api/warehouses/${warehouseId}`);
-        document.getElementById("warehouseName").textContent = `🏢 ${warehouse.name}`;
+        document.getElementById("warehouseName").textContent = ` ${warehouse.name}`;
         
         loadOverview();
         loadLocations();
@@ -194,7 +194,7 @@ async function loadZonesStats(locations, stocks) {
     
     container.innerHTML = zoneList.map(z => {
         const percent = z.locations > 0 ? Math.round((z.stocked / z.locations) * 100) : 0;
-        const color = percent >= 80 ? "🟢" : percent >= 50 ? "🟡" : "🔴";
+        const color = percent >= 80 ? "" : percent >= 50 ? "" : "";
         return `
             <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
                 <span>${typeIcons.ZONE} ${z.zone.name}</span>
@@ -273,8 +273,8 @@ function renderLocationTree(locations, stocks) {
 function renderLocationNode(loc, tree, level = 0) {
     const indent = level * 20;
     const hasChildren = loc.children && loc.children.length > 0;
-    const stockStatus = loc.totalQty > 0 ? "🟢" : "⚪";
-    const typeIcon = typeIcons[loc.type] || "📦";
+    const stockStatus = loc.totalQty > 0 ? "" : "";
+    const typeIcon = typeIcons[loc.type] || "";
     
     let html = `
         <div class="location-node" style="padding-left: ${indent}px;">
@@ -285,7 +285,7 @@ function renderLocationNode(loc, tree, level = 0) {
                 <span class="node-name">${loc.name}</span>
                 <span class="node-status">${stockStatus}</span>
                 <span class="node-qty">${loc.totalQty > 0 ? fmtNum(loc.totalQty) + ' ед.' : 'Пусто'}</span>
-                <button class="btn btn-sm btn-secondary loc-view" data-id="${loc.id}">👁</button>
+                <button class="btn btn-sm btn-secondary loc-view" data-id="${loc.id}"></button>
             </div>
             ${hasChildren ? `<div id="loc-children-${loc.id}">${loc.children.map(c => renderLocationNode(c, tree, level + 1)).join("")}</div>` : ''}
         </div>
@@ -336,7 +336,7 @@ async function loadProducts() {
                 <td class="right">${fmtNum(p.qty)}</td>
                 <td class="right">${fmtMoney(p.value)}</td>
                 <td>${p.locations.size}</td>
-                <td><button class="btn btn-sm btn-secondary" onclick="openProductDetail(${p.product.productId})">👁</button></td>
+                <td><button class="btn btn-sm btn-secondary" onclick="openProductDetail(${p.product.productId})"></button></td>
             `;
             tb.appendChild(tr);
         });
@@ -391,7 +391,7 @@ window.openProductDetail = async function(productId) {
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>${s.locationCode || "—"}</td>
-                <td>${typeIcons[s.locationType] || "📦"}</td>
+                <td>${typeIcons[s.locationType] || ""}</td>
                 <td class="right">${fmtNum(s.qty)}</td>
                 <td class="right">${fmtMoney(s.costPrice || 0)}</td>
                 <td class="right">${fmtMoney((s.qty || 0) * (s.costPrice || 0))}</td>
@@ -470,7 +470,7 @@ function filterLocations() {
         const code = node.querySelector(".node-code")?.textContent.toLowerCase() || "";
         const name = node.querySelector(".node-name")?.textContent.toLowerCase() || "";
         const typeClass = node.querySelector(".node-icon")?.textContent || "";
-        const hasStock = node.querySelector(".node-status")?.textContent === "🟢";
+        const hasStock = node.querySelector(".node-status")?.textContent === "";
         
         const matchSearch = !search || code.includes(search) || name.includes(search);
         const matchType = !type || typeIcons[type] === typeClass;

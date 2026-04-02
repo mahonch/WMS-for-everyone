@@ -6,9 +6,6 @@ if (!token) {
     window.location.href = '/index.html';
 }
 
-// Debug JWT
-debugAuthContext('DASHBOARD');
-
 // Alerts
 const alerts = document.getElementById('alerts');
 function pushAlert(type, text) {
@@ -63,27 +60,27 @@ const fmtDate = (d) => {
 
 // Иконки действий
 const actionIcons = {
-    'PRODUCT_CREATE': '📦',
-    'PRODUCT_UPDATE': '✏️',
-    'PRODUCT_DELETE': '🗑️',
-    'SUPPLIER_CREATE': '🚚',
-    'SUPPLIER_UPDATE': '✏️',
-    'SUPPLIER_DELETE': '🗑️',
-    'WAREHOUSE_CREATE': '🏢',
-    'WAREHOUSE_UPDATE': '✏️',
-    'WAREHOUSE_DELETE': '🗑️',
-    'LOCATION_CREATE': '📍',
-    'LOCATION_UPDATE': '✏️',
-    'LOCATION_DELETE': '🗑️',
-    'RECEIPT_CREATE': '📥',
-    'RECEIPT_COMMIT': '✅',
-    'RECEIPT_DELETE': '🗑️',
-    'ISSUE_CREATE': '📤',
-    'ISSUE_COMMIT': '✅',
-    'ISSUE_DELETE': '🗑️',
-    'TRANSFER_CREATE': '🔁',
-    'TRANSFER_COMMIT': '✅',
-    'TRANSFER_DELETE': '🗑️'
+    'PRODUCT_CREATE': '',
+    'PRODUCT_UPDATE': '',
+    'PRODUCT_DELETE': '',
+    'SUPPLIER_CREATE': '',
+    'SUPPLIER_UPDATE': '',
+    'SUPPLIER_DELETE': '',
+    'WAREHOUSE_CREATE': '',
+    'WAREHOUSE_UPDATE': '',
+    'WAREHOUSE_DELETE': '',
+    'LOCATION_CREATE': '',
+    'LOCATION_UPDATE': '',
+    'LOCATION_DELETE': '',
+    'RECEIPT_CREATE': '',
+    'RECEIPT_COMMIT': '',
+    'RECEIPT_DELETE': '',
+    'ISSUE_CREATE': '',
+    'ISSUE_COMMIT': '',
+    'ISSUE_DELETE': '',
+    'TRANSFER_CREATE': '',
+    'TRANSFER_COMMIT': '',
+    'TRANSFER_DELETE': ''
 };
 
 // Загрузка статистики
@@ -148,7 +145,7 @@ window.loadRecent = async function() {
 
         for (const log of list) {
             const tr = document.createElement('tr');
-            const icon = actionIcons[log.action] || '📝';
+            const icon = actionIcons[log.action] || '';
             
             tr.innerHTML = `
                 <td style="white-space: nowrap;">${fmtDate(log.ts)}</td>
@@ -160,7 +157,7 @@ window.loadRecent = async function() {
                     ${log.entity} #${log.entityId}
                 </td>
                 <td>
-                    👤 ${log.actor || 'system'}
+                     ${log.actor || 'system'}
                 </td>
             `;
             tb.appendChild(tr);

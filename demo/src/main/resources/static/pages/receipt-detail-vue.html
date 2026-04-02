@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Приёмка №{{number}} — WMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <!-- Vuetify CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@3.7.1/dist/vuetify.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="/css/app-v2.css" rel="stylesheet">
+    <link href="/css/mobile.css" rel="stylesheet">
+    
+    <style>
+        [v-cloak] { display: none; }
+        .page-container { padding: 24px; max-width: 1400px; margin: 0 auto; }
+        .info-label { color: #666; font-size: 12px; }
+        .info-value { font-weight: 500; }
+        .status-badge { padding: 4px 12px; border-radius: 16px; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div id="app" v-cloak>
+        <v-app>
+            <!-- Sidebar -->
+            <v-navigation-drawer v-model="drawer" app permanent>
+                <div class="d-flex align-center pa-4">
+                    <span class="text-h5 font-weight-bold">📦 WMS</span>
+                </div>
+                <v-divider></v-divider>
+                <v-list nav>
+                    <v-list-item
+                        v-for="item in menuItems"
+                        :key="item.path"
+                        :to="item.path"
+                        :prepend-icon="item.icon"
+                        :title="item.title"
+                        rounded
+                    ></v-list-item>
+                </v-list>
+                <template v-slot:append>
+                    <v-list-item prepend-icon="mdi-logout" title="Выйти" @click="logout"></v-list-item>
+                </template>
+            </v-navigation-drawer>
+
+            <!-- Top App Bar -->
+            <v-app-bar app elevation="1">
+                <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
+                <v-app-bar-title>Приёмка №{{ receipt?.number || 'Загрузка...' }}</v-app-bar-title>
+            </v-app-bar>
+
+            <!-- Main Content -->
+            <v-main>
+                <v-container fluid class="page-container">
+                    <!-- Breadcrumbs -->
+                    <v-breadcrumbs :items="breadcrumbs" class="pa-0 mb-4">
+                        <template v-slot:divider>
+                            <v-icon icon="mdi-chevron-right" size="small"></v-icon>
+                        </template>
+                    </v-breadcrumbs>
+
+                    <!-- Loading -->
+                    <v-card v-if="loading" class="pa-8 text-center">
+                        <v-progress-circular color="primary" size="64" indeterminate></v-progress-circular>
+                        <div class="mt-4 text-body-1">Загрузка документа...</div>
+                    </v-card>
+
+                    <!-- Receipt Detail -->
+                    <template v-else-if="receipt">
+                        <!-- Header Card -->
+                        <v-card class="mb-4">
+                            <v-card-text class="pa-4">
+                                <v-row align="center" justify="space-between">
+                                    <v-col>
+                                        <div class="d-flex align-center gap-2">
+                                            <v-chip
+                                                :color="receipt.status === 'COMMITTED' ? 'success' : 'warning'"
+                                                variant="tonal"
+                                                class="status-badge"
+                                            >
+                                                <v-icon start :icon="receipt.status === 'COMMITTED' ? 'mdi-check-circle' : 'mdi-clock-outline'"></v-icon>
+                                                {{ receipt.status === 'COMMITTED' ? 'Проведён' : 'Черновик' }}
+                                            </v-chip>
+                                            <v-chip v-if="receipt.status === 'COMMITTED'" color="primary" variant="outlined" size="small">
+                                                <v-icon start icon="mdi-calendar"></v-icon>
+                                                {{ formatDate(receipt.committedAt) }}
+                                            </v-chip>
+                                        </div>
+                                    </v-col>
+                                    <v-col cols="auto">
+                                        <v-btn v-if="receipt.status === 'DRAFT'" color="success" prepend-icon="mdi-check" @click="commitReceipt">
+                                            Провести
+                                        </v-btn>
+                                        <v-btn v-if="receipt.status === 'DRAFT'" color="error" prepend-icon="mdi-delete" @click="deleteReceipt">
+                                            Удалить
+                                        </v-btn>
+                                        <v-btn variant="outlined" prepend-icon="mdi-arrow-left" @click="goBack">
+                                            Назад к списку
+                                        </v-btn>
+                                    </v-col>
+                                </v-row>
+                            </v-card-text>
+                        </v-card>
+
+                        <!-- Info Cards -->
+                        <v-row class="mb-4">
+                            <v-col cols="12" md="3">
+                                <v-card variant="tonal" color="primary">
+                                    <v-card-text>
+                                        <div class="info-label">Номер документа</div>
+                                        <div class="info-value text-h6">{{ receipt.number }}</div>
+                                    </v-card-text>
+                                </v-card>
+                            </v-col>
+                            <v-col cols="12" md="3">
+                                <v-card variant="tonal" color="success">
+                                    <v-card-text>
+                                        <div class="info-label">Поставщик</div>
+                                        <div class="info-value text-h6">{{ receipt.supplierName || '—' }}</div>
+                                    </v-card-text>
+                                </v-card>
+                            </v-col>
+                            <v-col cols="12" md="3">
+                                <v-card variant="tonal" color="info">
+                                    <v-card-text>
+                                        <div class="info-label">Склад</div>
+                                        <div class="info-value text-h6">{{ receipt.warehouseName || '—' }}</div>
+                                    </v-card-text>
+                                </v-card>
+                            </v-col>
+                            <v-col cols="12" md="3">
+                                <v-card variant="tonal" color="warning">
+                                    <v-card-text>
+                                        <div class="info-label">Создал</div>
+                                        <div class="info-value text-h6">{{ receipt.createdByName || '—' }}</div>
+                                    </v-card-text>
+                                </v-card>
+                            </v-col>
+                        </v-row>
+
+                        <!-- Items Table -->
+                        <v-card>
+                            <v-card-title class="d-flex align-center">
+                                <v-icon icon="mdi-package-variant" class="mr-2"></v-icon>
+                                Позиции документа
+                                <v-chip class="ml-2" color="primary" size="small">{{ receipt.items?.length || 0 }} шт.</v-chip>
+                            </v-card-title>
+                            <v-card-text>
+                                <v-table>
+                                    <thead>
+                                        <tr>
+                                            <th>№</th>
+                                            <th>Товар</th>
+                                            <th>Артикул</th>
+                                            <th class="text-right">Количество</th>
+                                            <th class="text-right">Цена</th>
+                                            <th class="text-right">Сумма</th>
+                                            <th>Локация</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(item, index) in receipt.items" :key="item.id">
+                                            <td>{{ index + 1 }}</td>
+                                            <td>{{ item.productName }}</td>
+                                            <td><v-chip size="x-small" variant="outlined">{{ item.productSku }}</v-chip></td>
+                                            <td class="text-right"><strong>{{ item.qty }}</strong></td>
+                                            <td class="text-right">{{ formatMoney(item.price) }}</td>
+                                            <td class="text-right font-weight-bold">{{ formatMoney(item.qty * item.price) }}</td>
+                                            <td>
+                                                <v-chip v-if="item.locationName" size="small" variant="tonal" color="info">
+                                                    <v-icon start icon="mdi-map-marker" size="x-small"></v-icon>
+                                                    {{ item.locationName }}
+                                                </v-chip>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="5" class="text-right font-weight-bold">Итого:</td>
+                                            <td class="text-right font-weight-bold text-primary">{{ formatMoney(totalAmount) }}</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </v-table>
+
+                                <v-alert v-if="!receipt.items || receipt.items.length === 0" type="info" variant="tonal" class="mt-4">
+                                    В документе нет позиций
+                                </v-alert>
+                            </v-card-text>
+                        </v-card>
+
+                        <!-- Audit Info -->
+                        <v-card class="mt-4" variant="outlined">
+                            <v-card-title class="text-body-1">
+                                <v-icon icon="mdi-history" size="small" class="mr-2"></v-icon>
+                                Информация о документе
+                            </v-card-title>
+                            <v-card-text>
+                                <v-row>
+                                    <v-col cols="12" md="6">
+                                        <div class="info-label">Дата создания</div>
+                                        <div class="info-value">{{ formatDate(receipt.createdAt) }}</div>
+                                    </v-col>
+                                    <v-col cols="12" md="6" v-if="receipt.committedAt">
+                                        <div class="info-label">Дата проведения</div>
+                                        <div class="info-value">{{ formatDate(receipt.committedAt) }}</div>
+                                    </v-col>
+                                </v-row>
+                            </v-card-text>
+                        </v-card>
+                    </template>
+
+                    <!-- Error -->
+                    <v-alert v-else type="error" variant="tonal" class="ma-4">
+                        <v-icon start icon="mdi-alert-circle"></v-icon>
+                        Ошибка загрузки документа
+                    </v-alert>
+                </v-container>
+            </v-main>
+        </v-app>
+    </div>
+
+    <!-- Vue 3 + Pinia + Vuetify -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-demi@0.14.7/lib/index.iife.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pinia@2.1.7/dist/pinia.iife.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@3.7.1/dist/vuetify.min.js"></script>
+    
+    <!-- Stores & Services (должны быть до приложения) -->
+    <script src="/js/stores/receipts-store.js?v=2"></script>
+    <script src="/js/services/receipt-service.js?v=2"></script>
+    
+    <!-- App -->
+    <script src="/js/vue-receipt-detail.js?v=2"></script>
+</body>
+</html>

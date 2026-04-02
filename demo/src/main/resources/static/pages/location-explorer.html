@@ -4,17 +4,17 @@
         <!-- Заголовок -->
         <div class="explorer-header">
             <div class="explorer-title">
-                <h3>📍 Выбор локации</h3>
-                <button class="btn btn-secondary btn-sm" onclick="LocationExplorer.close()">✕</button>
+                <h3> Выбор локации</h3>
+                <button class="btn btn-secondary btn-sm" onclick="LocationExplorer.close()"></button>
             </div>
             
             <!-- Поиск -->
             <div class="explorer-search">
                 <input id="locationExplorerSearch" 
                        class="input" 
-                       placeholder="🔍 Поиск по коду или названию..."
+                       placeholder=" Поиск по коду или названию..."
                        oninput="onLocationSearch()">
-                <button class="btn btn-secondary" onclick="clearLocationSearch()">✕</button>
+                <button class="btn btn-secondary" onclick="clearLocationSearch()"></button>
             </div>
         </div>
 
@@ -23,7 +23,7 @@
             <!-- Левая панель: Дерево -->
             <div class="explorer-panel explorer-tree-panel">
                 <div class="panel-header">
-                    <strong>🌲 Дерево склада</strong>
+                    <strong> Дерево склада</strong>
                     <span class="panel-hint">Навигация</span>
                 </div>
                 <div class="explorer-tree" id="locationTree">
@@ -37,12 +37,12 @@
             <!-- Правая панель: Контент -->
             <div class="explorer-panel explorer-content-panel">
                 <div class="panel-header">
-                    <strong>📂 Содержимое</strong>
+                    <strong> Содержимое</strong>
                     <span class="panel-hint" id="contentHint">Выберите узел</span>
                 </div>
                 <div class="explorer-content" id="locationContent">
                     <div class="empty-state">
-                        <span class="empty-icon">👈</span>
+                        <span class="empty-icon"></span>
                         <div class="empty-title">Выберите локацию</div>
                         <div class="empty-text">Кликните на элемент в дереве слева</div>
                     </div>
@@ -66,7 +66,7 @@
                 <button class="btn btn-primary" id="btnConfirmLocation" 
                         onclick="LocationExplorer.selectLocation(LocationExplorer.selectedNode?.id)"
                         disabled>
-                    ✅ Выбрать
+                     Выбрать
                 </button>
             </div>
         </div>

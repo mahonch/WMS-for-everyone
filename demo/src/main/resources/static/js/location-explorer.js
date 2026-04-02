@@ -174,13 +174,13 @@ window.LocationExplorer = {
         const isExpanded = this.expandedNodes.has(Number(node.id));
 
         const icons = {
-            "ZONE": "📍",
-            "RACK": "📚",
-            "SHELF": "📋",
-            "BIN": "📦"
+            "ZONE": "",
+            "RACK": "",
+            "SHELF": "",
+            "BIN": ""
         };
 
-        const icon = icons[node.type] || "📦";
+        const icon = icons[node.type] || "";
         const hasProducts = node.productCount > 0;
 
         let html = `
@@ -270,7 +270,7 @@ window.LocationExplorer = {
             if (container) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <span class="empty-icon">📂</span>
+                        <span class="empty-icon"></span>
                         <div class="empty-title">Выберите локацию</div>
                         <div class="empty-text">Кликните на элемент в дереве слева</div>
                     </div>
@@ -296,7 +296,7 @@ window.LocationExplorer = {
         if (children.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
-                    <span class="empty-icon">📂</span>
+                    <span class="empty-icon"></span>
                     <div class="empty-title">Пусто</div>
                     <div class="empty-text">В этом разделе нет дочерних элементов</div>
                 </div>
@@ -365,13 +365,13 @@ window.LocationExplorer = {
                     <h3>${this.getNodeTitle(node)}</h3>
                 </div>
                 <div class="empty-state">
-                    <span class="empty-icon">📦</span>
+                    <span class="empty-icon"></span>
                     <div class="empty-title">Ячейка пуста</div>
                     <div class="empty-text">В этой ячейке нет товаров</div>
                 </div>
                 <div class="location-actions">
                     <button class="btn btn-primary" onclick="LocationExplorer.selectLocation(${node.id})">
-                        ✅ Выбрать ячейку
+                         Выбрать ячейку
                     </button>
                 </div>
             `;
@@ -389,7 +389,7 @@ window.LocationExplorer = {
         stocks.forEach(s => {
             html += `
                 <div class="product-item">
-                    <span class="product-icon">🍎</span>
+                    <span class="product-icon"></span>
                     <div class="product-info">
                         <div class="product-name">${s.productName || "Товар #" + s.productId}</div>
                         <div class="product-sku">${s.sku || "—"}</div>
@@ -403,7 +403,7 @@ window.LocationExplorer = {
             </div>
             <div class="location-actions">
                 <button class="btn btn-primary" onclick="LocationExplorer.selectLocation(${node.id})">
-                    ✅ Выбрать ячейку
+                     Выбрать ячейку
                 </button>
             </div>
         `;
@@ -413,17 +413,17 @@ window.LocationExplorer = {
 
     renderTypeGroup(type, items) {
         const titles = {
-            "ZONE": "📍 Зоны",
-            "RACK": "📚 Стеллажи",
-            "SHELF": "📋 Полки",
-            "BIN": "📦 Ячейки"
+            "ZONE": " Зоны",
+            "RACK": " Стеллажи",
+            "SHELF": " Полки",
+            "BIN": " Ячейки"
         };
         
         const icons = {
-            "ZONE": "📍",
-            "RACK": "📚",
-            "SHELF": "📋",
-            "BIN": "📦"
+            "ZONE": "",
+            "RACK": "",
+            "SHELF": "",
+            "BIN": ""
         };
         
         let html = `
@@ -461,12 +461,12 @@ window.LocationExplorer = {
 
     getNodeTitle(node) {
         const icons = {
-            "ZONE": "📍",
-            "RACK": "📚",
-            "SHELF": "📋",
-            "BIN": "📦"
+            "ZONE": "",
+            "RACK": "",
+            "SHELF": "",
+            "BIN": ""
         };
-        return `${icons[node.type] || "📦"} ${node.code} — ${node.name}`;
+        return `${icons[node.type] || ""} ${node.code} — ${node.name}`;
     },
 
     expandAndSelect(nodeId) {
@@ -541,7 +541,7 @@ window.LocationExplorer = {
         if (results.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
-                    <span class="empty-icon">🔍</span>
+                    <span class="empty-icon"></span>
                     <div class="empty-title">Ничего не найдено</div>
                     <div class="empty-text">Попробуйте другой запрос</div>
                 </div>
@@ -579,10 +579,10 @@ window.LocationExplorer = {
 
     renderSearchGroup(type, items) {
         const titles = {
-            "BIN": "📦 Ячейки",
-            "SHELF": "📋 Полки",
-            "RACK": "📚 Стеллажи",
-            "ZONE": "📍 Зоны"
+            "BIN": " Ячейки",
+            "SHELF": " Полки",
+            "RACK": " Стеллажи",
+            "ZONE": " Зоны"
         };
         
         let html = `

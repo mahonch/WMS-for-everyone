@@ -6,51 +6,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="/css/app-v2.css" rel="stylesheet">
     <link href="/css/mobile.css" rel="stylesheet">
+    <script src="/js/auth-service.js"></script>
     <script src="/js/modal.js"></script>
-    <script src="/js/auth-debug.js"></script>
+    <script src="/js/product-drag.js?v=2" defer></script>
 </head>
 <body class="layout">
 
 <!-- BOTTOM NAV (MOBILE) -->
 <nav class="bottom-nav">
     <a href="/dashboard.html">
-        <span class="nav-icon">📊</span>
+        <span class="nav-icon"></span>
         <span>Главная</span>
     </a>
     <a href="/pages/receipts.html">
-        <span class="nav-icon">📥</span>
+        <span class="nav-icon"></span>
         <span>Приёмка</span>
     </a>
     <a href="/pages/issues.html">
-        <span class="nav-icon">📤</span>
+        <span class="nav-icon"></span>
         <span>Списание</span>
     </a>
     <a href="/pages/transfers.html">
-        <span class="nav-icon">🔁</span>
+        <span class="nav-icon"></span>
         <span>Перемещ.</span>
     </a>
     <a href="/pages/products.html" class="active">
-        <span class="nav-icon">📦</span>
+        <span class="nav-icon"></span>
         <span>Товары</span>
     </a>
     <a href="/pages/suppliers.html">
-        <span class="nav-icon">🚚</span>
+        <span class="nav-icon"></span>
         <span>Поставщ.</span>
     </a>
 </nav>
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
-    <div class="logo">📦 WMS</div>
+    <div class="logo">WMS</div>
     <nav>
-        <a href="/dashboard.html">📊 Главная</a>
-        <a href="/pages/receipts.html">📥 Приёмка</a>
-        <a href="/pages/issues.html">📤 Списание</a>
-        <a href="/pages/transfers.html">🔁 Перемещения</a>
-        <a href="/pages/products.html" class="active">📦 Товары</a>
-        <a href="/pages/suppliers.html">🚚 Поставщики</a>
-        <a href="/pages/warehouses.html">🏢 Склады</a>
-        <a href="/scan.html">📷 Скан QR</a>
+        <a href="/dashboard.html"> Главная</a>
+        <a href="/pages/receipts.html"> Приёмка</a>
+        <a href="/pages/issues.html"> Списание</a>
+        <a href="/pages/transfers.html"> Перемещения</a>
+        <a href="/pages/products.html" class="active"> Товары</a>
+        <a href="/pages/suppliers.html"> Поставщики</a>
+        <a href="/pages/warehouses.html"> Склады</a>
+        <a href="/pages/profile.html"> Профиль</a>
+        <a href="/scan.html"> Скан QR</a>
     </nav>
     <div class="user-chip">
         <span id="usernameLabel">—</span>
@@ -69,17 +71,17 @@
 
     <div id="alerts"></div>
 
-    <div class="products-layout" style="display: grid; grid-template-columns: 280px 1fr; gap: 24px; height: calc(100vh - 140px);">
-        
+    <div class="products-layout" style="display: grid; grid-template-columns: 280px 1fr 300px; gap: 24px; height: calc(100vh - 140px);">
+
         <!-- ЛЕВАЯ ПАНЕЛЬ - ДЕРЕВО КАТЕГОРИЙ -->
         <aside class="card" style="overflow: hidden; display: flex; flex-direction: column;">
             <div class="section-title" style="padding: 16px; border-bottom: 1px solid var(--border);">
-                <h3>📁 Категории</h3>
-                <button class="btn btn-sm btn-secondary" onclick="ProductsPage.toggleCategoryTree()">🗺️</button>
+                <h3>Категории</h3>
+                <button class="btn btn-sm btn-secondary" onclick="ProductsPage.toggleCategoryTree()">Карта</button>
             </div>
-            
+
             <div style="padding: 16px; border-bottom: 1px solid var(--border);">
-                <input type="text" id="categorySearch" class="input" placeholder="🔍 Поиск категории..." 
+                <input type="text" id="categorySearch" class="input" placeholder="Поиск категории..."
                        oninput="ProductsPage.filterCategories()" style="font-size: 14px;">
             </div>
 
@@ -95,7 +97,7 @@
             </div>
         </aside>
 
-        <!-- ПРАВАЯ ПАНЕЛЬ - СПИСОК ТОВАРОВ -->
+        <!-- ЦЕНТРАЛЬНАЯ ПАНЕЛЬ - СПИСОК ТОВАРОВ -->
         <section class="card" style="overflow: hidden; display: flex; flex-direction: column;">
             <div class="section-title" style="padding: 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;">
                 <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
@@ -104,16 +106,20 @@
                         <h3 id="productsCount">0 товаров</h3>
                     </div>
                     <div class="toolbar" style="gap: 12px; flex-wrap: wrap;">
-                        <input id="searchInput" class="input" placeholder="🔍 Поиск..." style="width: 220px;">
+                        <input id="searchInput" class="input" placeholder="Поиск..." style="width: 220px;">
                         <select id="productsSort" class="input" onchange="ProductsPage.sortProducts()" style="width: 180px;">
                             <option value="name_asc">По названию (А-Я)</option>
                             <option value="name_desc">По названию (Я-А)</option>
-                            <option value="price_asc">По цене ↑</option>
-                            <option value="price_desc">По цене ↓</option>
+                            <option value="price_asc">По цене (возр.)</option>
+                            <option value="price_desc">По цене (убыв.)</option>
                             <option value="created_desc">Сначала новые</option>
                             <option value="created_asc">Сначала старые</option>
                         </select>
-                        <button class="btn btn-primary" onclick="ProductsPage.openCreate()">➕ Новый товар</button>
+                        <label class="checkbox-label" style="white-space: nowrap;">
+                            <input type="checkbox" id="inStockOnly" onchange="ProductsPage.filterProducts()">
+                            <span>В наличии</span>
+                        </label>
+                        <button class="btn btn-primary" onclick="ProductsPage.openCreate()">Новый товар</button>
                     </div>
                 </div>
             </div>
@@ -138,11 +144,46 @@
                 </table>
             </div>
         </section>
+
+        <!-- ПРАВАЯ ПАНЕЛЬ - СКЛАДЫ И ЯЧЕЙКИ (DROP ZONES) -->
+        <aside class="card" style="overflow: hidden; display: flex; flex-direction: column;">
+            <div class="section-title" style="padding: 16px; border-bottom: 1px solid var(--border);">
+                <h3 id="warehousesSectionTitle">Склады и ячейки</h3>
+                <button class="btn btn-sm btn-primary" onclick="ProductsPage.refreshWarehouses()" title="Обновить">Обновить</button>
+            </div>
+
+            <div style="padding: 16px; border-bottom: 1px solid var(--border);">
+                <input type="text" id="warehouseSearch" class="input" placeholder="Поиск склада..."
+                       oninput="ProductsPage.filterWarehouses()" style="font-size: 14px;">
+            </div>
+
+            <div id="warehousesList" class="warehouses-list" style="flex: 1; overflow-y: auto; padding: 8px;">
+                <!-- Склады рендерятся здесь -->
+                <div class="muted" style="padding: 24px; text-align: center;">
+                    Загрузка складов...
+                </div>
+            </div>
+
+            <div style="padding: 16px; border-top: 1px solid var(--border); background: #f8f9fa;">
+                <div class="info-item">
+                    <span class="label">Подсказка</span>
+                    <div class="value" style="font-size: 12px; color: #6c757d; margin-top: 4px;">
+                        Перетащите товар на склад или ячейку для перемещения
+                    </div>
+                </div>
+            </div>
+        </aside>
     </div>
 </main>
 
 <!-- Подключаем модальные окна товаров -->
 <link rel="import" href="/components/product-modals.html" id="productModalsImport">
+
+<style>
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+</style>
 
 <script>
 // Инициализация страницы
@@ -153,15 +194,15 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(html => {
             const temp = document.createElement('div');
             temp.innerHTML = html;
-            
+
             // Копируем стили
             const styles = temp.querySelectorAll('style');
             styles.forEach(style => document.head.appendChild(style.cloneNode(true)));
-            
+
             // Копируем модальные окна в body
             const modals = temp.querySelectorAll('#productFormModal, #productViewModal, #categorySelectModal, #locationViewModal');
             modals.forEach(modal => document.body.appendChild(modal.cloneNode(true)));
-            
+
             // Выполняем скрипты из модальных окон
             const scripts = temp.querySelectorAll('script');
             scripts.forEach(script => {
@@ -173,8 +214,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 document.body.appendChild(newScript);
             });
-            
-            // Инициализируем страницу после загрузки модальных окон
+
             ProductsPage.init();
         })
         .catch(err => {
@@ -190,10 +230,15 @@ window.ProductsPage = {
     stocksByProduct: {},
     selectedCategoryId: null,
     currentSort: 'name_asc',
+    warehouses: [],
+    filteredWarehouses: [],
+    userWarehouseId: null,
+    userWarehouseName: null,
+    isLoading: false,
 
     async init() {
         console.log('[ProductsPage] init...');
-        
+
         const token = localStorage.getItem('token');
         if (!token) {
             window.location.href = '/index.html';
@@ -212,10 +257,33 @@ window.ProductsPage = {
             this.filterProducts();
         });
 
+        // Загружаем профиль пользователя для получения склада
+        await this.loadUserProfile();
         await this.loadCategories();
         await this.loadProducts();
+        await this.loadWarehouses();
         this.renderCategoryTree();
         this.renderProducts();
+        this.renderWarehouses();
+    },
+
+    async loadUserProfile() {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/api/profile', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (res.ok) {
+                const profile = await res.json();
+                if (profile && profile.warehouseId) {
+                    this.userWarehouseId = profile.warehouseId;
+                    this.userWarehouseName = profile.warehouseName;
+                    console.log('[ProductsPage] User warehouse:', profile.warehouseName);
+                }
+            }
+        } catch (e) {
+            console.error('[ProductsPage] Failed to load profile:', e);
+        }
     },
 
     async loadCategories() {
@@ -240,7 +308,7 @@ window.ProductsPage = {
             const page = await res.json();
             this.products = page.content || [];
             this.filteredProducts = [...this.products];
-            
+
             // Загружаем остатки для всех товаров
             await this.loadAllStocks();
         } catch (e) {
@@ -256,18 +324,41 @@ window.ProductsPage = {
             });
             const stocks = await res.json();
             
+            console.log('[ProductsPage] Loaded stocks:', stocks);
+            console.log('[ProductsPage] User warehouse:', this.userWarehouseId);
+
+            // Фильтруем остатки по складу пользователя и qty > 0
+            let filteredStocks = stocks;
+            if (this.userWarehouseId) {
+                filteredStocks = stocks.filter(s => {
+                    const matches = s.warehouseId === this.userWarehouseId && s.qty > 0;
+                    console.log(`[ProductsPage] Stock productId=${s.productId}, warehouseId=${s.warehouseId}, qty=${s.qty}, matches=${matches}`);
+                    return matches;
+                });
+                console.log('[ProductsPage] Filtered stocks by warehouse:', this.userWarehouseId, 'from', stocks.length, 'to', filteredStocks.length);
+            } else {
+                // Если склад не назначен, всё равно фильтруем qty > 0
+                filteredStocks = stocks.filter(s => s.qty > 0);
+                console.log('[ProductsPage] Filtered stocks with qty > 0:', stocks.length, 'to', filteredStocks.length);
+            }
+
             // Группируем остатки по товарам
             this.stocksByProduct = {};
-            stocks.forEach(s => {
+            filteredStocks.forEach(s => {
                 if (!this.stocksByProduct[s.productId]) {
                     this.stocksByProduct[s.productId] = 0;
                 }
                 this.stocksByProduct[s.productId] += s.qty;
             });
-            
+
+            console.log('[ProductsPage] stocksByProduct:', this.stocksByProduct);
+
             // Добавляем общий остаток к каждому товару
             this.products.forEach(p => {
                 p.totalQty = this.stocksByProduct[p.id] || 0;
+                if (p.totalQty > 0) {
+                    console.log(`[ProductsPage] Product ${p.name} has ${p.totalQty} qty`);
+                }
             });
         } catch (e) {
             console.error('[ProductsPage] Failed to load stocks:', e);
@@ -277,11 +368,11 @@ window.ProductsPage = {
     renderCategoryTree() {
         const container = document.getElementById('categoryTree');
         const roots = this.categories.filter(c => !c.parentId);
-        
+
         let html = `
-            <div class="category-tree-item ${this.selectedCategoryId === null ? 'selected' : ''}" 
+            <div class="category-tree-item ${this.selectedCategoryId === null ? 'selected' : ''}"
                  onclick="ProductsPage.selectCategory(null)">
-                <span class="icon">📂</span>
+                <span class="icon">Папка</span>
                 <span class="name">Все категории</span>
             </div>
         `;
@@ -300,10 +391,10 @@ window.ProductsPage = {
         const indent = level * 16;
 
         let html = `
-            <div class="category-tree-item ${isSelected ? 'selected' : ''}" 
+            <div class="category-tree-item ${isSelected ? 'selected' : ''}"
                  style="padding-left: ${indent + 8}px;"
                  onclick="ProductsPage.selectCategory(${node.id})">
-                <span class="icon">${hasChildren ? '📁' : '📄'}</span>
+                <span class="icon">${hasChildren ? 'Папка' : 'Файл'}</span>
                 <span class="name">${node.name}</span>
             </div>
         `;
@@ -331,13 +422,19 @@ window.ProductsPage = {
 
     filterProducts() {
         const searchQuery = (document.getElementById('searchInput').value || '').toLowerCase();
-        
+        const inStockOnly = document.getElementById('inStockOnly').checked;
+
         this.filteredProducts = this.products.filter(p => {
             // Фильтр по категории
             if (this.selectedCategoryId !== null && p.categoryId !== this.selectedCategoryId) {
                 return false;
             }
-            
+
+            // Фильтр по наличию
+            if (inStockOnly && (p.totalQty || 0) <= 0) {
+                return false;
+            }
+
             // Поиск по названию и артикулу
             if (searchQuery) {
                 const matchName = p.name.toLowerCase().includes(searchQuery);
@@ -347,7 +444,7 @@ window.ProductsPage = {
                     return false;
                 }
             }
-            
+
             return true;
         });
 
@@ -382,7 +479,7 @@ window.ProductsPage = {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="8" class="muted" style="padding: 48px; text-align: center;">
-                        📦 Нет товаров
+                        Нет товаров
                         ${this.selectedCategoryId !== null ? '<br>Выбранная категория пуста' : ''}
                     </td>
                 </tr>
@@ -391,12 +488,12 @@ window.ProductsPage = {
         }
 
         tbody.innerHTML = this.filteredProducts.map(p => `
-            <tr onclick="ProductsPage.viewProduct(${p.id})" style="cursor: pointer;">
+            <tr data-product-id="${p.id}" onclick="ProductsPage.viewProduct(${p.id})" style="cursor: grab;" title="Удерживайте для перемещения товара">
                 <td>
                     ${p.imageUrl
                         ? `<img src="${p.imageUrl}" alt="" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                           <div style="width: 50px; height: 50px; background: #f0f1f7; border-radius: 4px; display: none; align-items: center; justify-content: center;">📦</div>`
-                        : '<div style="width: 50px; height: 50px; background: #f0f1f7; border-radius: 4px; display: flex; align-items: center; justify-content: center;">📦</div>'
+                           <div style="width: 50px; height: 50px; background: #f0f1f7; border-radius: 4px; display: none; align-items: center; justify-content: center;">Товар</div>`
+                        : '<div style="width: 50px; height: 50px; background: #f0f1f7; border-radius: 4px; display: flex; align-items: center; justify-content: center;">Товар</div>'
                     }
                 </td>
                 <td><strong>${p.sku}</strong></td>
@@ -410,15 +507,20 @@ window.ProductsPage = {
                 <td>${this.formatPrice(p.costPrice)}</td>
                 <td>
                     <span class="pill ${p.totalQty <= (p.minStock || 0) ? 'pill-warning' : p.isActive ? 'pill-success' : 'pill-muted'}">
-                        ${p.totalQty <= (p.minStock || 0) ? '⚠️ Мало' : p.isActive ? '✅ В норме' : '❌ Неактивен'}
+                        ${p.totalQty <= (p.minStock || 0) ? 'Мало' : p.isActive ? 'В норме' : 'Неактивен'}
                     </span>
                 </td>
-                <td onclick="event.stopPropagation()">
-                    <button class="btn btn-sm btn-secondary" onclick="ProductsPage.viewProduct(${p.id})">👁</button>
-                    <button class="btn btn-sm btn-warning" onclick="ProductsPage.editProduct(${p.id})">✏️</button>
+                <td onclick="event.stopPropagation()" class="no-drag">
+                    <button class="btn btn-sm btn-secondary" onclick="ProductsPage.viewProduct(${p.id})">Просмотр</button>
+                    <button class="btn btn-sm btn-warning" onclick="ProductsPage.editProduct(${p.id})">Изменить</button>
                 </td>
             </tr>
         `).join('');
+
+        // Обновляем drag-and-drop привязки
+        if (window.ProductDrag) {
+            setTimeout(() => ProductDrag.refresh(), 100);
+        }
     },
 
     formatPrice(price) {
@@ -464,23 +566,174 @@ window.ProductsPage = {
         const roots = filtered.filter(c => !c.parentId);
         
         let html = `
-            <div class="category-tree-item ${this.selectedCategoryId === null ? 'selected' : ''}" 
+            <div class="category-tree-item ${this.selectedCategoryId === null ? 'selected' : ''}"
                  onclick="ProductsPage.selectCategory(null)">
-                <span class="icon">📂</span>
+                <span class="icon">Папка</span>
                 <span class="name">Все категории</span>
             </div>
         `;
-        
+
         roots.forEach(root => {
             html += this.renderCategoryNode(root);
         });
-        
+
         container.innerHTML = html;
     },
 
     toggleCategoryTree() {
         // Можно добавить сворачивание/разворачивание дерева
         console.log('Toggle category tree');
+    },
+
+    async loadWarehouses() {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/api/warehouses?page=0&size=100', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const page = await res.json();
+            this.warehouses = page.content || [];
+            this.filteredWarehouses = [...this.warehouses];
+
+            // Если у пользователя назначен склад, показываем только его
+            if (this.userWarehouseId) {
+                this.filteredWarehouses = this.warehouses.filter(wh => wh.id === this.userWarehouseId);
+                console.log('[ProductsPage] Filtered warehouses to user warehouse:', this.userWarehouseId);
+            }
+
+            // Загружаем локации для каждого склада
+            for (const warehouse of this.filteredWarehouses) {
+                try {
+                    const locRes = await fetch(`/api/locations/warehouse/${warehouse.id}`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (locRes.ok) {
+                        warehouse.locations = await locRes.json();
+                    }
+                } catch (e) {
+                    console.error(`Failed to load locations for warehouse ${warehouse.id}:`, e);
+                    warehouse.locations = [];
+                }
+            }
+        } catch (e) {
+            console.error('[ProductsPage] Failed to load warehouses:', e);
+        }
+    },
+
+    renderWarehouses() {
+        const container = document.getElementById('warehousesList');
+        const titleEl = document.getElementById('warehousesSectionTitle');
+
+        // Обновляем заголовок если показываем только один склад
+        if (this.userWarehouseName && this.filteredWarehouses.length === 1) {
+            titleEl.textContent = this.userWarehouseName;
+        } else {
+            titleEl.textContent = 'Склады и ячейки';
+        }
+
+        if (this.filteredWarehouses.length === 0) {
+            container.innerHTML = `
+                <div class="muted" style="padding: 24px; text-align: center;">
+                    Нет складов
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        this.filteredWarehouses.forEach(wh => {
+            html += this.renderWarehouseNode(wh);
+        });
+
+        container.innerHTML = html;
+    },
+
+    renderWarehouseNode(warehouse) {
+        const locations = warehouse.locations || [];
+        const hasLocations = locations.length > 0;
+
+        let html = `
+            <div class="warehouse-item drop-zone" data-warehouse-id="${warehouse.id}">
+                <div class="warehouse-header drop-zone"
+                     data-warehouse-id="${warehouse.id}"
+                     onclick="ProductsPage.openWarehouseExplorer(${warehouse.id})">
+                    <span class="warehouse-icon">Склад</span>
+                    <div class="warehouse-info">
+                        <div class="warehouse-name">${warehouse.name}</div>
+                        <div class="warehouse-code">${warehouse.code || ''}</div>
+                    </div>
+                    <span class="warehouse-count">${locations.length} яч.</span>
+                </div>
+        `;
+
+        if (hasLocations) {
+            html += `<div class="warehouse-locations" style="${locations.length > 10 ? 'display: none;' : ''}">`;
+            locations.forEach(loc => {
+                html += `
+                    <div class="location-item drop-zone"
+                         data-location-id="${loc.id}"
+                         data-warehouse-id="${warehouse.id}">
+                        <span class="location-icon">Ячейка</span>
+                        <span class="location-code">${loc.code}</span>
+                        <span class="location-name">${loc.name}</span>
+                    </div>
+                `;
+            });
+            
+            if (locations.length > 10) {
+                html += `
+                    <div class="location-more" onclick="this.previousElementSibling.style.display='flex'; this.style.display='none'">
+                        Показать все ${locations.length} ячеек
+                    </div>
+                `;
+            }
+            
+            html += `</div>`;
+        } else {
+            html += `
+                <div class="no-locations">
+                    <span class="muted">Нет ячеек</span>
+                </div>
+            `;
+        }
+
+        html += `</div>`;
+        return html;
+    },
+
+    filterWarehouses() {
+        const query = (document.getElementById('warehouseSearch').value || '').toLowerCase();
+        
+        this.filteredWarehouses = this.warehouses.filter(wh => {
+            if (!query) return true;
+            const matchName = wh.name && wh.name.toLowerCase().includes(query);
+            const matchCode = wh.code && wh.code.toLowerCase().includes(query);
+            return matchName || matchCode;
+        });
+        
+        this.renderWarehouses();
+    },
+
+    refreshWarehouses() {
+        this.loadWarehouses().then(() => {
+            this.filterWarehouses();
+        });
+    },
+
+    // Открытие Location Explorer для склада
+    openWarehouseExplorer(warehouseId) {
+        console.log('[ProductsPage] Opening Location Explorer for warehouse:', warehouseId);
+
+        // Используем LocationExplorer для выбора ячейки
+        if (window.LocationExplorer) {
+            LocationExplorer.open((location) => {
+                console.log('[ProductsPage] Location selected:', location);
+                // Можно открыть модальное окно просмотра локации
+                if (window.LocationView) {
+                    LocationView.open(location);
+                }
+            }, warehouseId);
+        }
     }
 };
 
@@ -584,6 +837,128 @@ categoryTreeStyles.textContent = `
         .card:first-child {
             display: none;
         }
+        
+        .card:last-child {
+            display: none;
+        }
+    }
+    
+    /* Стили для складов и ячеек */
+    .warehouse-item {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin: 8px 0;
+        overflow: hidden;
+        transition: all 0.2s;
+    }
+    
+    .warehouse-item:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .warehouse-item.drop-target-highlight {
+        outline: 3px dashed var(--primary) !important;
+        outline-offset: -3px;
+        background: rgba(0, 123, 255, 0.1) !important;
+    }
+    
+    .warehouse-header {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        background: #f8f9fa;
+        border-bottom: 1px solid var(--border);
+        cursor: grab;
+    }
+    
+    .warehouse-icon {
+        font-size: 20px;
+        margin-right: 8px;
+    }
+    
+    .warehouse-info {
+        flex: 1;
+    }
+    
+    .warehouse-name {
+        font-weight: 600;
+        color: #212529;
+        font-size: 14px;
+    }
+    
+    .warehouse-code {
+        font-size: 12px;
+        color: #6c757d;
+    }
+    
+    .warehouse-count {
+        font-size: 12px;
+        padding: 4px 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        color: #495057;
+    }
+    
+    .warehouse-locations {
+        display: block;
+        padding: 4px;
+        background: white;
+    }
+    
+    .location-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background 0.2s;
+        margin: 2px 0;
+    }
+    
+    .location-item:hover {
+        background: #e9ecef;
+    }
+    
+    .location-item.drop-target-highlight {
+        background: rgba(0, 123, 255, 0.2) !important;
+        outline: 2px dashed var(--primary);
+    }
+    
+    .location-icon {
+        font-size: 16px;
+        margin-right: 8px;
+    }
+    
+    .location-code {
+        font-weight: 600;
+        font-size: 13px;
+        color: #212529;
+        margin-right: 8px;
+    }
+    
+    .location-name {
+        font-size: 12px;
+        color: #6c757d;
+        flex: 1;
+    }
+    
+    .location-more {
+        padding: 8px 12px;
+        font-size: 12px;
+        color: #007bff;
+        cursor: pointer;
+        text-align: center;
+        border-top: 1px solid var(--border);
+    }
+    
+    .location-more:hover {
+        background: #e9ecef;
+    }
+    
+    .no-locations {
+        padding: 12px;
+        text-align: center;
+        font-size: 13px;
     }
 `;
 document.head.appendChild(categoryTreeStyles);

@@ -41,6 +41,24 @@ public class AdminUserController {
         return UserDto.of(u);
     }
 
+    @PutMapping("/{id}/warehouse")
+    public UserDto changeWarehouse(@PathVariable Long id, @RequestBody ChangeWarehouseReq req) {
+        var u = service.setWarehouse(id, req.warehouseId);
+        return UserDto.of(u);
+    }
+
+    @GetMapping("/{id}")
+    public UserDto getUser(@PathVariable Long id) {
+        var u = service.findById(id);
+        return UserDto.of(u);
+    }
+
+    @PutMapping("/{id}/password")
+    public UserDto changePassword(@PathVariable Long id, @RequestBody ChangePasswordReq req) {
+        var u = service.changePassword(id, req.password);
+        return UserDto.of(u);
+    }
+
     @DeleteMapping("/{id}")
     public Map<String, Object> delete(@PathVariable Long id) {
         service.safeDelete(id);
@@ -61,6 +79,10 @@ public class AdminUserController {
 
     @Data public static class ChangeStatusReq { String status; }
 
+    @Data public static class ChangeWarehouseReq { Long warehouseId; }
+
+    @Data public static class ChangePasswordReq { String password; }
+
     @Data
     public static class UserDto {
         Long id;
@@ -68,6 +90,8 @@ public class AdminUserController {
         String email;
         boolean active;
         String role;
+        Long warehouseId;
+        String warehouseName;
 
         static UserDto of(User u) {
             var dto = new UserDto();
@@ -78,6 +102,8 @@ public class AdminUserController {
             dto.role = u.getRoles().isEmpty()
                     ? "GUEST"
                     : u.getRoles().iterator().next().getCode();
+            dto.warehouseId = u.getWarehouseId();
+            // warehouseName заполняется в сервисе или через JOIN
             return dto;
         }
     }

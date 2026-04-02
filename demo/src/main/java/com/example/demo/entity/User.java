@@ -29,6 +29,9 @@ public class User {
     @Column(nullable = false)
     private Boolean active = true;
 
+    @Column(name = "warehouse_id")
+    private Long warehouseId;
+
     @Column(name = "created_at", updatable = false, insertable = false)
     private Instant createdAt;
 

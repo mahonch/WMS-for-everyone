@@ -1,48 +1,85 @@
 // /js/admin.js
 
-// Общий дебаг авторизации
-debugAuthContext('ADMIN_PAGE').then(() => {
-    console.log('[ADMIN_PAGE] debugAuthContext завершён');
-});
+console.log('[ADMIN] init...');
 
-// проверка роли на фронте
+// Проверка роли
 const role = (localStorage.getItem('role') || '').toUpperCase();
-console.log('[ADMIN_PAGE] role from LS =', role);
-
 if (!role.includes('ADMIN')) {
-    console.warn('[ADMIN_PAGE] Нет роли ADMIN на фронте, редирект на /index.html');
+    console.warn('[ADMIN] Нет роли ADMIN');
     alert('Требуется роль ADMIN');
     window.location.replace('/index.html');
 }
 
-// шапка/выход
-document.getElementById('usernameLabel').textContent =
-    localStorage.getItem('username') || 'admin';
-document.getElementById('logoutBtn').addEventListener('click', () => {
-    console.log('[ADMIN_PAGE] Logout clicked, очищаем localStorage');
-    localStorage.clear();
-    window.location.href = '/index.html';
+// Инициализация после загрузки DOM
+document.addEventListener('DOMContentLoaded', function() {
+    initPage();
 });
 
-// алерты
-const alerts = document.getElementById('alerts');
-function alertBox(type, text) {
+let usersCache = [];
+
+function initPage() {
+    console.log('[ADMIN] initPage');
+    
+    // Username и logout
+    document.getElementById('usernameLabel').textContent = localStorage.getItem('username') || 'admin';
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.clear();
+        window.location.href = '/index.html';
+    });
+
+    // Кнопки создания
+    document.getElementById('btnOpenCreate').onclick = () => {
+        document.getElementById('createPanel').style.display = 'block';
+    };
+    document.getElementById('btnCancelCreate').onclick = () => {
+        document.getElementById('createPanel').style.display = 'none';
+    };
+    document.getElementById('btnCancelCreate2').onclick = () => {
+        document.getElementById('createPanel').style.display = 'none';
+    };
+
+    // Форма создания
+    document.getElementById('createForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('c_username').value.trim();
+        const email = document.getElementById('c_email').value.trim();
+        const password = document.getElementById('c_password').value;
+        const roleCode = document.getElementById('c_role').value;
+
+        try {
+            await api('POST', '/api/admin/users', { username, email, password, roleCode });
+            showAlert('success', 'Пользователь создан');
+            document.getElementById('createPanel').style.display = 'none';
+            e.target.reset();
+            await loadUsers();
+        } catch (err) {
+            showAlert('error', err.message);
+        }
+    });
+
+    // Drag-and-drop для колонок
+    setupDragAndDrop();
+
+    // Загрузка пользователей
+    loadUsers();
+}
+
+// Алёрты
+function showAlert(type, text) {
+    const alerts = document.getElementById('alerts');
     const div = document.createElement('div');
     div.className = `alert ${type}`;
     div.textContent = text;
+    div.style.cssText = 'padding: 12px 16px; border-radius: 8px; margin-bottom: 12px;';
+    if (type === 'success') div.style.background = '#d4edda';
+    if (type === 'error') div.style.background = '#f8d7da';
     alerts.appendChild(div);
     setTimeout(() => div.remove(), 4000);
 }
 
-// универсальный запрос к API с логированием
+// API запрос
 async function api(method, url, body) {
     const token = localStorage.getItem('token') || '';
-    console.log('[ADMIN_PAGE][api] →', method, url, {
-        tokenPresent: !!token,
-        tokenShort: token ? token.substring(0, 20) + '...' : null,
-        body
-    });
-
     const res = await fetch(url, {
         method,
         headers: {
@@ -53,138 +90,197 @@ async function api(method, url, body) {
     });
 
     let data = null;
-    try {
-        data = await res.json();
-    } catch (_) {
-        console.warn('[ADMIN_PAGE][api] Не удалось распарсить JSON ответа');
-    }
-
-    console.log('[ADMIN_PAGE][api] ←', method, url, 'status =', res.status, 'body =', data);
+    try { data = await res.json(); } catch (_) {}
 
     if (!res.ok) {
         const msg = (data && (data.error || data.message)) || `Ошибка ${res.status}`;
-        console.error('[ADMIN_PAGE][api] Ошибка:', msg);
         throw new Error(msg);
     }
     return data;
 }
 
-// отрисовка таблицы
+// Загрузка пользователей
 async function loadUsers() {
-    console.log('[ADMIN_PAGE] loadUsers() start');
-    const list = await api('GET', '/api/admin/users');
-    console.log('[ADMIN_PAGE] loadUsers() got', list);
-
-    const tb = document.querySelector('#usersTable tbody');
-    tb.innerHTML = '';
-    for (const u of list) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-      <td>${u.id}</td>
-      <td>${u.username}</td>
-      <td></td>
-      <td>${u.active ? 'ACTIVE' : 'BLOCKED'}</td>
-      <td>
-        <select data-id="${u.id}" class="roleSelect">
-          ${['ADMIN','MANAGER','STOREKEEPER','GUEST'].map(r =>
-            `<option value="${r}" ${u.role===r?'selected':''}>${r}</option>`).join('')}
-        </select>
-      </td>
-      <td>
-        <button class="btn btn-danger delBtn" data-id="${u.id}">Удалить</button>
-        <button class="btn btn-secondary blockBtn" data-id="${u.id}" data-status="${u.active}">
-          ${u.active ? 'Заблокировать' : 'Активировать'}
-        </button>
-      </td>
-    `;
-        tb.appendChild(tr);
+    try {
+        usersCache = await api('GET', '/api/admin/users');
+        renderUsers();
+    } catch (err) {
+        showAlert('error', 'Не удалось загрузить пользователей: ' + err.message);
     }
 }
 
-// обработчики действий — роли
-document.querySelector('#usersTable').addEventListener('change', async (e) => {
-    if (e.target.classList.contains('roleSelect')) {
-        const id = +e.target.dataset.id;
-        const roleCode = e.target.value;
-        console.log('[ADMIN_PAGE] change role', { id, roleCode });
-        try {
-            await api('PUT', `/api/admin/users/${id}/role`, { roleCode });
-            alertBox('success', 'Роль обновлена');
-        } catch (err) {
-            alertBox('error', err.message);
-            await loadUsers(); // откатить UI
-        }
+// Рендер пользователей по колонкам
+function renderUsers() {
+    const activeContainer = document.getElementById('activeUsers');
+    const blockedContainer = document.getElementById('blockedUsers');
+    
+    activeContainer.innerHTML = '';
+    blockedContainer.innerHTML = '';
+    
+    const activeUsers = usersCache.filter(u => u.active);
+    const blockedUsers = usersCache.filter(u => !u.active);
+    
+    // Обновляем счетчики
+    document.getElementById('activeCount').textContent = activeUsers.length;
+    document.getElementById('blockedCount').textContent = blockedUsers.length;
+    
+    // Рендерим активных
+    if (activeUsers.length === 0) {
+        activeContainer.innerHTML = '<div class="drop-hint">Перетащите пользователя сюда для активации</div>';
+    } else {
+        activeUsers.forEach(u => {
+            activeContainer.appendChild(createUserCard(u));
+        });
     }
-});
-
-// обработчики действий — delete + active
-document.querySelector('#usersTable').addEventListener('click', async (e) => {
-    const del = e.target.closest('.delBtn');
-    const block = e.target.closest('.blockBtn');
-
-    if (del) {
-        const id = +del.dataset.id;
-        console.log('[ADMIN_PAGE] delete user', id);
-        if (!confirm('Удалить пользователя?')) return;
-        try {
-            await api('DELETE', `/api/admin/users/${id}`);
-            alertBox('success', 'Удалён');
-            await loadUsers();
-        } catch (err) {
-            alertBox('error', err.message);
-        }
+    
+    // Рендерим заблокированных
+    if (blockedUsers.length === 0) {
+        blockedContainer.innerHTML = '<div class="drop-hint">Перетащите пользователя сюда для блокировки</div>';
+    } else {
+        blockedUsers.forEach(u => {
+            blockedContainer.appendChild(createUserCard(u));
+        });
     }
+}
 
-    else if (block) {
-        const id = +block.dataset.id;
-        const current = block.dataset.status === "true";
-        const nextActive = !current;
+// Создание карточки пользователя
+function createUserCard(user) {
+    const card = document.createElement('div');
+    card.className = 'user-card';
+    card.draggable = true;
+    card.dataset.userId = user.id;
+    
+    const roleClass = `role-${user.role}`;
+    
+    card.innerHTML = `
+        <div class="user-card__header">
+            <div>
+                <div class="user-card__name">${user.username}</div>
+                <div class="user-card__email">${user.email || '—'}</div>
+            </div>
+            <span class="user-card__role ${roleClass}">${user.role}</span>
+        </div>
+        
+        <div class="user-card__info">
+            <div class="user-card__info-item">
+                <div class="user-card__info-label">Статус</div>
+                <div>${user.active ? '✅' : '🚫'}</div>
+            </div>
+            <div class="user-card__info-item">
+                <div class="user-card__info-label">Склад</div>
+                <div style="max-width: 120px; overflow: hidden; text-overflow: ellipsis;">${user.warehouseName || '—'}</div>
+            </div>
+        </div>
+        
+        <div class="user-card__actions">
+            <button class="btn btn-primary" onclick="openUserProfile(${user.id})">Профиль</button>
+            <button class="btn btn-danger" onclick="deleteUser(${user.id})" style="flex: 0 0 40px;">🗑</button>
+        </div>
+    `;
+    
+    // Drag events
+    card.addEventListener('dragstart', handleDragStart);
+    card.addEventListener('dragend', handleDragEnd);
+    
+    return card;
+}
 
-        console.log('[ADMIN_PAGE] toggle active', { id, current, nextActive });
+// Drag-and-drop логика
+let draggedCard = null;
 
-        try {
-            await api('PUT', `/api/admin/users/${id}/active`, { active: nextActive });
-            alertBox('success', 'Статус изменён');
-            await loadUsers();
-        } catch (err) {
-            alertBox('error', err.message);
-        }
-    }
-});
+function setupDragAndDrop() {
+    const containers = document.querySelectorAll('.board-list');
+    
+    containers.forEach(container => {
+        container.addEventListener('dragover', handleDragOver);
+        container.addEventListener('dragenter', handleDragEnter);
+        container.addEventListener('dragleave', handleDragLeave);
+        container.addEventListener('drop', handleDrop);
+    });
+}
 
-// создание пользователя
-const createPanel = document.getElementById('createPanel');
-document.getElementById('btnOpenCreate').onclick = () => {
-    console.log('[ADMIN_PAGE] open create panel');
-    createPanel.style.display = 'block';
-};
-document.getElementById('btnCancelCreate').onclick = () => {
-    console.log('[ADMIN_PAGE] cancel create');
-    createPanel.style.display = 'none';
-};
+function handleDragStart(e) {
+    draggedCard = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', this.dataset.userId);
+}
 
-document.getElementById('createForm').addEventListener('submit', async (e) => {
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    draggedCard = null;
+    
+    // Убираем подсветку со всех колонок
+    document.querySelectorAll('.board-list').forEach(list => {
+        list.classList.remove('drag-over');
+    });
+}
+
+function handleDragOver(e) {
     e.preventDefault();
-    const username = document.getElementById('c_username').value.trim();
-    const email = document.getElementById('c_email').value.trim();
-    const password = document.getElementById('c_password').value;
-    const roleCode = document.getElementById('c_role').value;
+    e.dataTransfer.dropEffect = 'move';
+}
 
-    console.log('[ADMIN_PAGE] create user submit', { username, email, roleCode });
+function handleDragEnter(e) {
+    e.preventDefault();
+    this.classList.add('drag-over');
+}
 
+function handleDragLeave(e) {
+    // Убираем подсветку только если уходим из контейнера
+    if (!this.contains(e.relatedTarget)) {
+        this.classList.remove('drag-over');
+    }
+}
+
+async function handleDrop(e) {
+    e.preventDefault();
+    this.classList.remove('drag-over');
+    
+    const userId = e.dataTransfer.getData('text/plain');
+    const newStatus = this.dataset.status;
+    
+    if (!userId) return;
+    
+    const user = usersCache.find(u => u.id == userId);
+    if (!user) return;
+    
+    const shouldBeActive = newStatus === 'active';
+    
+    // Если статус не изменился - ничего не делаем
+    if (user.active === shouldBeActive) return;
+    
+    // Подтверждение
+    const actionText = shouldBeActive ? 'активировать' : 'заблокировать';
+    if (!confirm(`Вы уверены, что хотите ${actionText} пользователя ${user.username}?`)) {
+        return;
+    }
+    
     try {
-        await api('POST', '/api/admin/users', { username, email, password, roleCode });
-        alertBox('success', 'Пользователь создан');
-        createPanel.style.display = 'none';
-        e.target.reset();
+        await api('PUT', `/api/admin/users/${userId}/status`, { 
+            status: shouldBeActive ? 'ACTIVE' : 'BLOCKED' 
+        });
+        showAlert('success', `Пользователь ${shouldBeActive ? 'активирован' : 'заблокирован'}`);
         await loadUsers();
     } catch (err) {
-        alertBox('error', err.message);
+        showAlert('error', err.message);
     }
-});
+}
 
-// старт
-loadUsers().catch(e => {
-    console.error('[ADMIN_PAGE] loadUsers error', e);
-    alertBox('error', e.message);
-});
+// Открыть профиль пользователя
+window.openUserProfile = function(userId) {
+    window.location.href = `/admin-user-profile.html?id=${userId}`;
+};
+
+// Удалить пользователя (для кнопки в карточке)
+window.deleteUser = async function(userId) {
+    if (!confirm('Вы уверены, что хотите удалить пользователя?')) return;
+    
+    try {
+        await api('DELETE', `/api/admin/users/${userId}`);
+        showAlert('success', 'Пользователь удалён');
+        await loadUsers();
+    } catch (err) {
+        showAlert('error', err.message);
+    }
+};

@@ -1,10 +1,14 @@
 console.log("[WAREHOUSES] init...");
 
-debugAuthContext("WAREHOUSES_PAGE").then(() => startPage());
-
 let token = null;
 let warehousesCache = [];
 let currentWarehouse = null;
+
+/* ==================== INIT ==================== */
+
+document.addEventListener('DOMContentLoaded', function() {
+    startPage();
+});
 
 /* ==================== START ==================== */
 
@@ -20,27 +24,34 @@ function startPage() {
         window.location.href = "/index.html";
     };
 
+    // Инициализируем алерты
+    initAlerts();
+
     bindEvents();
     loadWarehouses();
 }
 
 /* ==================== ALERTS ==================== */
 
-const alerts = document.getElementById("alerts");
+let alerts = null;
+let toastContainer = null;
 
-let toastContainer = document.getElementById("toastContainer");
-if (!toastContainer) {
-    toastContainer = document.createElement("div");
-    toastContainer.id = "toastContainer";
-    toastContainer.className = "toast-container";
-    document.body.appendChild(toastContainer);
+function initAlerts() {
+    alerts = document.getElementById("alerts");
+    toastContainer = document.getElementById("toastContainer");
+    if (!toastContainer) {
+        toastContainer = document.createElement("div");
+        toastContainer.id = "toastContainer";
+        toastContainer.className = "toast-container";
+        document.body.appendChild(toastContainer);
+    }
 }
 
 function showNotification(type, title, message) {
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
     
-    const icon = type === "success" ? "✅" : type === "error" ? "❌" : type === "warning" ? "⚠️" : "ℹ️";
+    const icon = type === "success" ? "" : type === "error" ? "" : type === "warning" ? "" : "ℹ";
     toast.innerHTML = `
         <span class="toast-icon">${icon}</span>
         <div class="toast-content">
@@ -67,7 +78,7 @@ function alertBox(type, text) {
 const fmtDate = (d) => d ? new Date(d).toLocaleString("ru-RU") : "—";
 const statusPill = (s) => {
     const cls = s ? "pill-committed" : "pill-draft";
-    const label = s ? "✅ Активен" : "❌ Неактивен";
+    const label = s ? " Активен" : " Неактивен";
     return `<span class="pill ${cls}">${label}</span>`;
 };
 
@@ -150,11 +161,11 @@ async function renderTable() {
             <td>${w.address || "—"}</td>
             <td>${statusPill(w.isActive)}</td>
             <td>
-                <button class="btn btn-sm btn-primary" onclick="openWarehouseDetail(${w.id})">👁 Просмотр</button>
+                <button class="btn btn-sm btn-primary" onclick="openWarehouseDetail(${w.id})"> Просмотр</button>
             </td>
             <td>
-                <button class="btn btn-sm btn-secondary" onclick="openEditWarehouse(${w.id})">✏️</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteWarehouse(${w.id})">🗑️</button>
+                <button class="btn btn-sm btn-secondary" onclick="openEditWarehouse(${w.id})"></button>
+                <button class="btn btn-sm btn-danger" onclick="deleteWarehouse(${w.id})"></button>
             </td>
         `;
         tb.appendChild(tr);
@@ -166,14 +177,14 @@ async function renderTable() {
 function bindEvents() {
     document.getElementById("filterInput").addEventListener("input", renderTable);
     document.getElementById("statusFilter").addEventListener("change", renderTable);
-    document.getElementById("btnCreate").onclick = openCreateWarehouse;
+    document.getElementById("btnCreate").onclick = window.openCreateWarehouse;
     document.getElementById("btnCloseModal").onclick = closeModal;
-    document.getElementById("btnCloseDetail").onclick = closeDetail;
+    document.getElementById("btnCloseDetail").onclick = window.closeDetail;
     document.getElementById("btnEditWarehouse").onclick = () => {
-        if (currentWarehouse) openEditWarehouse(currentWarehouse.id);
+        if (currentWarehouse) window.openEditWarehouse(currentWarehouse.id);
     };
     document.getElementById("btnDeleteWarehouse").onclick = () => {
-        if (currentWarehouse) deleteWarehouse(currentWarehouse.id);
+        if (currentWarehouse) window.deleteWarehouse(currentWarehouse.id);
     };
 }
 
@@ -181,7 +192,7 @@ function bindEvents() {
 
 async function openCreateWarehouse() {
     const modalBody = document.getElementById("modalBody");
-    document.getElementById("modalTitle").textContent = "🏢 Новый склад";
+    document.getElementById("modalTitle").textContent = " Новый склад";
     
     modalBody.innerHTML = `
         <div class="loc-row" style="margin-bottom: 12px;">
@@ -216,7 +227,7 @@ async function openEditWarehouse(id) {
         currentWarehouse = w;
         
         const modalBody = document.getElementById("modalBody");
-        document.getElementById("modalTitle").textContent = "✏️ Редактировать склад";
+        document.getElementById("modalTitle").textContent = " Редактировать склад";
         
         modalBody.innerHTML = `
             <div class="loc-row" style="margin-bottom: 12px;">
@@ -338,5 +349,8 @@ async function deleteWarehouse(id) {
 window.openWarehouseDetail = function(id) {
     window.location.href = `/pages/warehouse-detail.html?id=${id}`;
 };
+window.openCreateWarehouse = openCreateWarehouse;
 window.openEditWarehouse = openEditWarehouse;
 window.deleteWarehouse = deleteWarehouse;
+window.closeModal = closeModal;
+window.closeDetail = closeDetail;

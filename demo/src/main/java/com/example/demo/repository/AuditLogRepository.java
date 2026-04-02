@@ -9,4 +9,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 
     // Получить последние 5 операций
     List<AuditLog> findTop5ByOrderByTsDesc();
+    
+    // Получить аудит по пользователю
+    List<AuditLog> findByActorIdOrderByTsDesc(Long actorId);
 }

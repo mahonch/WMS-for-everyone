@@ -14,4 +14,5 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long>,JpaSpeci
     Optional<Receipt> findByNumber(String number);
     List<Receipt> findByStatusOrderByCreatedAtDesc(DocStatus status);
     Page<Receipt> findBySupplierId(Long supplierId, Pageable pageable);
+    Page<Receipt> findByWarehouseId(Pageable pageable, Long warehouseId);
 }

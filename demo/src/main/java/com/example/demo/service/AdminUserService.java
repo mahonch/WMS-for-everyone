@@ -67,4 +67,22 @@ public class AdminUserService {
         u.setActive(false);
         users.save(u);
     }
+
+    @Transactional
+    public User setWarehouse(Long userId, Long warehouseId) {
+        var u = users.findById(userId).orElseThrow();
+        u.setWarehouseId(warehouseId);
+        return users.save(u);
+    }
+
+    @Transactional
+    public User changePassword(Long userId, String newPassword) {
+        var u = users.findById(userId).orElseThrow();
+        u.setPasswordHash(encoder.encode(newPassword));
+        return users.save(u);
+    }
+
+    public User findById(Long userId) {
+        return users.findById(userId).orElseThrow();
+    }
 }

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Профиль — WMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="/css/app-v2.css" rel="stylesheet">
+    <link href="/css/mobile.css" rel="stylesheet">
+    <script src="/js/auth-service.js"></script>
+    <script src="/js/modal.js"></script>
+</head>
+<body class="layout">
+
+<!-- BOTTOM NAV (MOBILE) -->
+<nav class="bottom-nav">
+    <a href="/dashboard.html">
+        <span class="nav-icon">Главная</span>
+    </a>
+    <a href="/pages/receipts.html">
+        <span class="nav-icon">Приёмка</span>
+    </a>
+    <a href="/pages/issues.html">
+        <span class="nav-icon">Списание</span>
+    </a>
+    <a href="/pages/transfers.html">
+        <span class="nav-icon">Перемещ.</span>
+    </a>
+    <a href="/pages/products.html">
+        <span class="nav-icon">Товары</span>
+    </a>
+    <a href="/pages/profile.html" class="active">
+        <span class="nav-icon">Профиль</span>
+    </a>
+</nav>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="logo">WMS</div>
+    <nav>
+        <a href="/dashboard.html">Главная</a>
+        <a href="/pages/receipts.html">Приёмка</a>
+        <a href="/pages/issues.html">Списание</a>
+        <a href="/pages/transfers.html">Перемещения</a>
+        <a href="/pages/products.html">Товары</a>
+        <a href="/pages/suppliers.html">Поставщики</a>
+        <a href="/pages/warehouses.html">Склады</a>
+        <a href="/pages/profile.html" class="active">Профиль</a>
+        <a href="/scan.html">Скан QR</a>
+    </nav>
+    <div class="user-chip">
+        <span id="usernameLabel">—</span>
+        <button id="logoutBtn" class="btn btn-secondary">Выйти</button>
+    </div>
+</aside>
+
+<!-- PAGE -->
+<main class="content">
+    <header class="topbar">
+        <div>
+            <div class="tag-muted">Настройки</div>
+            <strong>Профиль пользователя</strong>
+        </div>
+    </header>
+
+    <div id="alerts"></div>
+
+    <div class="profile-layout" style="display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 800px; margin: 24px auto; padding: 0 24px;">
+
+        <!-- Карточка профиля -->
+        <section class="card">
+            <div class="section-title">
+                <h3>Информация о пользователе</h3>
+            </div>
+
+            <div style="padding: 24px;">
+                <div class="grid2" style="gap: 24px;">
+                    <!-- Левая колонка -->
+                    <div>
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="label">Имя пользователя</span>
+                            <span id="profileUsername" class="value" style="font-size: 18px; font-weight: 600;">—</span>
+                        </div>
+
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="label">Роль</span>
+                            <span id="profileRole" class="value">
+                                <span class="pill pill-primary">—</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Правая колонка -->
+                    <div>
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="label">Email</span>
+                            <input type="email" id="profileEmail" class="input" placeholder="email@example.com">
+                        </div>
+
+                        <div class="info-item">
+                            <span class="label">Рабочий склад</span>
+                            <select id="profileWarehouse" class="input">
+                                <option value="">Не выбран</option>
+                            </select>
+                            <small class="muted" style="display: block; margin-top: 8px;">
+                                Склад, который будет использоваться по умолчанию при создании документов
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="toolbar" style="justify-content: flex-end; margin-top: 24px;">
+                    <button type="button" class="btn btn-secondary" onclick="ProfilePage.loadProfile()">Отмена</button>
+                    <button type="button" class="btn btn-primary" onclick="ProfilePage.saveProfile()">Сохранить</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Карточка безопасности -->
+        <section class="card" style="margin-top: 24px;">
+            <div class="section-title">
+                <h3>Безопасность</h3>
+            </div>
+
+            <div style="padding: 24px;">
+                <div class="info-item" style="margin-bottom: 16px;">
+                    <span class="label">Статус аккаунта</span>
+                    <span id="profileStatus" class="value">
+                        <span class="pill pill-success">Активен</span>
+                    </span>
+                </div>
+
+                <div class="muted" style="margin-top: 16px;">
+                    Для изменения пароля обратитесь к администратору системы
+                </div>
+            </div>
+        </section>
+
+    </div>
+</main>
+
+<!-- Toast контейнер -->
+<div id="toastContainer" class="toast-container"></div>
+
+<script>
+window.ProfilePage = {
+    profile: null,
+    warehouses: [],
+
+    async init() {
+        console.log('[ProfilePage] init...');
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/index.html';
+            return;
+        }
+
+        document.getElementById('usernameLabel').textContent = localStorage.getItem('username') || 'user';
+        document.getElementById('logoutBtn').onclick = () => {
+            localStorage.clear();
+            window.location.href = '/index.html';
+        };
+
+        await this.loadProfile();
+        await this.loadWarehouses();
+    },
+
+    async loadProfile() {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/api/profile', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (!res.ok) {
+                throw new Error('Ошибка загрузки профиля');
+            }
+            this.profile = await res.json();
+            this.renderProfile();
+        } catch (e) {
+            console.error('[ProfilePage] Error:', e);
+            this.showNotification('error', 'Ошибка загрузки профиля: ' + e.message);
+        }
+    },
+
+    async loadWarehouses() {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/api/profile/warehouses', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (!res.ok) {
+                throw new Error('Ошибка загрузки складов');
+            }
+            this.warehouses = await res.json();
+            this.renderWarehouses();
+        } catch (e) {
+            console.error('[ProfilePage] Error:', e);
+        }
+    },
+
+    renderProfile() {
+        document.getElementById('profileUsername').textContent = this.profile.username || '—';
+        document.getElementById('profileEmail').value = this.profile.email || '';
+        document.getElementById('profileWarehouse').value = this.profile.warehouseId || '';
+
+        const roleEl = document.getElementById('profileRole');
+        const role = this.profile.role || 'GUEST';
+        roleEl.innerHTML = `<span class="pill pill-primary">${this.getRoleName(role)}</span>`;
+
+        const statusEl = document.getElementById('profileStatus');
+        statusEl.innerHTML = `<span class="pill pill-success">Активен</span>`;
+    },
+
+    renderWarehouses() {
+        const select = document.getElementById('profileWarehouse');
+        select.innerHTML = '<option value="">Не выбран</option>' +
+            this.warehouses.map(w => `<option value="${w.id}">${w.name} (${w.code})</option>`).join('');
+
+        // Восстанавливаем выбранное значение
+        if (this.profile && this.profile.warehouseId) {
+            select.value = this.profile.warehouseId;
+        }
+    },
+
+    getRoleName(code) {
+        const roles = {
+            'ADMIN': 'Администратор',
+            'WAREHOUSE_MANAGER': 'Менеджер склада',
+            'OPERATOR': 'Оператор',
+            'GUEST': 'Гость'
+        };
+        return roles[code] || code;
+    },
+
+    async saveProfile() {
+        const token = localStorage.getItem('token');
+        const email = document.getElementById('profileEmail').value;
+        const warehouseId = document.getElementById('profileWarehouse').value;
+
+        const data = {
+            email: email || null,
+            warehouseId: warehouseId ? Number(warehouseId) : null
+        };
+
+        try {
+            const res = await fetch('/api/profile', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (!res.ok) {
+                const error = await res.json().catch(() => ({ message: 'Ошибка сохранения' }));
+                throw new Error(error.message || 'Ошибка сохранения');
+            }
+
+            const result = await res.json();
+            this.profile = result;
+
+            this.showNotification('success', 'Профиль успешно обновлён');
+
+            // Обновляем username в localStorage если изменился
+            if (result.username) {
+                localStorage.setItem('username', result.username);
+                document.getElementById('usernameLabel').textContent = result.username;
+            }
+
+        } catch (e) {
+            console.error('[ProfilePage] Save error:', e);
+            this.showNotification('error', 'Ошибка сохранения: ' + e.message);
+        }
+    },
+
+    showNotification(type, message) {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        
+        const icon = type === 'success' ? '✅' : '⚠️';
+        const bg = type === 'success' ? '#d4edda' : '#f8d7da';
+        const color = type === 'success' ? '#155724' : '#721c24';
+        
+        toast.style.cssText = `
+            background: ${bg};
+            color: ${color};
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideInRight 0.3s ease;
+        `;
+        
+        toast.innerHTML = `
+            <span style="font-size: 18px;">${icon}</span>
+            <span style="flex: 1;">${message}</span>
+            <button onclick="this.parentElement.remove()" style="background: none; border: none; cursor: pointer; font-size: 18px;">×</button>
+        `;
+        
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    },
+
+    showAlert(type, message) {
+        // Устаревший метод, используем showNotification
+        this.showNotification(type, message);
+    }
+};
+
+// Добавляем стили для анимации
+const style = document.createElement('style');
+style.textContent = `
+    .toast-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 9999;
+        max-width: 400px;
+    }
+    
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// Инициализация
+document.addEventListener('DOMContentLoaded', () => {
+    ProfilePage.init();
+});
+</script>
+
+</body>
+</html>

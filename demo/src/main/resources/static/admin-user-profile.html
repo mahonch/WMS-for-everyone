@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Профиль пользователя — WMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="/css/app-v2.css" rel="stylesheet">
+    <link href="/css/mobile.css" rel="stylesheet">
+    <script src="/js/auth-service.js"></script>
+    <script src="/js/admin-user-profile.js?v=1"></script>
+</head>
+<body class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="logo">WMS</div>
+    <nav>
+        <a href="/dashboard.html">Главная</a>
+        <a href="/admin.html">Админ</a>
+    </nav>
+    <div class="user-chip">
+        <span id="usernameLabel">—</span>
+        <button id="logoutBtn" class="btn btn-secondary">Выйти</button>
+    </div>
+</aside>
+
+<!-- PAGE -->
+<main class="content">
+    <header class="topbar">
+        <div>
+            <div class="tag-muted">Администрирование</div>
+            <strong id="pageTitle">Профиль пользователя</strong>
+        </div>
+        <a href="/admin.html" class="btn btn-secondary">← Назад к списку</a>
+    </header>
+
+    <div id="alerts"></div>
+
+    <div id="userProfile" style="padding: 20px; display: none;">
+        <!-- INFO CARD -->
+        <section class="card" style="margin-bottom: 20px;">
+            <div class="section-title">
+                <h3>Информация</h3>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 16px 0;">
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">ID</div>
+                    <div id="userId" style="font-size: 16px;">—</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Логин</div>
+                    <div id="userUsername" style="font-size: 16px;">—</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Email</div>
+                    <div id="userEmail" style="font-size: 16px;">—</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Статус</div>
+                    <div id="userStatus" style="font-size: 16px;">—</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Роль</div>
+                    <div id="userRole" style="font-size: 16px;">—</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Склад</div>
+                    <div id="userWarehouse" style="font-size: 16px;">—</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ACTIONS CARD -->
+        <section class="card" style="margin-bottom: 20px;">
+            <div class="section-title">
+                <h3>Действия</h3>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 16px 0;">
+                <!-- Change Role -->
+                <div>
+                    <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px;">
+                        Изменить роль
+                    </label>
+                    <div style="display: flex; gap: 8px;">
+                        <select id="editRole" style="flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;">
+                            <option value="ADMIN">ADMIN</option>
+                            <option value="MANAGER">MANAGER</option>
+                            <option value="STOREKEEPER">STOREKEEPER</option>
+                            <option value="GUEST">GUEST</option>
+                        </select>
+                        <button class="btn btn-primary" id="btnChangeRole">Применить</button>
+                    </div>
+                </div>
+
+                <!-- Change Password -->
+                <div>
+                    <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px;">
+                        Изменить пароль
+                    </label>
+                    <div style="display: flex; gap: 8px;">
+                        <input id="editPassword" type="password" placeholder="Новый пароль" 
+                               style="flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;">
+                        <button class="btn btn-primary" id="btnChangePassword">Применить</button>
+                    </div>
+                </div>
+
+                <!-- Change Status -->
+                <div>
+                    <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px;">
+                        Статус
+                    </label>
+                    <div style="display: flex; gap: 8px;">
+                        <select id="editStatus" style="flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;">
+                            <option value="ACTIVE">Активен</option>
+                            <option value="BLOCKED">Заблокирован</option>
+                        </select>
+                        <button class="btn btn-primary" id="btnChangeStatus">Применить</button>
+                    </div>
+                </div>
+
+                <!-- Change Warehouse -->
+                <div>
+                    <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px;">
+                        Склад
+                    </label>
+                    <div style="display: flex; gap: 8px;">
+                        <select id="editWarehouse" style="flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;">
+                            <option value="">Без склада</option>
+                        </select>
+                        <button class="btn btn-primary" id="btnChangeWarehouse">Применить</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AUDIT LOG CARD -->
+        <section class="card">
+            <div class="section-title">
+                <h3>Последние действия</h3>
+            </div>
+            <div style="padding: 16px 0;">
+                <table class="table" id="auditTable">
+                    <thead>
+                        <tr>
+                            <th>Время</th>
+                            <th>Действие</th>
+                            <th>Сущность</th>
+                            <th>Детали</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditBody">
+                        <!-- Аудит записи -->
+                    </tbody>
+                </table>
+                <div id="noAudit" style="text-align: center; padding: 40px; color: var(--muted); display: none;">
+                    Нет записей в журнале аудита
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="loading" style="text-align: center; padding: 60px; color: var(--muted);">
+        Загрузка...
+    </div>
+</main>
+
+</body>
+</html>

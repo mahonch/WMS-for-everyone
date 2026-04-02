@@ -9,10 +9,10 @@ public class ReceiptDtos {
 
     public record Create(
             Long supplierId,
-            @NotNull Long createdById,
-            @NotNull Long warehouseId,
-            String number,                  // опционально: если не указан — сгенерим
-            List<ItemCreate> items          // опционально: можно пусто и добавить потом
+            Long createdById,
+            Long warehouseId,            // опционально: если не указан — берётся из профиля пользователя
+            String number,              // опционально: если не указан — сгенерим
+            List<ItemCreate> items      // опционально: можно пусто и добавить потом
     ) {}
 
     public record ItemCreate(

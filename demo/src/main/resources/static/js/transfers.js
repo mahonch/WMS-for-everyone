@@ -1,9 +1,13 @@
 console.log('[TRANSFERS] init...');
 
-debugAuthContext("TRANSFERS_PAGE").then(() => startPage());
-
 let token = null;
 let transfersCache = [];
+
+/* ==================== INIT ==================== */
+
+document.addEventListener('DOMContentLoaded', function() {
+    startPage();
+});
 
 /* ==================== START ==================== */
 
@@ -35,7 +39,7 @@ if (!toastContainer) {
 function showNotification(type, title, message) {
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
-    const icon = type === "success" ? "✅" : type === "error" ? "❌" : "⚠️";
+    const icon = type === "success" ? "" : type === "error" ? "" : "";
     toast.innerHTML = `
         <span class="toast-icon">${icon}</span>
         <div class="toast-content">
@@ -61,7 +65,7 @@ const fmtDate = (d) => d ? new Date(d).toLocaleString("ru-RU") : "—";
 
 const statusPill = (s) => {
     const cls = s === "COMMITTED" ? "pill-committed" : "pill-draft";
-    return `<span class="pill ${cls}">${s === "COMMITTED" ? "✅ Проведён" : "📝 Черновик"}</span>`;
+    return `<span class="pill ${cls}">${s === "COMMITTED" ? " Проведён" : " Черновик"}</span>`;
 };
 
 /* ==================== API ==================== */
@@ -123,14 +127,15 @@ function renderTable() {
 
     for (const t of filtered) {
         const tr = document.createElement("tr");
+        const itemsCount = t.items ? t.items.length : 0;
         tr.innerHTML = `
             <td><strong>${t.number}</strong></td>
             <td>${statusPill(t.status)}</td>
-            <td>${t.fromLocationCode || "—"}</td>
-            <td>${t.toLocationCode || "—"}</td>
+            <td>${t.fromWarehouseName || ''} <br><small class="muted">${t.fromLocationCode || '—'}</small></td>
+            <td>${t.toWarehouseName || ''} <br><small class="muted">${t.toLocationCode || '—'}</small></td>
             <td>${fmtDate(t.createdAt)}</td>
-            <td>${t.itemsCount || 0}</td>
-            <td><button class="btn btn-sm btn-secondary" onclick="TransferForm.open(${t.id})">👁</button></td>
+            <td>${itemsCount}</td>
+            <td><button class="btn btn-sm btn-secondary" onclick="TransferForm.open(${t.id})"></button></td>
         `;
         tb.appendChild(tr);
     }

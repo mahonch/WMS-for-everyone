@@ -11,7 +11,7 @@
                 <p class="eyebrow" id="productFormTitle">Товар</p>
                 <h3 id="productFormHeader">Создание товара</h3>
             </div>
-            <button class="btn btn-secondary" onclick="ProductForm.close()">✕ Закрыть</button>
+            <button class="btn btn-secondary" onclick="ProductForm.close()"> Закрыть</button>
         </div>
 
         <form id="productForm" onsubmit="ProductForm.handleSubmit(event)">
@@ -94,12 +94,12 @@
                 <div class="image-upload-container" style="margin-top: 8px;">
                     <div id="productImagePreview" class="image-preview" style="display: none;">
                         <img id="productImagePreviewImg" src="" alt="Предпросмотр">
-                        <button type="button" class="btn btn-sm btn-danger" onclick="ProductForm.removeImage()">✕ Удалить</button>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="ProductForm.removeImage()"> Удалить</button>
                     </div>
                     <div id="productImageUpload" class="image-upload-area">
                         <input type="file" id="productImageFile" accept="image/*" onchange="ProductForm.handleImageSelect(this)" style="display: none;">
                         <div class="upload-placeholder" onclick="document.getElementById('productImageFile').click()">
-                            <span class="upload-icon">📷</span>
+                            <span class="upload-icon"></span>
                             <div class="upload-text">Нажмите для загрузки изображения</div>
                             <div class="upload-hint">PNG, JPG, GIF до 5MB</div>
                         </div>
@@ -115,7 +115,7 @@
             <!-- Кнопки -->
             <div class="toolbar" style="justify-content: flex-end; margin-top: 24px;">
                 <button type="button" class="btn btn-secondary" onclick="ProductForm.close()">Отмена</button>
-                <button type="submit" class="btn btn-primary" id="productFormSubmitBtn">💾 Сохранить</button>
+                <button type="submit" class="btn btn-primary" id="productFormSubmitBtn"> Сохранить</button>
             </div>
         </form>
     </div>
@@ -129,7 +129,7 @@
                 <p class="eyebrow">Карточка товара</p>
                 <h3 id="productViewTitle">Товар</h3>
             </div>
-            <button class="btn btn-secondary" onclick="ProductView.close()">✕ Закрыть</button>
+            <button class="btn btn-secondary" onclick="ProductView.close()"> Закрыть</button>
         </div>
 
         <div class="product-card" style="display: grid; grid-template-columns: 280px 1fr; gap: 24px;">
@@ -138,7 +138,7 @@
                 <div id="productViewImageContainer" class="product-image-large">
                     <img id="productViewImage" src="" alt="Товар" style="display: none; width: 100%; height: auto; border-radius: 8px;">
                     <div id="productViewNoImage" class="no-image-placeholder">
-                        <span style="font-size: 64px;">📦</span>
+                        <span style="font-size: 64px;"></span>
                         <div class="muted">Нет изображения</div>
                     </div>
                 </div>
@@ -198,7 +198,7 @@
 
                 <!-- Остатки по складам -->
                 <div style="margin-top: 24px;">
-                    <h4 style="margin-bottom: 12px;">📊 Остатки</h4>
+                    <h4 style="margin-bottom: 12px;"> Остатки</h4>
                     <div id="productViewStocks" class="table-wrapper">
                         <table class="table">
                             <thead>
@@ -220,8 +220,8 @@
         <!-- Кнопки действий -->
         <div class="toolbar" style="justify-content: flex-end; margin-top: 24px;">
             <button type="button" class="btn btn-secondary" onclick="ProductView.close()">Закрыть</button>
-            <button type="button" class="btn btn-warning" onclick="ProductView.edit()">✏️ Редактировать</button>
-            <button type="button" class="btn btn-danger" onclick="ProductView.delete()">🗑️ Удалить</button>
+            <button type="button" class="btn btn-warning" onclick="ProductView.edit()"> Редактировать</button>
+            <button type="button" class="btn btn-danger" onclick="ProductView.delete()"> Удалить</button>
         </div>
     </div>
 </div>
@@ -230,12 +230,12 @@
 <div id="categorySelectModal" class="modal-overlay hidden">
     <div class="modal" style="max-width: 600px;">
         <div class="section-title">
-            <h3>📁 Выбор категории</h3>
-            <button class="btn btn-secondary" onclick="CategorySelect.close()">✕ Закрыть</button>
+            <h3> Выбор категории</h3>
+            <button class="btn btn-secondary" onclick="CategorySelect.close()"> Закрыть</button>
         </div>
 
         <div style="margin-bottom: 16px;">
-            <input type="text" id="categorySearch" class="input" placeholder="🔍 Поиск категории..." oninput="CategorySelect.search()">
+            <input type="text" id="categorySearch" class="input" placeholder=" Поиск категории..." oninput="CategorySelect.search()">
         </div>
 
         <div id="categoryTree" class="category-tree" style="max-height: 400px; overflow-y: auto;">
@@ -244,7 +244,7 @@
 
         <div class="toolbar" style="justify-content: flex-end; margin-top: 16px;">
             <button type="button" class="btn btn-secondary" onclick="CategorySelect.close()">Отмена</button>
-            <button type="button" class="btn btn-primary" onclick="CategorySelect.confirm()">✅ Выбрать</button>
+            <button type="button" class="btn btn-primary" onclick="CategorySelect.confirm()"> Выбрать</button>
         </div>
     </div>
 </div>
@@ -255,12 +255,12 @@
         <div class="section-title">
             <div>
                 <p class="eyebrow">Ячейка</p>
-                <h3 id="locationViewTitle">📍 Ячейка</h3>
+                <h3 id="locationViewTitle"> Ячейка</h3>
             </div>
             <div class="toolbar" style="gap: 8px;">
-                <button class="btn btn-warning" onclick="LocationView.openTransfer()" title="Переместить товар из ячейки">🔁 Переместить</button>
-                <button class="btn btn-danger" onclick="LocationView.openIssue()" title="Списать товар из ячейки">🗑️ Списать</button>
-                <button class="btn btn-secondary" onclick="LocationView.close()">✕ Закрыть</button>
+                <button class="btn btn-warning" onclick="LocationView.openTransfer()" title="Переместить товар из ячейки"> Переместить</button>
+                <button class="btn btn-danger" onclick="LocationView.openIssue()" title="Списать товар из ячейки"> Списать</button>
+                <button class="btn btn-secondary" onclick="LocationView.close()"> Закрыть</button>
             </div>
         </div>
 
@@ -713,7 +713,7 @@ window.ProductView = {
         
         // Статус
         const statusEl = document.getElementById('productViewStatus');
-        statusEl.textContent = p.isActive ? '✅ Активен' : '❌ Неактивен';
+        statusEl.textContent = p.isActive ? ' Активен' : ' Неактивен';
         statusEl.className = 'pill ' + (p.isActive ? 'pill-success' : 'pill-muted');
 
         // Изображение
@@ -763,15 +763,18 @@ window.ProductView = {
 
             const tbody = document.getElementById('productViewStocksBody');
 
-            if (stocks.length === 0) {
+            // Фильтруем остатки с количеством > 0
+            const filteredStocks = stocks.filter(s => s.qty > 0);
+
+            if (filteredStocks.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="3" class="muted">Нет остатков</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = stocks.map(s => `
+            tbody.innerHTML = filteredStocks.map(s => `
                 <tr style="cursor: pointer;" onclick="LocationView.open(${s.locationId}, ${s.warehouseId})" title="Нажмите для просмотра содержимого ячейки">
                     <td>${s.warehouseName || 'Склад #' + s.warehouseId}</td>
-                    <td>📍 ${s.locationCode || '—'}</td>
+                    <td> ${s.locationCode || '—'}</td>
                     <td><strong>${s.qty}</strong> ${this.formatUnit(this.currentProduct.unit)}</td>
                 </tr>
             `).join('');
@@ -894,7 +897,7 @@ window.CategorySelect = {
         let html = `
             <div class="category-item ${isSelected ? 'selected' : ''}" 
                  onclick="CategorySelect.select(${node.id})">
-                <span class="icon">📁</span>
+                <span class="icon"></span>
                 <span class="name">${node.name}</span>
             </div>
         `;
@@ -1055,13 +1058,13 @@ window.LocationView = {
                 </div>
             </div>
 
-            <h4 style="margin: 16px 0 12px;">📦 Товары в ячейке</h4>
+            <h4 style="margin: 16px 0 12px;"> Товары в ячейке</h4>
         `;
 
         if (stocks.length === 0) {
             html += `
                 <div class="empty-state" style="padding: 32px; text-align: center;">
-                    <span class="empty-icon" style="font-size: 48px;">📦</span>
+                    <span class="empty-icon" style="font-size: 48px;"></span>
                     <div class="empty-title">Ячейка пуста</div>
                     <div class="empty-text">В этой ячейке нет товаров</div>
                 </div>
@@ -1118,10 +1121,10 @@ window.LocationView = {
 
     formatLocationType(type) {
         const types = {
-            'ZONE': '📍 Зона',
-            'RACK': '📚 Стеллаж',
-            'SHELF': '📋 Полка',
-            'BIN': '📦 Ячейка'
+            'ZONE': ' Зона',
+            'RACK': ' Стеллаж',
+            'SHELF': ' Полка',
+            'BIN': ' Ячейка'
         };
         return types[type] || type;
     }

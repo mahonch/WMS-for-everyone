@@ -11,10 +11,12 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @RequestMapping("/api/transfers")
 @RestController
@@ -111,8 +113,31 @@ public class TransferController {
         );
     }
     @GetMapping
-    public List<TransferDtos.View> list() {
+    public List<TransferDtos.View> list(@AuthenticationPrincipal UserDetails userDetails) {
         List<Transfer> list = transferRepository.findAll();
+        
+        // Фильтруем по складу пользователя если он назначен
+        if (userDetails != null) {
+            Optional<User> currentUser = userRepository.findByUsername(userDetails.getUsername());
+            if (currentUser.isPresent() && currentUser.get().getWarehouseId() != null) {
+                Long userWarehouseId = currentUser.get().getWarehouseId();
+                final Long warehouseId = userWarehouseId;
+                
+                // Показываем если fromLocation или toLocation принадлежат складу пользователя
+                list = list.stream()
+                    .filter(t -> {
+                        boolean fromMatches = t.getFromLocation() != null && 
+                            t.getFromLocation().getWarehouse() != null &&
+                            t.getFromLocation().getWarehouse().getId().equals(warehouseId);
+                        boolean toMatches = t.getToLocation() != null && 
+                            t.getToLocation().getWarehouse() != null &&
+                            t.getToLocation().getWarehouse().getId().equals(warehouseId);
+                        return fromMatches || toMatches;
+                    })
+                    .toList();
+            }
+        }
+        
         return list.stream()
                 .map(this::toView)
                 .toList();
@@ -145,7 +170,13 @@ public class TransferController {
                 t.getCommittedBy() != null ? t.getCommittedBy().getUsername() : null,
                 t.getCommittedAt(),
                 t.getFromLocation().getId(),
+                t.getFromLocation().getCode(),
+                t.getFromLocation().getWarehouse() != null ? t.getFromLocation().getWarehouse().getId() : null,
+                t.getFromLocation().getWarehouse() != null ? t.getFromLocation().getWarehouse().getName() : null,
                 t.getToLocation().getId(),
+                t.getToLocation().getCode(),
+                t.getToLocation().getWarehouse() != null ? t.getToLocation().getWarehouse().getId() : null,
+                t.getToLocation().getWarehouse() != null ? t.getToLocation().getWarehouse().getName() : null,
                 t.getCreatedAt(),
                 t.getItems().stream()
                         .map(i -> new TransferDtos.ViewItem(

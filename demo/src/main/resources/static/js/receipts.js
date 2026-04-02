@@ -1,20 +1,25 @@
 console.log('[RECEIPTS] init...');
 
-debugAuthContext("RECEIPTS_PAGE").then(() => startPage());
-
-let token = null;
 let receiptsCache = [];
 let currentReceipt = null;
-let warehousesCache = [];
 let suppliersCache = [];
 let categoriesCache = [];
 let productsCache = [];
+
+/* ==================== INIT ==================== */
+
+document.addEventListener('DOMContentLoaded', function() {
+    startPage();
+});
 
 /* ==================== START ==================== */
 
 function startPage() {
     token = localStorage.getItem("token");
-    if (!token) return (window.location.href = "/index.html");
+    if (!token) {
+        window.location.href = "/index.html";
+        return;
+    }
 
     document.getElementById("usernameLabel").textContent = localStorage.getItem("username") || "user";
     document.getElementById("logoutBtn").onclick = () => {
@@ -24,7 +29,7 @@ function startPage() {
 
     bindEvents();
     loadReceipts();
-    loadWarehouses();
+    loadUserProfile();
     loadSuppliers();
     loadCategories();
 }
@@ -45,7 +50,7 @@ if (!toastContainer) {
 function showNotification(type, title, message) {
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
-    const icon = type === "success" ? "✅" : type === "error" ? "❌" : "⚠️";
+    const icon = type === "success" ? "" : type === "error" ? "" : "";
     toast.innerHTML = `
         <span class="toast-icon">${icon}</span>
         <div class="toast-content">
@@ -74,13 +79,22 @@ const fmtMoney = (n) => new Intl.NumberFormat("ru-RU", { style: "currency", curr
 
 const statusPill = (s) => {
     const cls = s === "COMMITTED" ? "pill-committed" : "pill-draft";
-    return `<span class="pill ${cls}">${s === "COMMITTED" ? "✅ Проведён" : "📝 Черновик"}</span>`;
+    return `<span class="pill ${cls}">${s === "COMMITTED" ? " Проведён" : " Черновик"}</span>`;
 };
 
 /* ==================== API ==================== */
 
 async function api(method, url, body) {
     try {
+        // Получаем токен через AuthService (он обновит если нужно)
+        const token = await AuthService.getToken();
+        
+        if (!token) {
+            alertBox("error", "Сессия истекла. Пожалуйста, войдите снова.");
+            window.location.href = "/index.html";
+            throw new Error("No token");
+        }
+        
         const res = await fetch(url, {
             method,
             headers: {
@@ -153,20 +167,24 @@ function renderTable() {
             <td>${r.createdByName || "—"}</td>
             <td>${fmtDate(r.createdAt)}</td>
             <td class="right">${fmtMoney(r.totalSum)}</td>
-            <td><button class="btn btn-sm btn-secondary" onclick="ReceiptForm.open(${r.id})">👁</button></td>
+            <td><button class="btn btn-sm btn-secondary" onclick="ReceiptForm.open(${r.id})"></button></td>
         `;
         tb.appendChild(tr);
     }
     console.log('[renderTable] Done');
 }
 
-async function loadWarehouses() {
+async function loadUserProfile() {
     try {
-        const page = await api("GET", "/api/warehouses?page=0&size=100");
-        warehousesCache = page.content || [];
-        console.log('[loadWarehouses] Loaded:', warehousesCache.length, 'warehouses');
+        const profile = await api("GET", "/api/profile");
+        if (profile && profile.warehouseId) {
+            // Сохраняем склад пользователя в localStorage
+            localStorage.setItem('userWarehouseId', profile.warehouseId);
+            localStorage.setItem('userWarehouseName', profile.warehouseName || '');
+            console.log('[loadUserProfile] User warehouse:', profile.warehouseName);
+        }
     } catch (e) {
-        console.error('[loadWarehouses] error:', e);
+        console.error('[loadUserProfile] error:', e);
     }
 }
 
@@ -217,10 +235,10 @@ window.ReceiptForm = {
     open(receiptId = null) {
         this.items = [];
         this.currentLocationSelectorCallback = null;
-        
+
         const modal = document.getElementById("receiptFormModal");
         const form = document.getElementById("receiptForm");
-        
+
         if (receiptId) {
             // Редактирование
             document.getElementById("formHeader").textContent = "Редактирование приёмки";
@@ -232,7 +250,7 @@ window.ReceiptForm = {
             document.getElementById("formTitle").textContent = "Новая приёмка";
             form.reset();
             document.getElementById("receiptId").value = "";
-            document.getElementById("receiptStatus").textContent = "📝 Черновик";
+            document.getElementById("receiptStatus").textContent = " Черновик";
             document.getElementById("receiptStatus").className = "pill pill-draft";
             document.getElementById("receiptDate").textContent = new Date().toLocaleString("ru-RU");
             document.getElementById("btnDeleteDraft").style.display = "none";
@@ -240,8 +258,19 @@ window.ReceiptForm = {
             document.getElementById("btnSave").style.display = "inline-block";
             this.items = [];
             this.renderItems();
+            
+            // Автоматически устанавливаем склад из профиля пользователя
+            const userWarehouseId = localStorage.getItem('userWarehouseId');
+            const userWarehouseName = localStorage.getItem('userWarehouseName');
+            if (userWarehouseId) {
+                document.getElementById("receiptWarehouseId").value = userWarehouseId;
+                document.getElementById("receiptWarehouse").value = userWarehouseName || "Склад #" + userWarehouseId;
+            } else {
+                document.getElementById("receiptWarehouse").value = "Склад не назначен";
+                document.getElementById("receiptWarehouse").style.backgroundColor = "#fff3cd";
+            }
         }
-        
+
         modal.classList.remove("hidden");
     },
 
@@ -259,7 +288,7 @@ window.ReceiptForm = {
             document.getElementById("receiptSupplierId").value = receipt.supplierId || "";
             document.getElementById("receiptWarehouse").value = receipt.warehouseName || "";
             document.getElementById("receiptWarehouseId").value = receipt.warehouseId || "";
-            document.getElementById("receiptStatus").textContent = receipt.status === "COMMITTED" ? "✅ Проведён" : "📝 Черновик";
+            document.getElementById("receiptStatus").textContent = receipt.status === "COMMITTED" ? " Проведён" : " Черновик";
             document.getElementById("receiptStatus").className = `pill ${receipt.status === "COMMITTED" ? "pill-committed" : "pill-draft"}`;
             document.getElementById("receiptDate").textContent = fmtDate(receipt.createdAt);
             
@@ -293,17 +322,10 @@ window.ReceiptForm = {
         });
     },
 
-    selectWarehouse() {
-        WarehouseSelector.open((warehouse) => {
-            document.getElementById("receiptWarehouse").value = warehouse.name;
-            document.getElementById("receiptWarehouseId").value = warehouse.id;
-        });
-    },
-
     openProductSelector() {
         const warehouseId = document.getElementById("receiptWarehouseId").value;
         if (!warehouseId) {
-            alertBox("error", "Сначала выберите склад");
+            alertBox("error", "Склад не назначен. Настройте в профиле пользователя.");
             return;
         }
         ProductSelector.open((product) => {
@@ -363,10 +385,10 @@ window.ReceiptForm = {
                     <td class="right">${fmtMoney(sum)}</td>
                     <td>
                         <span class="muted" style="font-size: 12px;">${item.locationCode || 'Не выбрана'}</span>
-                        <button type="button" class="btn btn-sm btn-secondary" onclick="ReceiptForm.selectLocation(${index})">🗺️</button>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="ReceiptForm.selectLocation(${index})"></button>
                     </td>
                     <td>
-                        <button type="button" class="btn btn-sm btn-danger" onclick="ReceiptForm.removeItem(${index})">✕</button>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="ReceiptForm.removeItem(${index})"></button>
                     </td>
                 </tr>
             `;
@@ -423,7 +445,7 @@ window.ReceiptForm = {
             return;
         }
         if (!warehouseId) {
-            alertBox("error", "Выберите склад");
+            alertBox("error", "Склад не назначен. Настройте в профиле пользователя.");
             return;
         }
         if (this.items.length === 0) {
@@ -434,7 +456,6 @@ window.ReceiptForm = {
         const data = {
             supplierId: parseInt(supplierId),
             warehouseId: parseInt(warehouseId),
-            createdById: parseInt(localStorage.getItem("userId") || 1),
             items: this.items.map(item => ({
                 productId: item.productId,
                 qty: item.qty,
@@ -454,12 +475,12 @@ window.ReceiptForm = {
                 alertBox("success", "Приёмка создана: " + created.number);
                 currentReceipt = created;
                 document.getElementById("receiptId").value = created.id;
-                
+
                 // Обновляем форму после создания
                 this.loadReceipt(created.id);
                 return; // Выходим, чтобы не закрывать форму
             }
-            
+
             this.close();
             loadReceipts();
         } catch (e) {
@@ -559,49 +580,6 @@ window.SupplierSelector = {
     }
 };
 
-/* ==================== WAREHOUSE SELECTOR ==================== */
-
-window.WarehouseSelector = {
-    callback: null,
-
-    async open(callback) {
-        this.callback = callback;
-        
-        // Загружаем склады если ещё не загружены
-        if (warehousesCache.length === 0) {
-            await loadWarehouses();
-        }
-        
-        this.render();
-        document.getElementById("warehouseSelectModal").classList.remove("hidden");
-    },
-
-    close() {
-        document.getElementById("warehouseSelectModal").classList.add("hidden");
-    },
-
-    render() {
-        const tbody = document.getElementById("warehousesBody");
-        
-        if (warehousesCache.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="2" class="muted" style="padding: 2rem; text-align: center;">Складов нет</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = warehousesCache.map(w => `
-            <tr style="cursor: pointer;" onclick="WarehouseSelector.select(${w.id}, '${w.name.replace(/'/g, "\\'")}')">
-                <td><strong>${w.name}</strong></td>
-                <td>${w.address || '—'}</td>
-            </tr>
-        `).join('');
-    },
-
-    select(id, name) {
-        if (this.callback) this.callback({ id, name });
-        this.close();
-    }
-};
-
 /* ==================== PRODUCT SELECTOR ==================== */
 
 window.ProductSelector = {
@@ -649,7 +627,7 @@ window.ProductSelector = {
         let html = `
             <div class="category-item ${this.selectedCategoryId === null ? 'selected' : ''}" 
                  onclick="ProductSelector.selectCategory(null)">
-                <span class="icon">📂</span>
+                <span class="icon"></span>
                 <span class="name">Все категории</span>
             </div>
         `;
@@ -670,7 +648,7 @@ window.ProductSelector = {
             <div class="category-item ${isSelected ? 'selected' : ''}" 
                  style="padding-left: ${indent + 8}px;"
                  onclick="ProductSelector.selectCategory(${node.id})">
-                <span class="icon">${children.length > 0 ? '📁' : '📄'}</span>
+                <span class="icon">${children.length > 0 ? '' : ''}</span>
                 <span class="name">${node.name}</span>
             </div>
         `;
@@ -748,7 +726,7 @@ window.ProductSelector = {
                 <td>
                     ${p.imageUrl 
                         ? `<img src="${p.imageUrl}" alt="" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">`
-                        : '<div style="width: 40px; height: 40px; background: #f0f1f7; border-radius: 4px; display: flex; align-items: center; justify-content: center;">📦</div>'
+                        : '<div style="width: 40px; height: 40px; background: #f0f1f7; border-radius: 4px; display: flex; align-items: center; justify-content: center;"></div>'
                     }
                 </td>
                 <td><strong>${p.sku}</strong></td>
@@ -757,7 +735,7 @@ window.ProductSelector = {
                 <td>${fmtMoney(p.costPrice)}</td>
                 <td>
                     <button class="btn btn-sm btn-primary" onclick="ProductSelector.select(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.sku}', ${p.costPrice || 0})">
-                        ➕
+                        
                     </button>
                 </td>
             </tr>

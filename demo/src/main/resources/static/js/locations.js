@@ -82,9 +82,9 @@ async function loadLocations() {
             <div><b>Сумма:</b> ${loc.totalValue ?? 0} ₽</div>
 
             <div class="loc-actions">
-                <button class="btn btn-secondary" data-info="${loc.id}">ℹ️</button>
-                <button class="btn btn-secondary" data-edit="${loc.id}">✏️</button>
-                <button class="btn btn-danger" data-del="${loc.id}">🗑️</button>
+                <button class="btn btn-secondary" data-info="${loc.id}">ℹ</button>
+                <button class="btn btn-secondary" data-edit="${loc.id}"></button>
+                <button class="btn btn-danger" data-del="${loc.id}"></button>
             </div>
         `;
 

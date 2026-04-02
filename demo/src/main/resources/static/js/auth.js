@@ -5,7 +5,7 @@ function decodeJwt(token) {
         const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
         return JSON.parse(json);
     } catch (e) {
-        console.warn('[auth-debug] Не удалось декодировать JWT:', e);
+        console.warn('[auth] Не удалось декодировать JWT:', e);
         return null;
     }
 }
@@ -71,7 +71,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     try {
         console.log('⏳ Вход...');
         await login(username, password);
-        console.log('✅ Успешный вход, перенаправление...');
+        console.log(' Успешный вход, перенаправление...');
 
         // Если JWT нет username — берём тот, что ввёл пользователь
         if (!localStorage.getItem('username')) {

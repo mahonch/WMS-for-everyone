@@ -9,6 +9,8 @@ public record StockDto(
         String productName,
         String sku,
         String categoryName,
+        Long warehouseId,
+        String warehouseName,
         Long locationId,
         String locationCode,
         String locationType,

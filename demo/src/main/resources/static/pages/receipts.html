@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="/css/app-v2.css" rel="stylesheet">
     <link href="/css/mobile.css" rel="stylesheet">
+    <script src="/js/auth-service.js"></script>
     <script src="/js/modal.js"></script>
-    <script src="/js/auth-debug.js"></script>
     <script src="/js/location-explorer.js"></script>
     <script src="/js/receipts.js"></script>
 </head>
@@ -16,43 +16,44 @@
 <!-- BOTTOM NAV (MOBILE) -->
 <nav class="bottom-nav">
     <a href="/dashboard.html">
-        <span class="nav-icon">📊</span>
+        <span class="nav-icon"></span>
         <span>Главная</span>
     </a>
     <a href="/pages/receipts.html" class="active">
-        <span class="nav-icon">📥</span>
+        <span class="nav-icon"></span>
         <span>Приёмка</span>
     </a>
     <a href="/pages/issues.html">
-        <span class="nav-icon">📤</span>
+        <span class="nav-icon"></span>
         <span>Списание</span>
     </a>
     <a href="/pages/transfers.html">
-        <span class="nav-icon">🔁</span>
+        <span class="nav-icon"></span>
         <span>Перемещ.</span>
     </a>
     <a href="/pages/products.html">
-        <span class="nav-icon">📦</span>
+        <span class="nav-icon"></span>
         <span>Товары</span>
     </a>
     <a href="/pages/suppliers.html">
-        <span class="nav-icon">🚚</span>
+        <span class="nav-icon"></span>
         <span>Поставщ.</span>
     </a>
 </nav>
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
-    <div class="logo">📦 WMS</div>
+    <div class="logo"> WMS</div>
     <nav>
-        <a href="/dashboard.html">📊 Главная</a>
-        <a href="/pages/receipts.html" class="active">📥 Приёмки</a>
-        <a href="/pages/issues.html">📤 Списание</a>
-        <a href="/pages/transfers.html">🔁 Перемещения</a>
-        <a href="/pages/products.html">📦 Товары</a>
-        <a href="/pages/suppliers.html">🚚 Поставщики</a>
-        <a href="/pages/warehouses.html">🏢 Склады</a>
-        <a href="/scan.html">📷 Скан QR</a>
+        <a href="/dashboard.html"> Главная</a>
+        <a href="/pages/receipts.html" class="active"> Приёмки</a>
+        <a href="/pages/issues.html"> Списание</a>
+        <a href="/pages/transfers.html"> Перемещения</a>
+        <a href="/pages/products.html"> Товары</a>
+        <a href="/pages/suppliers.html"> Поставщики</a>
+        <a href="/pages/warehouses.html"> Склады</a>
+        <a href="/pages/profile.html"> Профиль</a>
+        <a href="/scan.html"> Скан QR</a>
     </nav>
     <div class="user-chip">
         <span id="usernameLabel">—</span>
@@ -78,8 +79,8 @@
                 <h3>Все приёмки</h3>
             </div>
             <div class="toolbar">
-                <input id="filterInput" class="input" placeholder="🔍 Поиск по номеру, поставщику..." style="flex: 1;">
-                <button class="btn btn-primary" id="btnCreate">➕ Новая приёмка</button>
+                <input id="filterInput" class="input" placeholder=" Поиск по номеру, поставщику..." style="flex: 1;">
+                <button class="btn btn-primary" id="btnCreate"> Новая приёмка</button>
             </div>
         </div>
 
@@ -111,7 +112,7 @@
                 <p class="eyebrow" id="formTitle">Приёмка</p>
                 <h3 id="formHeader">Создание приёмки</h3>
             </div>
-            <button class="btn btn-secondary" onclick="ReceiptForm.close()">✕ Закрыть</button>
+            <button class="btn btn-secondary" onclick="ReceiptForm.close()"> Закрыть</button>
         </div>
 
         <form id="receiptForm" onsubmit="ReceiptForm.handleSubmit(event)">
@@ -125,20 +126,18 @@
                         <div class="input-row">
                             <input type="text" id="receiptSupplier" class="input" readonly placeholder="Выберите поставщика">
                             <input type="hidden" id="receiptSupplierId">
-                            <button type="button" class="btn btn-secondary" onclick="ReceiptForm.selectSupplier()">🔍</button>
+                            <button type="button" class="btn btn-secondary" onclick="ReceiptForm.selectSupplier()">Выбрать</button>
                         </div>
                     </div>
                     <div class="info-item">
-                        <span class="label">Склад <span class="required">*</span></span>
-                        <div class="input-row">
-                            <input type="text" id="receiptWarehouse" class="input" readonly placeholder="Выберите склад">
-                            <input type="hidden" id="receiptWarehouseId">
-                            <button type="button" class="btn btn-secondary" onclick="ReceiptForm.selectWarehouse()">🔍</button>
-                        </div>
+                        <span class="label">Склад</span>
+                        <input type="text" id="receiptWarehouse" class="input" readonly placeholder="Склад не назначен">
+                        <input type="hidden" id="receiptWarehouseId">
+                        <small class="muted" style="display: block; margin-top: 4px;">Склад берётся из вашего профиля</small>
                     </div>
                     <div class="info-item">
                         <span class="label">Статус</span>
-                        <span id="receiptStatus" class="pill pill-draft">📝 Черновик</span>
+                        <span id="receiptStatus" class="pill pill-draft"> Черновик</span>
                     </div>
                     <div class="info-item">
                         <span class="label">Дата</span>
@@ -152,7 +151,7 @@
                 <div class="section-title">
                     <h4>Позиции</h4>
                     <div class="toolbar">
-                        <button type="button" class="btn btn-primary" onclick="ReceiptForm.openProductSelector()">➕ Добавить товар</button>
+                        <button type="button" class="btn btn-primary" onclick="ReceiptForm.openProductSelector()"> Добавить товар</button>
                     </div>
                 </div>
 
@@ -184,9 +183,9 @@
             <!-- КНОПКИ -->
             <div class="toolbar" style="justify-content: flex-end; gap: 8px;">
                 <button type="button" class="btn btn-secondary" onclick="ReceiptForm.close()">Отмена</button>
-                <button type="button" class="btn btn-danger" id="btnDeleteDraft" onclick="ReceiptForm.delete()">🗑️ Удалить</button>
-                <button type="button" class="btn btn-success" id="btnCommit" onclick="ReceiptForm.commit()">✅ Провести</button>
-                <button type="submit" class="btn btn-primary" id="btnSave">💾 Сохранить</button>
+                <button type="button" class="btn btn-danger" id="btnDeleteDraft" onclick="ReceiptForm.delete()"> Удалить</button>
+                <button type="button" class="btn btn-success" id="btnCommit" onclick="ReceiptForm.commit()"> Провести</button>
+                <button type="submit" class="btn btn-primary" id="btnSave"> Сохранить</button>
             </div>
         </form>
     </div>
@@ -196,12 +195,12 @@
 <div id="supplierSelectModal" class="modal-overlay hidden">
     <div class="modal" style="max-width: 700px;">
         <div class="section-title">
-            <h3>🚚 Выбор поставщика</h3>
-            <button class="btn btn-secondary" onclick="SupplierSelector.close()">✕ Закрыть</button>
+            <h3> Выбор поставщика</h3>
+            <button class="btn btn-secondary" onclick="SupplierSelector.close()"> Закрыть</button>
         </div>
 
         <div style="margin-bottom: 16px;">
-            <input type="text" id="supplierSearch" class="input" placeholder="🔍 Поиск поставщика..." oninput="SupplierSelector.search()">
+            <input type="text" id="supplierSearch" class="input" placeholder=" Поиск поставщика..." oninput="SupplierSelector.search()">
         </div>
 
         <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
@@ -219,43 +218,21 @@
     </div>
 </div>
 
-<!-- МОДАЛЬНОЕ ОКНО ВЫБОРА СКЛАДА -->
-<div id="warehouseSelectModal" class="modal-overlay hidden">
-    <div class="modal" style="max-width: 700px;">
-        <div class="section-title">
-            <h3>🏢 Выбор склада</h3>
-            <button class="btn btn-secondary" onclick="WarehouseSelector.close()">✕ Закрыть</button>
-        </div>
-
-        <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
-            <table class="table" id="warehousesTable">
-                <thead>
-                <tr>
-                    <th>Название</th>
-                    <th>Адрес</th>
-                </tr>
-                </thead>
-                <tbody id="warehousesBody"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
 <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА ТОВАРА -->
 <div id="productSelectModal" class="modal-overlay hidden">
     <div class="modal" style="max-width: 1100px; width: 95%;">
         <div class="section-title">
             <div>
                 <p class="eyebrow">Выбор товара</p>
-                <h3>📦 Добавить товар в приёмку</h3>
+                <h3> Добавить товар в приёмку</h3>
             </div>
-            <button class="btn btn-secondary" onclick="ProductSelector.close()">✕ Закрыть</button>
+            <button class="btn btn-secondary" onclick="ProductSelector.close()"> Закрыть</button>
         </div>
 
         <!-- Фильтры -->
         <div class="card" style="margin-bottom: 16px;">
             <div class="toolbar" style="gap: 12px; flex-wrap: wrap;">
-                <input type="text" id="productSearch" class="input" placeholder="🔍 Поиск по названию, SKU..." style="flex: 1; min-width: 250px;" oninput="ProductSelector.search()">
+                <input type="text" id="productSearch" class="input" placeholder=" Поиск по названию, SKU..." style="flex: 1; min-width: 250px;" oninput="ProductSelector.search()">
                 <select id="productCategoryFilter" class="input" style="width: 200px;" onchange="ProductSelector.filter()">
                     <option value="">Все категории</option>
                 </select>
@@ -274,7 +251,7 @@
         <div style="display: grid; grid-template-columns: 280px 1fr; gap: 16px; max-height: 500px;">
             <aside class="card" style="overflow-y: auto;">
                 <div class="section-title">
-                    <h4>📁 Категории</h4>
+                    <h4> Категории</h4>
                 </div>
                 <div id="productCategoryTree" style="padding: 8px;">
                     <!-- Категории -->
@@ -283,7 +260,7 @@
 
             <div class="card" style="overflow-y: auto;">
                 <div class="section-title">
-                    <h4>📦 Товары</h4>
+                    <h4> Товары</h4>
                     <span class="muted" id="productCount">0 товаров</span>
                 </div>
                 <div class="table-wrapper">
@@ -653,21 +630,21 @@
     <div class="location-explorer-modal">
         <div class="explorer-header">
             <div class="explorer-title">
-                <h3>📍 Выбор локации</h3>
-                <button class="btn btn-secondary btn-sm" onclick="LocationExplorer.close()">✕</button>
+                <h3> Выбор локации</h3>
+                <button class="btn btn-secondary btn-sm" onclick="LocationExplorer.close()"></button>
             </div>
         </div>
         <div class="explorer-body">
             <div class="explorer-panel explorer-tree-panel">
                 <div class="panel-header">
-                    <strong>🌲 Дерево склада</strong>
+                    <strong> Дерево склада</strong>
                     <span class="panel-hint">Навигация</span>
                 </div>
                 <div class="explorer-tree" id="locationTree"></div>
             </div>
             <div class="explorer-panel explorer-content-panel">
                 <div class="panel-header">
-                    <strong>📂 Содержимое</strong>
+                    <strong> Содержимое</strong>
                     <span class="panel-hint" id="contentHint">Выберите узел</span>
                 </div>
                 <div class="explorer-content" id="locationContent"></div>
@@ -676,6 +653,6 @@
     </div>
 </div>
 
-<script type="module" src="/js/receipts.js"></script>
+<script src="/js/receipts.js"></script>
 </body>
 </html>

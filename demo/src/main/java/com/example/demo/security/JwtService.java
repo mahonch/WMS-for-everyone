@@ -57,4 +57,24 @@ public class JwtService {
         Object v = parse(token).getBody().get("userId");
         return v == null ? null : Long.valueOf(v.toString());
     }
+    
+    /**
+     * Проверка refresh токена и получение username
+     * @return username если токен валиден, null если истек или невалиден
+     */
+    public String validateRefreshToken(String token) {
+        try {
+            Claims claims = parse(token).getBody();
+            
+            // Проверяем что токен еще не истек
+            if (claims.getExpiration().before(new Date())) {
+                return null;
+            }
+            
+            return claims.getSubject();
+            
+        } catch (JwtException | IllegalArgumentException e) {
+            return null;
+        }
+    }
 }

@@ -9,7 +9,7 @@ import java.util.List;
 public class IssueDtos {
 
     public record Create(
-            @NotNull Long createdById,
+            Long createdById,                // опционально: если не указан — берётся из профиля
             String number,
             String reason,
             String reasonCode,

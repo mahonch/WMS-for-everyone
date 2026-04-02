@@ -1,0 +1,68 @@
+/* ============================================
+   PAGE LOADER - Индикаторы загрузки
+   ============================================ */
+
+/* Полноэкранный лоадер при загрузке страницы */
+.page-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.page-loader__spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #e9ecef;
+    border-top-color: #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.page-loader__text {
+    color: #6c757d;
+    font-size: 14px;
+}
+
+/* API лоадер - маленький справа сверху */
+.api-loader {
+    position: fixed;
+    top: 60px;
+    right: 20px;
+    background: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    z-index: 99998;
+    display: none;
+    align-items: center;
+    gap: 12px;
+}
+
+.api-loader__spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e9ecef;
+    border-top-color: #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.api-loader__text {
+    color: #6c757d;
+    font-size: 13px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

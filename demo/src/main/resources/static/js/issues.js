@@ -1,8 +1,5 @@
 ﻿console.log("[ISSUES] init...");
 
-debugAuthContext("ISSUES_PAGE").then(() => startPage());
-
-let token = null;
 let issuesCache = [];
 let currentIssue = null;
 let warehousesCache = [];
@@ -10,11 +7,21 @@ let warehousesCache = [];
 // Для перемещения
 let transferProducts = new Map();
 
+/* ==================== INIT ==================== */
+
+// Запускаем страницу при загрузке DOM
+document.addEventListener('DOMContentLoaded', function() {
+    startPage();
+});
+
 /* ==================== START ==================== */
 
 function startPage() {
     token = localStorage.getItem("token");
-    if (!token) return (window.location.href = "/index.html");
+    if (!token) {
+        window.location.href = "/index.html";
+        return;
+    }
 
     document.getElementById("usernameLabel").textContent = localStorage.getItem("username") || "user";
     document.getElementById("logoutBtn").onclick = () => {
@@ -22,38 +29,39 @@ function startPage() {
         window.location.href = "/index.html";
     };
 
+    // Инициализируем алерты
+    initAlerts();
+
     // Проверяем параметры URL для автоматического открытия модального окна
     const urlParams = new URLSearchParams(window.location.search);
     const fromLocation = urlParams.get('fromLocation');
     const warehouse = urlParams.get('warehouse');
-    
+
     bindEvents();
     loadIssues();
-    loadWarehouses().then(() => {
-        // Если передана локация - открываем утиль с предустановленными значениями
-        if (fromLocation && warehouse) {
-            setTimeout(() => {
-                openDamageWithLocation(fromLocation, warehouse);
-            }, 500);
-        }
-    });
+    loadUserProfile();
 }
 
 /* ==================== ALERTS ==================== */
 
-const alerts = document.getElementById("alerts");
-let toastContainer = document.getElementById("toastContainer");
-if (!toastContainer) {
-    toastContainer = document.createElement("div");
-    toastContainer.id = "toastContainer";
-    toastContainer.className = "toast-container";
-    document.body.appendChild(toastContainer);
+let alerts = null;
+let toastContainer = null;
+
+function initAlerts() {
+    alerts = document.getElementById("alerts");
+    toastContainer = document.getElementById("toastContainer");
+    if (!toastContainer) {
+        toastContainer = document.createElement("div");
+        toastContainer.id = "toastContainer";
+        toastContainer.className = "toast-container";
+        document.body.appendChild(toastContainer);
+    }
 }
 
 function showNotification(type, title, message) {
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
-    const icon = type === "success" ? "✅" : type === "error" ? "❌" : "⚠️";
+    const icon = type === "success" ? "" : type === "error" ? "" : "";
     toast.innerHTML = `
         <span class="toast-icon">${icon}</span>
         <div class="toast-content">
@@ -80,19 +88,28 @@ const fmtMoney = (n) => new Intl.NumberFormat("ru-RU", { style: "currency", curr
 
 const statusPill = (s) => {
     const cls = s === "COMMITTED" ? "pill-committed" : "pill-draft";
-    return `<span class="pill ${cls}">${s === "COMMITTED" ? "✅ Проведён" : "📝 Черновик"}</span>`;
+    return `<span class="pill ${cls}">${s === "COMMITTED" ? " Проведён" : " Черновик"}</span>`;
 };
 
 const reasonLabels = {
-    "DAMAGE": "🗑️ Утиль",
-    "SALE": "💰 Продажа",
-    "TRANSFER_OUT": "🔁 Перемещение"
+    "DAMAGE": " Утиль",
+    "SALE": " Продажа",
+    "TRANSFER_OUT": " Перемещение"
 };
 
 /* ==================== API ==================== */
 
 async function api(method, url, body) {
     try {
+        // Получаем токен через AuthService (он обновит если нужно)
+        const token = await AuthService.getToken();
+        
+        if (!token) {
+            alertBox("error", "Сессия истекла. Пожалуйста, войдите снова.");
+            window.location.href = "/index.html";
+            throw new Error("No token");
+        }
+        
         const res = await fetch(url, {
             method,
             headers: {
@@ -151,7 +168,7 @@ function renderTable() {
             <td>${reasonLabels[i.reasonCode] || "—"}</td>
             <td>—</td><td>—</td>
             <td>${fmtDate(i.createdAt)}</td>
-            <td><button class="btn btn-sm btn-secondary" onclick="openIssueDetail(${i.id})">👁</button></td>
+            <td><button class="btn btn-sm btn-secondary" onclick="openIssueDetail(${i.id})"></button></td>
         `;
         tb.appendChild(tr);
     }
@@ -161,22 +178,50 @@ async function loadWarehouses() {
     try {
         const page = await api("GET", "/api/warehouses?page=0&size=100");
         warehousesCache = page.content || [];
-        
+
         console.log('[loadWarehouses] loaded:', warehousesCache.length);
 
+        const userWarehouseId = localStorage.getItem('userWarehouseId');
+        const userWarehouseName = localStorage.getItem('userWarehouseName');
+        
         const options = '<option value="">Выберите склад</option>' +
             warehousesCache.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
 
-        const transferWh = document.getElementById("transfer_warehouse");
+        const transferWh = document.getElementById("transfer_fromWarehouse");
         const damageWh = document.getElementById("damage_warehouse");
         const saleWh = document.getElementById("sale_warehouse");
-        
-        if (transferWh) transferWh.innerHTML = options;
-        if (damageWh) damageWh.innerHTML = options;
-        if (saleWh) saleWh.innerHTML = options;
-        
-        console.log('[loadWarehouses] dropdowns updated');
-        
+
+        if (transferWh) {
+            transferWh.innerHTML = options;
+            if (userWarehouseId) {
+                transferWh.value = userWarehouseId;
+                transferWh.disabled = true;
+                transferWh.style.backgroundColor = '#e9ecef';
+            }
+        }
+        if (damageWh) {
+            damageWh.innerHTML = options;
+            if (userWarehouseId) {
+                damageWh.value = userWarehouseId;
+                damageWh.disabled = true;
+                damageWh.style.backgroundColor = '#e9ecef';
+                // Триггерим событие change для загрузки локаций
+                damageWh.dispatchEvent(new Event('change'));
+            }
+        }
+        if (saleWh) {
+            saleWh.innerHTML = options;
+            if (userWarehouseId) {
+                saleWh.value = userWarehouseId;
+                saleWh.disabled = true;
+                saleWh.style.backgroundColor = '#e9ecef';
+                // Триггерим событие change для загрузки локаций
+                saleWh.dispatchEvent(new Event('change'));
+            }
+        }
+
+        console.log('[loadWarehouses] dropdowns updated, user warehouse:', userWarehouseId);
+
         return true;
     } catch (e) {
         console.error("[loadWarehouses] error:", e);
@@ -184,12 +229,26 @@ async function loadWarehouses() {
     }
 }
 
+async function loadUserProfile() {
+    try {
+        const profile = await api("GET", "/api/profile");
+        if (profile && profile.warehouseId) {
+            // Сохраняем склад пользователя в localStorage
+            localStorage.setItem('userWarehouseId', profile.warehouseId);
+            localStorage.setItem('userWarehouseName', profile.warehouseName || '');
+            console.log('[loadUserProfile] User warehouse:', profile.warehouseName);
+        }
+    } catch (e) {
+        console.error('[loadUserProfile] error:', e);
+    }
+}
+
 /* ==================== EVENTS ==================== */
 
 function bindEvents() {
     document.getElementById("filterInput").addEventListener("input", renderTable);
-    document.getElementById("btnCreate").onclick = openTypeSelect;
-    document.getElementById("btnCloseDetail").onclick = closeDetail;
+    document.getElementById("btnCreate").onclick = window.openTypeSelect;
+    document.getElementById("btnCloseDetail").onclick = window.closeDetail;
     document.getElementById("btnCommit").onclick = commitIssue;
     document.getElementById("btnDeleteDraft").onclick = deleteDraft;
 }
@@ -250,15 +309,26 @@ window.closeTransfer = function() {
 }
 
 function updateTransferWarehouseSelects() {
+    const userWarehouseId = localStorage.getItem('userWarehouseId');
+    const userWarehouseName = localStorage.getItem('userWarehouseName');
+    
     const options = '<option value="">Выберите склад</option>' +
         warehousesCache.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
-    
+
     const fromWh = document.getElementById("transfer_fromWarehouse");
     const toWh = document.getElementById("transfer_toWarehouse");
-    
+
     if (fromWh) {
         fromWh.innerHTML = options;
-        console.log('[updateTransferWarehouseSelects] fromWarehouse updated:', warehousesCache.length);
+        // Автоматически устанавливаем склад "ОТКУДА" из профиля пользователя
+        if (userWarehouseId) {
+            fromWh.value = userWarehouseId;
+            // Блокируем изменение (только для чтения)
+            fromWh.disabled = true;
+            fromWh.style.backgroundColor = '#e9ecef';
+            fromWh.title = 'Склад берётся из вашего профиля';
+        }
+        console.log('[updateTransferWarehouseSelects] fromWarehouse updated:', warehousesCache.length, 'user warehouse:', userWarehouseId);
     }
     if (toWh) {
         toWh.innerHTML = options;
@@ -311,7 +381,7 @@ async function loadTransferProducts(locationId) {
         const availableStocks = stocks.filter(s => s.qty > 0);
         
         if (availableStocks.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="muted" style="padding: 2rem; text-align: center;">⚠️ Нет товаров</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="muted" style="padding: 2rem; text-align: center;"> Нет товаров</td></tr>';
             return;
         }
         
@@ -475,7 +545,7 @@ async function loadDamageProducts(locationId) {
         const availableStocks = stocks.filter(s => s.qty > 0);
         
         if (availableStocks.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="muted" style="padding: 2rem; text-align: center;">⚠️ Нет товаров</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="muted" style="padding: 2rem; text-align: center;"> Нет товаров</td></tr>';
             return;
         }
         
@@ -616,7 +686,7 @@ async function loadSaleProducts(locationId) {
         const availableStocks = stocks.filter(s => s.qty > 0);
         
         if (availableStocks.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="muted" style="padding: 2rem; text-align: center;">⚠️ Нет товаров</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="muted" style="padding: 2rem; text-align: center;"> Нет товаров</td></tr>';
             return;
         }
         

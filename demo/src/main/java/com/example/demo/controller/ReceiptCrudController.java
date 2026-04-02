@@ -11,10 +11,13 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/receipts")
@@ -32,8 +35,23 @@ public class ReceiptCrudController {
 
     // ----- LIST & GET
     @GetMapping
-    public Page<ReceiptDtos.View> list(@RequestParam(defaultValue = "0") int page,
-                                       @RequestParam(defaultValue = "20") int size) {
+    public Page<ReceiptDtos.View> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
+        // Если у пользователя назначен склад, фильтруем только по его складу
+        if (userDetails != null) {
+            Optional<User> currentUser = userRepository.findByUsername(userDetails.getUsername());
+            if (currentUser.isPresent() && currentUser.get().getWarehouseId() != null) {
+                Long warehouseId = currentUser.get().getWarehouseId();
+                return receiptRepository.findByWarehouseId(
+                        PageRequest.of(page, size, Sort.by("id").descending()), 
+                        warehouseId
+                ).map(this::toView);
+            }
+        }
+        
         return receiptRepository.findAll(PageRequest.of(page, size, Sort.by("id").descending()))
                 .map(this::toView);
     }
@@ -47,16 +65,42 @@ public class ReceiptCrudController {
     // ----- CREATE DRAFT
     @PostMapping
     @Transactional
-    public ReceiptDtos.View create(@Valid @RequestBody ReceiptDtos.Create dto) {
+    public ReceiptDtos.View create(
+            @Valid @RequestBody ReceiptDtos.Create dto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
         Supplier s = dto.supplierId() == null ? null :
                 supplierRepository.findById(dto.supplierId())
                         .orElseThrow(() -> new NotFoundException("Supplier not found"));
 
-        Warehouse wh = warehouseRepository.findById(dto.warehouseId())
+        // Если warehouseId не указан, берём из профиля текущего пользователя
+        Long warehouseId = dto.warehouseId();
+        if (warehouseId == null && userDetails != null) {
+            Optional<User> currentUser = userRepository.findByUsername(userDetails.getUsername());
+            if (currentUser.isPresent()) {
+                warehouseId = currentUser.get().getWarehouseId();
+            }
+        }
+        
+        if (warehouseId == null) {
+            throw new NotFoundException("Warehouse not specified");
+        }
+        
+        Warehouse wh = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new NotFoundException("Warehouse not found"));
 
-        User createdBy = userRepository.findById(dto.createdById())
-                .orElseThrow(() -> new NotFoundException("User not found"));
+        // Используем текущего пользователя как создателя
+        User createdBy = null;
+        if (userDetails != null) {
+            createdBy = userRepository.findByUsername(userDetails.getUsername()).orElse(null);
+        }
+        if (createdBy == null && dto.createdById() != null) {
+            createdBy = userRepository.findById(dto.createdById())
+                    .orElseThrow(() -> new NotFoundException("User not found"));
+        }
+        if (createdBy == null) {
+            throw new NotFoundException("User not found");
+        }
 
         String number = (dto.number() == null || dto.number().isBlank())
                 ? numberGenerator.next("R")

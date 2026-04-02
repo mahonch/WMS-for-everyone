@@ -64,9 +64,53 @@ public class AuthController {
         );
     }
 
+    /**
+     * Обновление токена по refresh токену
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestBody RefreshReq req) {
+        String refreshToken = req.refreshToken;
+        
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "error", "Refresh token is required"
+            ));
+        }
+        
+        // Проверяем refresh токен
+        String username = jwtService.validateRefreshToken(refreshToken);
+        
+        if (username == null) {
+            return ResponseEntity.status(401).body(Map.of(
+                "error", "Invalid or expired refresh token"
+            ));
+        }
+        
+        // Генерируем новые токены
+        String newAccess = jwtService.generateAccess(
+                username,
+                "ROLE_USER", // Роль получим из БД при следующем запросе
+                null
+        );
+        
+        String newRefresh = jwtService.generateRefresh(username);
+        
+        return ResponseEntity.ok(Map.of(
+                "accessToken", newAccess,
+                "refreshToken", newRefresh,
+                "expiresIn", 3600000,
+                "tokenType", "Bearer"
+        ));
+    }
+
     @Data
     public static class LoginReq {
         public String username;
         public String password;
+    }
+    
+    @Data
+    public static class RefreshReq {
+        public String refreshToken;
     }
 }

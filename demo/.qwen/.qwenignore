@@ -1,0 +1,62 @@
+# Qwen Code Ignore Patterns
+# Файлы и директории, которые следует игнорировать при работе с проектом
+
+# === Build / Target ===
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# === IDE ===
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+.out/
+
+# Eclipse / STS
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# VS Code
+.vscode/
+
+# === Temporary Files ===
+*.tmp
+*.temp
+*.log
+*.swp
+*.swo
+*~
+
+# === Application Data ===
+uploads/*
+!uploads/.gitkeep
+
+# === Database ===
+*.db
+*.h2
+*.sql~
+
+# === OS ===
+.DS_Store
+Thumbs.db
+desktop.ini
+
+

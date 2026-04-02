@@ -11,11 +11,14 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/issues")
@@ -32,8 +35,43 @@ public class IssueCrudController {
     private final NumberGenerator numberGenerator;
 
     @GetMapping
-    public Page<IssueDtos.View> list(@RequestParam(defaultValue = "0") int page,
-                                     @RequestParam(defaultValue = "20") int size) {
+    public Page<IssueDtos.View> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        // Если у пользователя назначен склад, фильтруем только по его складу
+        if (userDetails != null) {
+            Optional<User> currentUser = userRepository.findByUsername(userDetails.getUsername());
+            if (currentUser.isPresent() && currentUser.get().getWarehouseId() != null) {
+                Long userWarehouseId = currentUser.get().getWarehouseId();
+                
+                // Получаем все списания и фильтруем
+                Page<Issue> issuesPage = issueRepository.findAll(PageRequest.of(page, size, Sort.by("id").descending()));
+                
+                // Фильтруем на уровне Java и маппим в View
+                // Показываем если:
+                // 1. targetWarehouse = склад пользователя (для TRANSFER_OUT - это склад назначения)
+                // 2. createdBy.warehouseId = склад пользователя (для DAMAGE/SALE или TRANSFER_OUT - склад отправителя)
+                List<IssueDtos.View> filtered = issuesPage.getContent().stream()
+                    .filter(issue -> {
+                        boolean matchesTargetWarehouse = issue.getTargetWarehouse() != null && 
+                            issue.getTargetWarehouse().getId().equals(userWarehouseId);
+                        
+                        boolean matchesCreatedByWarehouse = issue.getCreatedBy() != null && 
+                            issue.getCreatedBy().getWarehouseId() != null &&
+                            issue.getCreatedBy().getWarehouseId().equals(userWarehouseId);
+                        
+                        // Показываем если совпадает ИЛИ targetWarehouse ИЛИ createdBy warehouse
+                        return matchesTargetWarehouse || matchesCreatedByWarehouse;
+                    })
+                    .map(this::toView)
+                    .toList();
+                
+                // Возвращаем отфильтрованную страницу
+                return new org.springframework.data.domain.PageImpl<>(filtered, PageRequest.of(page, size, Sort.by("id").descending()), filtered.size());
+            }
+        }
 
         return issueRepository.findAll(PageRequest.of(page, size, Sort.by("id").descending()))
                 .map(this::toView);
@@ -48,10 +86,22 @@ public class IssueCrudController {
 
     @PostMapping
     @Transactional
-    public IssueDtos.View create(@Valid @RequestBody IssueDtos.Create dto) {
+    public IssueDtos.View create(
+            @Valid @RequestBody IssueDtos.Create dto,
+            @AuthenticationPrincipal UserDetails userDetails) {
 
-        User createdBy = userRepository.findById(dto.createdById())
-                .orElseThrow(() -> new NotFoundException("User not found"));
+        // Используем текущего пользователя как создателя
+        User createdBy = null;
+        if (userDetails != null) {
+            createdBy = userRepository.findByUsername(userDetails.getUsername()).orElse(null);
+        }
+        if (createdBy == null && dto.createdById() != null) {
+            createdBy = userRepository.findById(dto.createdById())
+                    .orElseThrow(() -> new NotFoundException("User not found"));
+        }
+        if (createdBy == null) {
+            throw new NotFoundException("User not found");
+        }
 
         String number = (dto.number() == null || dto.number().isBlank())
                 ? numberGenerator.next("I")

@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="/css/app-v2.css" rel="stylesheet">
     <link href="/css/mobile.css" rel="stylesheet">
+    <script src="/js/auth-service.js"></script>
     <script src="/js/modal.js"></script>
-    <script src="/js/auth-debug.js"></script>
     <script src="/js/location-explorer.js"></script>
     <script>
     // Загружаем модальные окна для перемещений
@@ -50,43 +50,44 @@
 <!-- BOTTOM NAV (MOBILE) -->
 <nav class="bottom-nav">
     <a href="/dashboard.html">
-        <span class="nav-icon">📊</span>
+        <span class="nav-icon"></span>
         <span>Главная</span>
     </a>
     <a href="/pages/receipts.html">
-        <span class="nav-icon">📥</span>
+        <span class="nav-icon"></span>
         <span>Приёмка</span>
     </a>
     <a href="/pages/issues.html">
-        <span class="nav-icon">📤</span>
+        <span class="nav-icon"></span>
         <span>Списание</span>
     </a>
     <a href="/pages/transfers.html" class="active">
-        <span class="nav-icon">🔁</span>
+        <span class="nav-icon"></span>
         <span>Перемещ.</span>
     </a>
     <a href="/pages/products.html">
-        <span class="nav-icon">📦</span>
+        <span class="nav-icon"></span>
         <span>Товары</span>
     </a>
     <a href="/pages/suppliers.html">
-        <span class="nav-icon">🚚</span>
+        <span class="nav-icon"></span>
         <span>Поставщ.</span>
     </a>
 </nav>
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
-    <div class="logo">📦 WMS</div>
+    <div class="logo"> WMS</div>
     <nav>
-        <a href="/dashboard.html">📊 Главная</a>
-        <a href="/pages/receipts.html">📥 Приёмка</a>
-        <a href="/pages/issues.html">📤 Списание</a>
-        <a href="/pages/transfers.html" class="active">🔁 Перемещения</a>
-        <a href="/pages/products.html">📦 Товары</a>
-        <a href="/pages/suppliers.html">🚚 Поставщики</a>
-        <a href="/pages/warehouses.html">🏢 Склады</a>
-        <a href="/scan.html">📷 Скан QR</a>
+        <a href="/dashboard.html"> Главная</a>
+        <a href="/pages/receipts.html"> Приёмка</a>
+        <a href="/pages/issues.html"> Списание</a>
+        <a href="/pages/transfers.html" class="active"> Перемещения</a>
+        <a href="/pages/products.html"> Товары</a>
+        <a href="/pages/suppliers.html"> Поставщики</a>
+        <a href="/pages/warehouses.html"> Склады</a>
+        <a href="/pages/profile.html"> Профиль</a>
+        <a href="/scan.html"> Скан QR</a>
     </nav>
     <div class="user-chip">
         <span id="usernameLabel">—</span>
@@ -112,8 +113,8 @@
                 <h3>Все перемещения</h3>
             </div>
             <div class="toolbar">
-                <input id="filterInput" class="input" placeholder="🔍 Поиск по номеру..." style="flex: 1;">
-                <button class="btn btn-primary" id="btnCreate">➕ Новое перемещение</button>
+                <input id="filterInput" class="input" placeholder=" Поиск по номеру..." style="flex: 1;">
+                <button class="btn btn-primary" id="btnCreate"> Новое перемещение</button>
             </div>
         </div>
 
@@ -141,21 +142,21 @@
     <div class="location-explorer-modal">
         <div class="explorer-header">
             <div class="explorer-title">
-                <h3>📍 Выбор локации</h3>
-                <button class="btn btn-secondary btn-sm" onclick="LocationExplorer.close()">✕</button>
+                <h3> Выбор локации</h3>
+                <button class="btn btn-secondary btn-sm" onclick="LocationExplorer.close()"></button>
             </div>
         </div>
         <div class="explorer-body">
             <div class="explorer-panel explorer-tree-panel">
                 <div class="panel-header">
-                    <strong>🌲 Дерево склада</strong>
+                    <strong> Дерево склада</strong>
                     <span class="panel-hint">Навигация</span>
                 </div>
                 <div class="explorer-tree" id="locationTree"></div>
             </div>
             <div class="explorer-panel explorer-content-panel">
                 <div class="panel-header">
-                    <strong>📂 Содержимое</strong>
+                    <strong> Содержимое</strong>
                     <span class="panel-hint" id="contentHint">Выберите узел</span>
                 </div>
                 <div class="explorer-content" id="locationContent"></div>

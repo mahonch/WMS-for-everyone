@@ -6,51 +6,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="/css/app-v2.css" rel="stylesheet">
     <link href="/css/mobile.css" rel="stylesheet">
+    <script src="/js/auth-service.js"></script>
     <script src="/js/modal.js"></script>
-    <script src="/js/auth-debug.js"></script>
 </head>
 <body class="layout">
 
 <!-- BOTTOM NAV (MOBILE) -->
 <nav class="bottom-nav">
     <a href="/dashboard.html">
-        <span class="nav-icon">📊</span>
+        <span class="nav-icon"></span>
         <span>Главная</span>
     </a>
     <a href="/pages/receipts.html">
-        <span class="nav-icon">📥</span>
+        <span class="nav-icon"></span>
         <span>Приёмка</span>
     </a>
     <a href="/pages/issues.html">
-        <span class="nav-icon">📤</span>
+        <span class="nav-icon"></span>
         <span>Списание</span>
     </a>
     <a href="/pages/transfers.html">
-        <span class="nav-icon">🔁</span>
+        <span class="nav-icon"></span>
         <span>Перемещ.</span>
     </a>
     <a href="/pages/products.html">
-        <span class="nav-icon">📦</span>
+        <span class="nav-icon"></span>
         <span>Товары</span>
     </a>
     <a href="/pages/suppliers.html" class="active">
-        <span class="nav-icon">🚚</span>
+        <span class="nav-icon"></span>
         <span>Поставщ.</span>
     </a>
 </nav>
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
-    <div class="logo">📦 WMS</div>
+    <div class="logo"> WMS</div>
     <nav>
-        <a href="/dashboard.html">📊 Главная</a>
-        <a href="/pages/receipts.html">📥 Приёмка</a>
-        <a href="/pages/issues.html">📤 Списание</a>
-        <a href="/pages/transfers.html">🔁 Перемещения</a>
-        <a href="/pages/products.html">📦 Товары</a>
-        <a href="/pages/suppliers.html" class="active">🚚 Поставщики</a>
-        <a href="/pages/warehouses.html">🏢 Склады</a>
-        <a href="/scan.html">📷 Скан QR</a>
+        <a href="/dashboard.html"> Главная</a>
+        <a href="/pages/receipts.html"> Приёмка</a>
+        <a href="/pages/issues.html"> Списание</a>
+        <a href="/pages/transfers.html"> Перемещения</a>
+        <a href="/pages/products.html"> Товары</a>
+        <a href="/pages/suppliers.html" class="active"> Поставщики</a>
+        <a href="/pages/warehouses.html"> Склады</a>
+        <a href="/pages/profile.html"> Профиль</a>
+        <a href="/scan.html"> Скан QR</a>
     </nav>
     <div class="user-chip">
         <span id="usernameLabel">—</span>
@@ -78,14 +79,14 @@
                         <h3 id="suppliersCount">0 поставщиков</h3>
                     </div>
                     <div class="toolbar" style="gap: 12px; flex-wrap: wrap;">
-                        <input id="searchInput" class="input" placeholder="🔍 Поиск..." style="width: 250px;">
+                        <input id="searchInput" class="input" placeholder=" Поиск..." style="width: 250px;">
                         <select id="suppliersSort" class="input" onchange="SuppliersPage.sortSuppliers()" style="width: 180px;">
                             <option value="name_asc">По названию (А-Я)</option>
                             <option value="name_desc">По названию (Я-А)</option>
                             <option value="created_desc">Сначала новые</option>
                             <option value="created_asc">Сначала старые</option>
                         </select>
-                        <button class="btn btn-primary" onclick="SuppliersPage.openCreate()">➕ Новый поставщик</button>
+                        <button class="btn btn-primary" onclick="SuppliersPage.openCreate()"> Новый поставщик</button>
                     </div>
                 </div>
             </div>
@@ -207,7 +208,7 @@ window.SuppliersPage = {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="6" class="muted" style="padding: 48px; text-align: center;">
-                        🚚 Нет поставщиков
+                         Нет поставщиков
                     </td>
                 </tr>
             `;
@@ -222,8 +223,8 @@ window.SuppliersPage = {
                 <td>${s.email || '—'}</td>
                 <td>${s.address || '—'}</td>
                 <td onclick="event.stopPropagation()">
-                    <button class="btn btn-sm btn-secondary" onclick="SuppliersPage.viewSupplier(${s.id})">👁</button>
-                    <button class="btn btn-sm btn-warning" onclick="SuppliersPage.editSupplier(${s.id})">✏️</button>
+                    <button class="btn btn-sm btn-secondary" onclick="SuppliersPage.viewSupplier(${s.id})"></button>
+                    <button class="btn btn-sm btn-warning" onclick="SuppliersPage.editSupplier(${s.id})"></button>
                 </td>
             </tr>
         `).join('');
@@ -417,10 +418,10 @@ window.SupplierView = {
             tbody.innerHTML = docs.map(d => `
                 <tr>
                     <td><strong>${d.number}</strong></td>
-                    <td>${d.docType === 'RECEIPT' ? '📥 Приёмка' : d.docType || '—'}</td>
+                    <td>${d.docType === 'RECEIPT' ? ' Приёмка' : d.docType || '—'}</td>
                     <td>
                         <span class="pill ${d.status === 'COMMITTED' ? 'pill-success' : 'pill-draft'}">
-                            ${d.status === 'COMMITTED' ? '✅ Проведён' : '📝 Черновик'}
+                            ${d.status === 'COMMITTED' ? ' Проведён' : ' Черновик'}
                         </span>
                     </td>
                     <td>${d.warehouseName || '—'}</td>
@@ -507,7 +508,7 @@ window.SupplierView = {
                 <p class="eyebrow">Поставщик</p>
                 <h3 id="supplierFormHeader">Создание поставщика</h3>
             </div>
-            <button class="btn btn-secondary" onclick="SupplierForm.close()">✕ Закрыть</button>
+            <button class="btn btn-secondary" onclick="SupplierForm.close()"> Закрыть</button>
         </div>
 
         <form id="supplierForm" onsubmit="SupplierForm.handleSubmit(event)">
@@ -548,7 +549,7 @@ window.SupplierView = {
             <!-- Кнопки -->
             <div class="toolbar" style="justify-content: flex-end; margin-top: 24px;">
                 <button type="button" class="btn btn-secondary" onclick="SupplierForm.close()">Отмена</button>
-                <button type="submit" class="btn btn-primary" id="supplierFormSubmitBtn">💾 Сохранить</button>
+                <button type="submit" class="btn btn-primary" id="supplierFormSubmitBtn"> Сохранить</button>
             </div>
         </form>
     </div>
@@ -560,15 +561,15 @@ window.SupplierView = {
         <div class="section-title">
             <div>
                 <p class="eyebrow">Карточка поставщика</p>
-                <h3 id="supplierViewTitle">🚚 Поставщик</h3>
+                <h3 id="supplierViewTitle"> Поставщик</h3>
             </div>
-            <button class="btn btn-secondary" onclick="SupplierView.close()">✕ Закрыть</button>
+            <button class="btn btn-secondary" onclick="SupplierView.close()"> Закрыть</button>
         </div>
 
         <!-- Вкладки -->
         <div class="tabs" style="margin: 16px 0; border-bottom: 1px solid var(--border);">
-            <button class="tab active" onclick="SupplierView.switchTab('info')" id="tab-info-btn">📋 Информация</button>
-            <button class="tab" onclick="SupplierView.switchTab('documents')" id="tab-documents-btn">📄 Документы</button>
+            <button class="tab active" onclick="SupplierView.switchTab('info')" id="tab-info-btn"> Информация</button>
+            <button class="tab" onclick="SupplierView.switchTab('documents')" id="tab-documents-btn"> Документы</button>
         </div>
 
         <!-- Вкладка: Информация -->
@@ -628,8 +629,8 @@ window.SupplierView = {
         <!-- Кнопки действий -->
         <div class="toolbar" style="justify-content: flex-end; margin-top: 24px;">
             <button type="button" class="btn btn-secondary" onclick="SupplierView.close()">Закрыть</button>
-            <button type="button" class="btn btn-warning" onclick="SupplierView.edit()">✏️ Редактировать</button>
-            <button type="button" class="btn btn-danger" onclick="SupplierView.delete()">🗑️ Удалить</button>
+            <button type="button" class="btn btn-warning" onclick="SupplierView.edit()"> Редактировать</button>
+            <button type="button" class="btn btn-danger" onclick="SupplierView.delete()"> Удалить</button>
         </div>
     </div>
 </div>

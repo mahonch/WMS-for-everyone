@@ -28,8 +28,14 @@ public class TransferDtos {
             Long committedBy,
             String committedByName,
             LocalDateTime committedAt,
-            Long fromLocation,
-            Long toLocation,
+            Long fromLocationId,
+            String fromLocationCode,
+            Long fromWarehouseId,
+            String fromWarehouseName,
+            Long toLocationId,
+            String toLocationCode,
+            Long toWarehouseId,
+            String toWarehouseName,
             LocalDateTime createdAt,
             List<ViewItem> items
     ) {}

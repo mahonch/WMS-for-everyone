@@ -11,7 +11,7 @@
                 <p class="eyebrow" id="transferFormTitle">Перемещение</p>
                 <h3 id="transferFormHeader">Создание перемещения</h3>
             </div>
-            <button class="btn btn-secondary" onclick="TransferForm.close()">✕ Закрыть</button>
+            <button class="btn btn-secondary" onclick="TransferForm.close()"> Закрыть</button>
         </div>
 
         <form id="transferForm" onsubmit="TransferForm.handleSubmit(event)">
@@ -25,12 +25,12 @@
                         <div class="input-row">
                             <input type="text" id="transferWarehouse" class="input" readonly placeholder="Выберите склад">
                             <input type="hidden" id="transferWarehouseId">
-                            <button type="button" class="btn btn-secondary" onclick="TransferForm.selectWarehouse()">🔍</button>
+                            <button type="button" class="btn btn-secondary" onclick="TransferForm.selectWarehouse()"></button>
                         </div>
                     </div>
                     <div class="info-item">
                         <span class="label">Статус</span>
-                        <span id="transferStatus" class="pill pill-draft">📝 Черновик</span>
+                        <span id="transferStatus" class="pill pill-draft"> Черновик</span>
                     </div>
                     <div class="info-item">
                         <span class="label">Дата</span>
@@ -48,7 +48,7 @@
                 <div class="section-title">
                     <h4>Позиции для перемещения</h4>
                     <div class="toolbar">
-                        <button type="button" class="btn btn-primary" onclick="TransferForm.openProductSelector()">➕ Добавить товар</button>
+                        <button type="button" class="btn btn-primary" onclick="TransferForm.openProductSelector()"> Добавить товар</button>
                     </div>
                 </div>
 
@@ -79,9 +79,9 @@
             <!-- КНОПКИ -->
             <div class="toolbar" style="justify-content: flex-end; gap: 8px;">
                 <button type="button" class="btn btn-secondary" onclick="TransferForm.close()">Отмена</button>
-                <button type="button" class="btn btn-danger" id="btnDeleteTransfer" onclick="TransferForm.delete()">🗑️ Удалить</button>
-                <button type="button" class="btn btn-success" id="btnCommitTransfer" onclick="TransferForm.commit()">✅ Провести</button>
-                <button type="submit" class="btn btn-primary" id="btnSaveTransfer">💾 Сохранить</button>
+                <button type="button" class="btn btn-danger" id="btnDeleteTransfer" onclick="TransferForm.delete()"> Удалить</button>
+                <button type="button" class="btn btn-success" id="btnCommitTransfer" onclick="TransferForm.commit()"> Провести</button>
+                <button type="submit" class="btn btn-primary" id="btnSaveTransfer"> Сохранить</button>
             </div>
         </form>
     </div>
@@ -93,15 +93,15 @@
         <div class="section-title">
             <div>
                 <p class="eyebrow">Выбор товара</p>
-                <h3>📦 Добавить товар в перемещение</h3>
+                <h3> Добавить товар в перемещение</h3>
             </div>
-            <button class="btn btn-secondary" onclick="TransferProductSelector.close()">✕ Закрыть</button>
+            <button class="btn btn-secondary" onclick="TransferProductSelector.close()"> Закрыть</button>
         </div>
 
         <!-- Фильтры -->
         <div class="card" style="margin-bottom: 16px;">
             <div class="toolbar" style="gap: 12px; flex-wrap: wrap;">
-                <input type="text" id="transferProductSearch" class="input" placeholder="🔍 Поиск по названию, SKU..." style="flex: 1; min-width: 250px;" oninput="TransferProductSelector.search()">
+                <input type="text" id="transferProductSearch" class="input" placeholder=" Поиск по названию, SKU..." style="flex: 1; min-width: 250px;" oninput="TransferProductSelector.search()">
                 <select id="transferProductCategoryFilter" class="input" style="width: 200px;" onchange="TransferProductSelector.filter()">
                     <option value="">Все категории</option>
                 </select>
@@ -118,7 +118,7 @@
         <div style="display: grid; grid-template-columns: 280px 1fr; gap: 16px; max-height: 500px;">
             <aside class="card" style="overflow-y: auto;">
                 <div class="section-title">
-                    <h4>📁 Категории</h4>
+                    <h4> Категории</h4>
                 </div>
                 <div id="transferProductCategoryTree" style="padding: 8px;">
                     <!-- Категории -->
@@ -127,7 +127,7 @@
 
             <div class="card" style="overflow-y: auto;">
                 <div class="section-title">
-                    <h4>📦 Товары с остатками</h4>
+                    <h4> Товары с остатками</h4>
                     <span class="muted" id="transferProductCount">0 товаров</span>
                 </div>
                 <div class="table-wrapper">
@@ -155,8 +155,8 @@
 <div id="transferWarehouseSelectModal" class="modal-overlay hidden">
     <div class="modal" style="max-width: 700px;">
         <div class="section-title">
-            <h3>🏢 Выбор склада</h3>
-            <button class="btn btn-secondary" onclick="TransferWarehouseSelector.close()">✕ Закрыть</button>
+            <h3> Выбор склада</h3>
+            <button class="btn btn-secondary" onclick="TransferWarehouseSelector.close()"> Закрыть</button>
         </div>
 
         <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
@@ -242,7 +242,7 @@ window.TransferForm = {
             document.getElementById("transferId").value = "";
             document.getElementById("transferWarehouse").value = "";
             document.getElementById("transferWarehouseId").value = "";
-            document.getElementById("transferStatus").textContent = "📝 Черновик";
+            document.getElementById("transferStatus").textContent = " Черновик";
             document.getElementById("transferStatus").className = "pill pill-draft";
             document.getElementById("transferDate").textContent = new Date().toLocaleString("ru-RU");
             document.getElementById("transferCreatedBy").textContent = localStorage.getItem("username") || "—";
@@ -265,7 +265,7 @@ window.TransferForm = {
             const transfer = await api("GET", `/api/transfers/${id}`);
             
             document.getElementById("transferId").value = transfer.id;
-            document.getElementById("transferStatus").textContent = transfer.status === "COMMITTED" ? "✅ Проведён" : "📝 Черновик";
+            document.getElementById("transferStatus").textContent = transfer.status === "COMMITTED" ? " Проведён" : " Черновик";
             document.getElementById("transferStatus").className = `pill ${transfer.status === "COMMITTED" ? "pill-committed" : "pill-draft"}`;
             document.getElementById("transferDate").textContent = fmtDate(transfer.createdAt);
             document.getElementById("transferCreatedBy").textContent = transfer.createdByName || "—";
@@ -347,7 +347,7 @@ window.TransferForm = {
                     </td>
                     <td>
                         <span class="muted" style="font-size: 12px;">${item.sourceLocationCode || 'Не выбрана'}</span>
-                        <button type="button" class="btn btn-sm btn-secondary" onclick="TransferForm.selectSourceLocation(${index})">🗺️</button>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="TransferForm.selectSourceLocation(${index})"></button>
                     </td>
                     <td>
                         <input type="number" min="1" max="${item.maxQty}" value="${item.qty}" 
@@ -356,10 +356,10 @@ window.TransferForm = {
                     </td>
                     <td>
                         <span class="muted" style="font-size: 12px;">${item.destLocationCode || 'Не выбрана'}</span>
-                        <button type="button" class="btn btn-sm btn-secondary" onclick="TransferForm.selectDestLocation(${index})">🗺️</button>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="TransferForm.selectDestLocation(${index})"></button>
                     </td>
                     <td>
-                        <button type="button" class="btn btn-sm btn-danger" onclick="TransferForm.removeItem(${index})">✕</button>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="TransferForm.removeItem(${index})"></button>
                     </td>
                 </tr>
             `;
@@ -576,7 +576,7 @@ window.TransferProductSelector = {
             let html = `
                 <div class="transfer-category-item ${this.selectedCategoryId === null ? 'selected' : ''}" 
                      onclick="TransferProductSelector.selectCategory(null)">
-                    <span class="icon">📂</span>
+                    <span class="icon"></span>
                     <span class="name">Все категории</span>
                 </div>
             `;
@@ -598,7 +598,7 @@ window.TransferProductSelector = {
             <div class="transfer-category-item ${isSelected ? 'selected' : ''}" 
                  style="padding-left: ${indent + 8}px;"
                  onclick="TransferProductSelector.selectCategory(${node.id})">
-                <span class="icon">${children.length > 0 ? '📁' : '📄'}</span>
+                <span class="icon">${children.length > 0 ? '' : ''}</span>
                 <span class="name">${node.name}</span>
             </div>
         `;
@@ -669,7 +669,7 @@ window.TransferProductSelector = {
                     <td>
                         ${p.imageUrl 
                             ? `<img src="${p.imageUrl}" alt="" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">`
-                            : '<div style="width: 40px; height: 40px; background: #f0f1f7; border-radius: 4px; display: flex; align-items: center; justify-content: center;">📦</div>'
+                            : '<div style="width: 40px; height: 40px; background: #f0f1f7; border-radius: 4px; display: flex; align-items: center; justify-content: center;"></div>'
                         }
                     </td>
                     <td><strong>${p.sku}</strong></td>
@@ -680,7 +680,7 @@ window.TransferProductSelector = {
                     </td>
                     <td>
                         <button class="btn btn-sm btn-primary" onclick="TransferProductSelector.selectProduct(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.sku}', ${mainLocation ? mainLocation.id : 'null'}, '${mainLocation ? mainLocation.code.replace(/'/g, "\\'") : ''}', ${mainLocation ? mainLocation.qty : 0})">
-                            ➕
+                            
                         </button>
                     </td>
                 </tr>

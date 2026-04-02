@@ -1,0 +1,70 @@
+{
+  "language": "russian",
+  "autoRunTests": true,
+  "autoBuild": true,
+  "preferredCommands": {
+    "build": "mvnw clean install",
+    "run": "mvnw spring-boot:run",
+    "test": "mvnw test",
+    "testSingle": "mvnw test -Dtest={className}",
+    "dockerUp": "docker-compose up -d",
+    "dockerDown": "docker-compose down",
+    "flywayMigrate": "mvnw flyway:migrate",
+    "flywayClean": "mvnw flyway:clean"
+  },
+  "projectStructure": {
+    "mainPackage": "com.example.demo",
+    "entityPackage": "com.example.demo.entity",
+    "repositoryPackage": "com.example.demo.repository",
+    "servicePackage": "com.example.demo.service",
+    "controllerPackage": "com.example.demo.controller",
+    "dtoPackage": "com.example.demo.dto",
+    "configPackage": "com.example.demo.config"
+  },
+  "codeStyle": {
+    "useLombok": true,
+    "useMapStruct": true,
+    "useRecordClasses": true,
+    "preferConstructorInjection": true,
+    "namingConvention": {
+      "entity": "SingularPascalCase",
+      "repository": "EntityRepository",
+      "service": "EntityService",
+      "controller": "EntityController",
+      "dto": "EntityDto"
+    }
+  },
+  "testing": {
+    "framework": "JUnit 5 + Spring Boot Test",
+    "integrationTestSuffix": "IntegrationTest",
+    "unitTestSuffix": "Test",
+    "useTestContainers": true,
+    "databaseForTests": "PostgreSQL via TestContainers"
+  },
+  "apiDocumentation": {
+    "swaggerUi": "http://localhost:8080/swagger-ui.html",
+    "openApiSpec": "http://localhost:8080/v3/api-docs",
+    "springDocVersion": "2.6.0"
+  },
+  "database": {
+    "type": "PostgreSQL",
+    "version": "16",
+    "migrationTool": "Flyway",
+    "migrationLocation": "classpath:db/migration",
+    "dockerCompose": "docker-compose.yml"
+  },
+  "security": {
+    "type": "JWT",
+    "accessTokenTtl": 3600000,
+    "refreshTokenTtl": 1209600000
+  },
+  "features": {
+    "qrCodeGeneration": true,
+    "fileUpload": true,
+    "auditLogging": true,
+    "batchOperations": true,
+    "multiWarehouse": true,
+    "inventoryManagement": true
+  },
+  "$version": 3
+}
