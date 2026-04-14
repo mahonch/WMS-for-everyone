@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.audit.AuditSnapshot;
+import com.example.demo.dto.doc.IssueDtos;
 import com.example.demo.entity.*;
 import com.example.demo.entity.enums.DocStatus;
 import com.example.demo.entity.enums.IssueReason;
@@ -34,6 +35,58 @@ public class IssueService {
     private final ReceiptRepository receiptRepository;
     private final ReceiptItemRepository receiptItemRepository;
     private final NumberGenerator numberGenerator;
+    private final UserRepository userRepository;
+    private final ProductRepository productRepository;
+
+    /**
+     * Создать черновик Issue.
+     */
+    @Transactional
+    public IssueDtos.View create(IssueDtos.Create dto, Long actorId) {
+        User actor = actorId != null ? userRepository.findById(actorId).orElse(null) : null;
+
+        Issue issue = Issue.builder()
+                .number(numberGenerator.next("ISS"))
+                .status(DocStatus.DRAFT)
+                .reasonCode(IssueReason.valueOf(dto.reasonCode() != null ? dto.reasonCode() : "SALE"))
+                .reason(dto.reason())
+                .createdBy(actor)
+                .build();
+
+        issue = issueRepository.save(issue);
+
+        List<IssueItem> items = new ArrayList<>();
+        for (IssueDtos.ItemCreate ic : dto.items()) {
+            Product p = productRepository.findById(ic.productId())
+                    .orElseThrow(() -> new NotFoundException("Product not found"));
+            IssueItem ii = IssueItem.builder()
+                    .issue(issue)
+                    .product(p)
+                    .qty(ic.qty())
+                    .build();
+            ii = issueItemRepository.save(ii);
+            items.add(ii);
+        }
+        issue.setItems(items);
+
+        return toView(issue);
+    }
+
+    private IssueDtos.View toView(Issue issue) {
+        return new IssueDtos.View(
+                issue.getId(),
+                issue.getNumber(),
+                issue.getStatus().name(),
+                issue.getCreatedBy() != null ? issue.getCreatedBy().getId() : null,
+                issue.getCreatedBy() != null ? issue.getCreatedBy().getUsername() : null,
+                null, null, issue.getCommittedAt(),
+                issue.getReason(), issue.getReasonCode().name(),
+                issue.getCreatedAt(),
+                issue.getItems().stream().map(i -> new IssueDtos.ViewItem(i.getId(), i.getProduct().getId(), i.getBatch() != null ? i.getBatch().getId() : null, i.getQty(), i.getCostPrice())).toList(),
+                null, null,
+                null, null
+        );
+    }
 
     @Transactional
     public void commit(Long issueId,

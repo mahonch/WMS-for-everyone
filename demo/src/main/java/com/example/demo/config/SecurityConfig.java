@@ -49,6 +49,7 @@ public class SecurityConfig {
                                 "/pages/transfers.html", "/pages/products.html", "/pages/product-detail.html",
                                 "/pages/location-detail.html",
                                 "/pages/suppliers.html", "/pages/profile.html",
+                                "/pages/worker/**", "/worker/**",
                                 "/components/**","/dashboard-vue.html").permitAll()
 
                         // swagger
@@ -61,16 +62,20 @@ public class SecurityConfig {
                         .requestMatchers("/api/qr/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/scan").permitAll()
 
+                        // worker API — доступны STOREKEEPER и PICKER
+                        .requestMatchers("/api/workers/**", "/api/tasks/**", "/api/routes/**", "/api/orders/**")
+                        .hasAnyRole("ADMIN", "MANAGER", "STOREKEEPER", "PICKER")
+
                         // admin API
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                         // GET /api/**
                         .requestMatchers(HttpMethod.GET, "/api/**")
-                        .hasAnyRole("ADMIN", "MANAGER", "STOREKEEPER", "GUEST")
+                        .hasAnyRole("ADMIN", "MANAGER", "STOREKEEPER", "PICKER", "GUEST")
 
                         // складские документы
                         .requestMatchers("/api/receipts/**", "/api/issues/**", "/api/transfers/**")
-                        .hasAnyRole("ADMIN", "STOREKEEPER")
+                        .hasAnyRole("ADMIN", "STOREKEEPER", "PICKER")
 
                         // всё остальное — только ADMIN
                         .anyRequest().hasRole("ADMIN")

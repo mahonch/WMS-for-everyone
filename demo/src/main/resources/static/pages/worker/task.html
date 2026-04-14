@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Выполнение задачи</title>
+    <link href="/css/worker.css" rel="stylesheet">
+    <!-- QR Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body class="worker-layout">
+
+    <!-- Task Header -->
+    <div class="task-detail-header">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <a href="tasks.html" id="backBtn" style="font-size:24px; text-decoration:none; color:var(--worker-muted);">←</a>
+            <span class="task-status" id="taskType">Загрузка...</span>
+        </div>
+        <h1 class="task-detail-title" id="taskNumber" style="margin-top:12px;">—</h1>
+        <p class="task-detail-sub" id="taskProgress" style="margin-top:4px;">
+            <span id="progressText">0 / 0 выполнено</span>
+        </p>
+        <div style="background:#e5e7eb; height:6px; border-radius:3px; margin-top:8px;">
+            <div id="progressBar" style="background:var(--worker-primary); width:0%; height:100%; border-radius:3px; transition:width 0.3s;"></div>
+        </div>
+    </div>
+
+    <!-- Items List -->
+    <div id="taskItemsContainer">
+        <!-- JS renders items here -->
+    </div>
+
+    <!-- Complete Button -->
+    <div style="padding:16px;">
+        <button id="completeTaskBtn" class="btn-worker btn-outline" disabled>Завершите все позиции</button>
+    </div>
+
+    <!-- Scanner Overlay -->
+    <div id="scannerContainer" class="scanner-container">
+        <button id="scannerCloseBtn" class="scanner-close">×</button>
+        <div class="scanner-overlay">
+            Наведите камеру на QR-код товара или ячейки
+        </div>
+        <div id="reader"></div>
+    </div>
+
+    <script src="/js/worker.js"></script>
+</body>
+</html>

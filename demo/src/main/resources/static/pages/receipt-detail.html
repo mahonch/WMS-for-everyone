@@ -7,6 +7,8 @@
     <link href="/css/app-v2.css" rel="stylesheet">
     <link href="/css/mobile.css" rel="stylesheet">
     <style>
+        body { background: #f5f7fb; }
+        .content { background: #f5f7fb; min-height: 100vh; padding: 20px; }
         .breadcrumb-bar {
             padding: 10px 24px;
             background: #fff;
@@ -41,18 +43,22 @@
         .audit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
         .audit-item .label { color: var(--muted); font-size: 12px; }
         .audit-item .value { font-weight: 500; }
+        /* Табличный стиль как на списке приёмок */
+        .table tbody tr:hover { background: #f0f4ff; }
+        .table th, .table td { vertical-align: middle; }
+        .table td.right, .table th.right { text-align: right; }
+        .page-block {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(15,23,42,0.08);
+            margin-top: 16px;
+        }
+        .section-gap { margin-top: 16px; }
     </style>
 </head>
 <body class="layout">
-
-<!-- Breadcrumbs -->
-<div class="breadcrumb-bar">
-    <a href="/dashboard.html">Главная</a>
-    <span>›</span>
-    <a href="/pages/receipts.html">Журнал приёмки</a>
-    <span>›</span>
-    <span id="breadcrumbCurrent">Загрузка...</span>
-</div>
 
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav">
@@ -84,7 +90,16 @@
     </div>
 </aside>
 
-<main class="content">
+<main class="content" style="max-width: 1800px; margin: 0 auto 32px;">
+    <!-- Breadcrumbs -->
+    <div class="breadcrumb-bar">
+        <a href="/dashboard.html">Главная</a>
+        <span>›</span>
+        <a href="/pages/receipts.html">Журнал приёмки</a>
+        <span>›</span>
+        <span id="breadcrumbCurrent">Загрузка...</span>
+    </div>
+
     <header class="topbar">
         <div>
             <div class="tag-muted">Документ</div>
@@ -93,44 +108,46 @@
         <div class="toolbar" id="actionButtons"></div>
     </header>
 
-    <!-- Error -->
-    <div id="errorBlock" class="card" style="display:none; margin: 24px;">
-        <div class="section-title"><h3>Ошибка загрузки</h3></div>
-        <p id="errorText" class="muted"></p>
-        <a href="/pages/receipts.html" class="btn btn-primary" style="margin-top:12px;">← Назад к списку</a>
-    </div>
+    <div class="page-block">
+        <!-- Error -->
+        <div id="errorBlock" class="card" style="display:none; margin: 0 0 16px 0;">
+            <div class="section-title"><h3>Ошибка загрузки</h3></div>
+            <p id="errorText" class="muted"></p>
+            <a href="/pages/receipts.html" class="btn btn-primary" style="margin-top:12px;">← Назад к списку</a>
+        </div>
 
-    <!-- Content -->
-    <div id="receiptContent" style="padding: 24px;">
-        <!-- Info Cards -->
-        <div class="info-grid" id="infoCards"></div>
+        <!-- Content -->
+        <div id="receiptContent">
+            <!-- Info Cards -->
+            <div class="info-grid card section-gap" id="infoCards" style="padding:16px;"></div>
 
-        <!-- Items Table -->
-        <section class="card">
-            <div class="section-title">
-                <div>
-                    <p class="eyebrow">Позиции</p>
-                    <h3 id="itemsTitle">Позиции</h3>
+            <!-- Items Table -->
+            <section class="card section-gap">
+                <div class="section-title">
+                    <div>
+                        <p class="eyebrow">Позиции</p>
+                        <h3 id="itemsTitle">Позиции</h3>
+                    </div>
+                    <div id="itemsToolbar" class="toolbar"></div>
                 </div>
-                <div id="itemsToolbar" class="toolbar"></div>
-            </div>
-            <div class="table-wrapper">
-                <table class="table" id="itemsTable">
-                    <thead><tr>
-                        <th>№</th><th>Товар</th><th>Артикул</th>
-                        <th class="right">Кол-во</th><th class="right">Цена</th>
-                        <th class="right">Сумма</th><th>Локация</th><th id="actionsTh"></th>
-                    </tr></thead>
-                    <tbody id="itemsBody"></tbody>
-                    <tfoot id="itemsFoot"></tfoot>
-                </table>
-            </div>
-        </section>
+                <div class="table-wrapper">
+                    <table class="table" id="itemsTable">
+                        <thead><tr>
+                            <th>№</th><th>Товар</th><th>Артикул</th>
+                            <th class="right">Кол-во</th><th class="right">Цена</th>
+                            <th class="right">Сумма</th><th>Локация</th><th id="actionsTh"></th>
+                        </tr></thead>
+                        <tbody id="itemsBody"></tbody>
+                        <tfoot id="itemsFoot"></tfoot>
+                    </table>
+                </div>
+            </section>
 
-        <!-- Audit -->
-        <div class="audit-box">
-            <h4> Информация о документе</h4>
-            <div class="audit-grid" id="auditGrid"></div>
+            <!-- Audit -->
+            <div class="audit-box section-gap">
+                <h4> Информация о документе</h4>
+                <div class="audit-grid" id="auditGrid"></div>
+            </div>
         </div>
     </div>
 </main>

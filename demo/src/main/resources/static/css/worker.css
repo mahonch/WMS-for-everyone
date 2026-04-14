@@ -1,0 +1,187 @@
+/* Worker Mobile Styles */
+:root {
+    --worker-primary: #2563eb;
+    --worker-success: #16a34a;
+    --worker-warning: #ca8a04;
+    --worker-danger: #dc2626;
+    --worker-bg: #f8fafc;
+    --worker-card: #ffffff;
+    --worker-text: #0f172a;
+    --worker-muted: #64748b;
+    --worker-border: #e2e8f0;
+}
+
+body.worker-layout {
+    background-color: var(--worker-bg);
+    font-family: system-ui, -apple-system, sans-serif;
+    color: var(--worker-text);
+    margin: 0;
+    padding-bottom: 80px; /* Space for bottom nav */
+}
+
+.worker-header {
+    background: var(--worker-primary);
+    color: white;
+    padding: 20px 16px;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.worker-header h1 { margin: 0; font-size: 24px; }
+.worker-header p { margin: 4px 0 0; opacity: 0.9; }
+
+.worker-card {
+    background: var(--worker-card);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 0 16px 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.worker-card-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 12px;
+    color: var(--worker-text);
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.stat-item {
+    background: var(--worker-bg);
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.stat-value { font-size: 20px; font-weight: 700; color: var(--worker-primary); }
+.stat-label { font-size: 12px; color: var(--worker-muted); }
+
+/* Buttons */
+.btn-worker {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    margin-bottom: 10px;
+    transition: opacity 0.2s;
+}
+
+.btn-worker:active { opacity: 0.8; }
+.btn-primary { background: var(--worker-primary); color: white; }
+.btn-success { background: var(--worker-success); color: white; }
+.btn-danger { background: var(--worker-danger); color: white; }
+.btn-outline { background: transparent; border: 2px solid var(--worker-border); color: var(--worker-muted); }
+
+/* Shift Status */
+.shift-status {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-top: 8px;
+}
+.shift-active { background: #dcfce7; color: var(--worker-success); }
+.shift-inactive { background: #fee2e2; color: var(--worker-danger); }
+
+/* Task List */
+.task-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: var(--worker-card);
+    border-bottom: 1px solid var(--worker-border);
+    cursor: pointer;
+}
+.task-item:active { background: #f1f5f9; }
+
+.task-info h3 { margin: 0 0 4px; font-size: 16px; }
+.task-info p { margin: 0; font-size: 13px; color: var(--worker-muted); }
+
+.task-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.status-pending { background: #e0f2fe; color: #0284c7; }
+.status-progress { background: #fef3c7; color: #d97706; }
+.status-done { background: #dcfce7; color: #16a34a; }
+
+/* Task Detail Items */
+.task-item-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--worker-border);
+}
+.task-item-row:last-child { border-bottom: none; }
+
+.item-check {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--worker-border);
+    border-radius: 50%;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+.item-check.checked {
+    background: var(--worker-success);
+    border-color: var(--worker-success);
+    position: relative;
+}
+.item-check.checked::after {
+    content: '✓';
+    color: white;
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 14px;
+}
+
+/* Scanner Overlay */
+#scanner-container {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: black;
+    z-index: 1000;
+    flex-direction: column;
+}
+#scanner-container.active { display: flex; }
+
+#reader { width: 100%; height: 100%; }
+
+.scanner-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+    z-index: 1001;
+}
+
+.scanner-btn {
+    flex: 1;
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+}

@@ -33,6 +33,7 @@ public class ReceiptService {
     private final AuditService auditService;
     private final UserRepository userRepository;
     private final EntityManager em;
+    private final TaskService taskService;
 
     // --------------------------------------------------------------------
     // SNAPSHOT BUILDER — JSON SAFE, no recursion
@@ -147,5 +148,13 @@ public class ReceiptService {
         AuditSnapshot after = snapshot(receipt);
 
         auditService.log(actor, "RECEIPT_COMMIT", "Receipt", receipt.getId(), before, after);
+
+        // Авто-создание задачи для кладовщика
+        try {
+            taskService.createTaskFromReceipt(receipt.getId(), receipt.getWarehouse().getId());
+        } catch (Exception e) {
+            // Не прерываем коммит если создание задачи упало
+            System.err.println("[ReceiptService] Failed to create task: " + e.getMessage());
+        }
     }
 }

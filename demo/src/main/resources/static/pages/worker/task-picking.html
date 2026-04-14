@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Сборка — Задача</title>
+    <link href="/css/app-v2.css" rel="stylesheet">
+    <style>
+        .task-header { background: linear-gradient(180deg, #3d2c8d, #6c5ce7); color: #fff; padding: 20px 16px; border-radius: 0 0 16px 16px; margin-bottom: 16px; }
+        .task-header h2 { margin: 0 0 4px 0; font-size: 22px; }
+        .task-header p { margin: 0; opacity: 0.85; font-size: 14px; }
+        
+        .progress-bar { height: 8px; background: rgba(255,255,255,0.3); border-radius: 4px; margin-top: 12px; overflow: hidden; }
+        .progress-fill { height: 100%; background: #2ecc71; border-radius: 4px; transition: width 0.3s; }
+        
+        /* Route steps */
+        .route-step { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+        .route-step-header { padding: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .route-step-header:hover { background: #f7f8fc; }
+        .route-step.active .route-step-header { background: #f6f1ff; border-left: 4px solid var(--primary); }
+        .route-step.completed { opacity: 0.6; }
+        .route-step.completed .route-step-header { border-left: 4px solid var(--success); }
+        
+        .step-number { width: 32px; height: 32px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+        .route-step.active .step-number { background: var(--primary); color: #fff; }
+        .route-step.completed .step-number { background: var(--success); color: #fff; }
+        
+        .step-content { padding: 0 16px 16px; display: none; }
+        .route-step.active .step-content { display: block; }
+        
+        .product-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .product-name { font-weight: 600; font-size: 16px; }
+        .product-qty { font-weight: 700; color: var(--primary); font-size: 20px; }
+        
+        .scan-area { background: #f6f7fb; border: 2px dashed var(--border); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .scan-area:hover { border-color: var(--primary); background: #f6f1ff; }
+        .scan-area:active { transform: scale(0.98); }
+        .scan-area.done { border-color: var(--success); background: #e6f6ed; border-style: solid; }
+        .scan-icon { font-size: 32px; display: block; margin-bottom: 8px; }
+        .scan-text { color: var(--muted); font-size: 14px; }
+        
+        .qty-input { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 16px; }
+        .qty-btn { width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--border); background: #fff; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .qty-btn:active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .qty-display { font-size: 28px; font-weight: 700; min-width: 60px; text-align: center; }
+        
+        .shipment-area { background: var(--card); border: 2px solid var(--danger); border-radius: var(--radius); padding: 20px; margin: 16px; text-align: center; }
+        .shipment-area.done { border-color: var(--success); background: #e6f6ed; }
+        
+        .complete-btn { position: fixed; bottom: 80px; left: 16px; right: 16px; }
+        .complete-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #fff; opacity: 0.8; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+    </style>
+</head>
+<body class="worker-layout">
+
+    <div class="task-header">
+        <a href="tasks.html" class="back-link">← Назад</a>
+        <h2 id="taskNumber">Загрузка...</h2>
+        <p id="taskMeta">Сборка заказа</p>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+        </div>
+        <p style="margin: 8px 0 0; font-size: 13px;" id="progressText">0 / 0 собрано</p>
+    </div>
+
+    <div id="routeContainer" style="padding: 0 16px 100px;">
+        <!-- Route steps rendered here -->
+    </div>
+
+    <!-- Shipment Location (appears when all items collected) -->
+    <div id="shipmentArea" class="shipment-area" style="display:none;">
+        <h3 style="margin: 0 0 8px;">📦 Ячейка отгрузки</h3>
+        <p style="margin: 0 0 16px; color: var(--muted); font-size: 14px;">Отсканируйте ячейку для завершения</p>
+        <div class="scan-area" onclick="scanShipmentLocation()">
+            <span class="scan-icon">📍</span>
+            <span class="scan-text">Сканировать ячейку отгрузки</span>
+        </div>
+    </div>
+
+    <button id="completeBtn" class="btn btn-success complete-btn" disabled onclick="completeTask()">✓ Завершить сборку</button>
+
+    <!-- Scanner Overlay -->
+    <div id="scannerOverlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); z-index:1000; flex-direction:column;">
+        <div style="padding:16px; display:flex; justify-content:space-between; align-items:center;">
+            <button class="btn btn-secondary" onclick="closeScanner()" style="font-size:18px;">✕</button>
+            <span style="color:#fff; font-weight:600;" id="scannerTitle">Сканирование</span>
+            <div style="width:40px;"></div>
+        </div>
+        <div id="reader" style="flex:1;"></div>
+        <div style="padding:20px; text-align:center; color:#fff;">
+            <p style="margin:0 0 8px; font-size:14px; opacity:0.7;">Наведите камеру на QR-код</p>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="/js/auth-service.js"></script>
+    <script src="/js/picking-task.js?v=1"></script>
+</body>
+</html>

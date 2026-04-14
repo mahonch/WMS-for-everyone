@@ -1,4 +1,4 @@
-// Если уже вошёл — сразу на дашборд
+// Если уже вошёл — сразу на дашборд (проверяем роль)
 function decodeJwt(token) {
     try {
         const payload = token.split('.')[1];
@@ -9,8 +9,20 @@ function decodeJwt(token) {
         return null;
     }
 }
+
+// utility: приводим роль к виду без префикса ROLE_
+function normalizeRole(r) {
+    if (!r) return '';
+    return r.replace(/^ROLE_/i, '').toUpperCase();
+}
+
 if (localStorage.getItem('token')) {
-    window.location.replace('/dashboard.html');
+    const role = normalizeRole(localStorage.getItem('role'));
+    if (role === 'STOREKEEPER' || role === 'PICKER') {
+        window.location.replace('/pages/worker/index.html');
+    } else {
+        window.location.replace('/dashboard.html');
+    }
 }
 
 // ---- LOGIN FUNCTION ----
@@ -36,7 +48,8 @@ async function login(username, password) {
     // Сохраняем токены и роль
     localStorage.setItem('token', token);
     localStorage.setItem('refresh', body.refreshToken);
-    localStorage.setItem('role', body.role);
+    const role = normalizeRole(body.role);
+    localStorage.setItem('role', role);
 
     // --------------------------------------------
     // NEW ⭐ ДЕКОДИРУЕМ JWT И СОХРАНЯЕМ USERID
@@ -56,6 +69,8 @@ async function login(username, password) {
             localStorage.setItem('username', payload.username);
         }
     }
+    
+    return role;
 }
 
 // ---- FORM SUBMIT ----
@@ -70,15 +85,20 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
     try {
         console.log('⏳ Вход...');
-        await login(username, password);
-        console.log(' Успешный вход, перенаправление...');
+        const role = await login(username, password);
+        console.log(' Успешный вход, роль:', role);
 
         // Если JWT нет username — берём тот, что ввёл пользователь
         if (!localStorage.getItem('username')) {
             localStorage.setItem('username', username);
         }
 
-        window.location.replace('/dashboard.html');
+        // Редирект в зависимости от роли
+        if (role === 'STOREKEEPER' || role === 'PICKER') {
+            window.location.replace('/pages/worker/index.html');
+        } else {
+            window.location.replace('/dashboard.html');
+        }
     } catch (e2) {
         console.error('Ошибка входа:', e2);
         errBox.textContent = e2.message || 'Ошибка входа';

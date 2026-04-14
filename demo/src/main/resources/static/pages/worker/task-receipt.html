@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Приёмка — Задача</title>
+    <link href="/css/app-v2.css" rel="stylesheet">
+    <style>
+        .task-header { background: linear-gradient(180deg, #3d2c8d, #6c5ce7); color: #fff; padding: 20px 16px; border-radius: 0 0 16px 16px; margin-bottom: 16px; }
+        .task-header h2 { margin: 0 0 4px 0; font-size: 22px; }
+        .task-header p { margin: 0; opacity: 0.85; font-size: 14px; }
+        
+        .progress-bar { height: 8px; background: rgba(255,255,255,0.3); border-radius: 4px; margin-top: 12px; overflow: hidden; }
+        .progress-fill { height: 100%; background: #2ecc71; border-radius: 4px; transition: width 0.3s; }
+        
+        .item-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; position: relative; }
+        .item-card.completed { opacity: 0.5; border-color: var(--success); }
+        .item-card.completed::after { content: '✅'; position: absolute; top: 12px; right: 12px; font-size: 20px; }
+        
+        .item-name { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
+        .item-meta { color: var(--muted); font-size: 13px; }
+        .item-qty { font-weight: 700; color: var(--primary); font-size: 18px; margin-top: 8px; }
+        
+        .scan-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+        .scan-step { padding: 10px; border: 2px dashed var(--border); border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .scan-step:hover { border-color: var(--primary); background: #f6f1ff; }
+        .scan-step.active { border-color: var(--primary); border-style: solid; background: #f6f1ff; }
+        .scan-step.done { border-color: var(--success); border-style: solid; background: #e6f6ed; }
+        .scan-step-icon { font-size: 24px; display: block; margin-bottom: 4px; }
+        .scan-step-label { font-size: 12px; color: var(--muted); }
+        
+        .complete-btn { position: fixed; bottom: 80px; left: 16px; right: 16px; }
+        .complete-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--primary); font-weight: 600; margin-bottom: 16px; }
+    </style>
+</head>
+<body class="worker-layout">
+
+    <div class="task-header">
+        <a href="tasks.html" class="back-link" style="color: #fff; opacity: 0.8; font-size: 14px;">← Назад</a>
+        <h2 id="taskNumber">Загрузка...</h2>
+        <p id="taskMeta">Приёмка</p>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+        </div>
+        <p style="margin: 8px 0 0; font-size: 13px;" id="progressText">0 / 0 выполнено</p>
+    </div>
+
+    <div id="itemsContainer" style="padding: 0 16px 100px;">
+        <!-- Items rendered here -->
+    </div>
+
+    <button id="completeBtn" class="btn btn-success complete-btn" disabled onclick="completeTask()">✓ Завершить приёмку</button>
+
+    <!-- Scanner Overlay -->
+    <div id="scannerOverlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); z-index:1000; flex-direction:column;">
+        <div style="padding:16px; display:flex; justify-content:space-between; align-items:center;">
+            <button class="btn btn-secondary" onclick="closeScanner()" style="font-size:18px;">✕</button>
+            <span style="color:#fff; font-weight:600;" id="scannerTitle">Сканирование</span>
+            <div style="width:40px;"></div>
+        </div>
+        <div id="reader" style="flex:1;"></div>
+        <div style="padding:20px; text-align:center; color:#fff;">
+            <p style="margin:0 0 8px; font-size:14px; opacity:0.7;">Наведите камеру на QR-код</p>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="/js/auth-service.js"></script>
+    <script src="/js/worker.js"></script>
+    <script src="/js/receipt-task.js?v=1"></script>
+</body>
+</html>

@@ -1,291 +1,154 @@
-/**
- * Location Detail App
- */
+const fmtMoney = (n) => {
+    if (n === null || n === undefined) return '—';
+    return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n) + ' ₽';
+};
 
-const { createApp, ref, computed, onMounted } = Vue;
-const { createVuetify } = Vuetify;
+const activeTabLoc = { current: 'receipts' };
 
-// Vuetify setup
-const vuetify = createVuetify({
-    locale: {
-        locale: 'ru',
-        messages: { ru: { close: 'Закрыть', open: 'Открыть' } }
-    },
-    theme: {
-        defaultTheme: 'light',
-        themes: {
-            light: {
-                colors: {
-                    primary: '#1976D2',
-                    secondary: '#424242',
-                    success: '#4CAF50',
-                    warning: '#FF9800',
-                    info: '#2196F3',
-                    error: '#F44336'
-                }
+async function loadLocationPage() {
+    const params = new URLSearchParams(window.location.search);
+    const locId = params.get('id');
+    if (!locId) return;
+    const token = localStorage.getItem('token') || '';
+    const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+
+    const setText = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    };
+
+    try {
+        // location
+        const res = await fetch(`/api/locations/${locId}`, { headers });
+        if (!res.ok) throw new Error('Не удалось загрузить ячейку');
+        const loc = await res.json();
+
+        setText('crumbTitle', loc.code || 'Ячейка');
+        setText('headerTitle', loc.code || 'Ячейка');
+        setText('locationCode', loc.code || '—');
+        setText('locationName', loc.name || '—');
+        setText('warehouseName', loc.warehouseName || '—');
+        const badge = document.getElementById('typeBadge');
+        if (badge) badge.textContent = loc.type || 'BIN';
+        const locNamePrint = document.getElementById('locNamePrint');
+        if (locNamePrint) locNamePrint.textContent = (loc.code || '') + (loc.name ? ' — ' + loc.name : '');
+        const parentLink = document.getElementById('parentLink');
+        if (parentLink) {
+            if (loc.parentId) {
+                parentLink.innerHTML = `<a class="clickable-link" href="/pages/location-detail.html?id=${loc.parentId}">${loc.parentName || ('#' + loc.parentId)}</a>`;
+            } else {
+                parentLink.textContent = '—';
             }
         }
-    }
-});
+        const qr = document.getElementById('qrImage');
+        if (qr) qr.src = `/api/qr/loc/${locId}.png?size=240`;
 
-const app = createApp({
-    setup() {
-        const drawer = ref(true);
-        const loading = ref(false);
-        const loadingRelated = ref(false);
-        const location = ref(null);
-        const products = ref([]);
-        const relatedReceipts = ref([]);
-        const relatedIssues = ref([]);
-        const relatedTransfers = ref([]);
-        const activeTab = ref('receipts');
+        // stats
+        const statsBox = document.getElementById('statsBox');
+        if (statsBox) {
+            statsBox.innerHTML = `
+                <div class="info-label">Всего товаров</div><div class="info-value text-h6">${loc.totalProducts || 0}</div>
+                <div class="info-label">Кол-во</div><div class="info-value text-h6">${loc.totalQty || 0}</div>
+                <div class="info-label">Стоимость</div><div class="info-value text-h6 text-primary">${fmtMoney(loc.totalValue || 0)}</div>
+            `;
+        }
 
-        const locationId = new URLSearchParams(window.location.search).get('id');
-
-        const menuItems = [
-            { title: 'Главная', icon: 'mdi-home', path: '/dashboard-vue.html' },
-            { title: 'Приёмка', icon: 'mdi-truck-delivery', path: '/pages/receipts-vue.html' },
-            { title: 'Списание', icon: 'mdi-delete', path: '/pages/issues.html' },
-            { title: 'Перемещения', icon: 'mdi-swap-horizontal', path: '/pages/transfers.html' },
-            { title: 'Товары', icon: 'mdi-package-variant', path: '/pages/products.html' },
-            { title: 'Склады', icon: 'mdi-warehouse', path: '/pages/warehouses.html' },
-            { title: 'Профиль', icon: 'mdi-account', path: '/pages/profile.html' },
-        ];
-
-        const breadcrumbs = computed(() => {
-            const base = [
-                { title: 'Главная', disabled: false, href: '/dashboard-vue.html' },
-            ];
-
-            if (location.value) {
-                base.push({ title: 'Склады', disabled: false, href: '/pages/warehouses.html' });
-                base.push({ title: location.value.warehouseName || 'Склад', disabled: false, href: `/pages/warehouse-detail.html?id=${location.value.warehouseId}` });
-                base.push({ title: location.value.code, disabled: true });
+        // products in location (через stocks по locationId)
+        const prodRes = await fetch(`/api/stocks?locationId=${locId}`, { headers });
+        let products = [];
+        if (prodRes.ok) {
+            const stocks = await prodRes.json();
+            products = stocks.map(s => ({
+                id: s.productId,
+                sku: s.productSku || s.productName,
+                name: s.productName,
+                quantity: s.qty || 0
+            }));
+        }
+        const tbody = document.querySelector('#productsTable tbody');
+        if (tbody) {
+            if (!products.length) {
+                tbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:12px;">Нет товаров</td></tr>`;
             } else {
-                base.push({ title: 'Загрузка...', disabled: true });
+                tbody.innerHTML = products.map(p => `
+                    <tr>
+                        <td>${p.sku || '—'}</td>
+                        <td><a class="clickable-link" href="/pages/product-detail.html?id=${p.id}">${p.name}</a></td>
+                        <td>${p.quantity || 0}</td>
+                        <td></td>
+                    </tr>
+                `).join('');
             }
+        }
 
-            return base;
+        // related docs
+        const loadDoc = async (url) => {
+            const r = await fetch(url, { headers });
+            if (!r.ok) return [];
+            const data = await r.json();
+            return data.content || [];
+        };
+
+        const receipts = await loadDoc('/api/receipts?page=0&size=100');
+        const issues = await loadDoc('/api/issues?page=0&size=100');
+        const transfers = await loadDoc('/api/transfers?page=0&size=100');
+
+        const relatedReceipts = receipts.filter(r => r.items?.some(it => it.locationId == locId));
+        const relatedIssues = issues.filter(i => i.items?.some(it => it.locationId == locId));
+        const relatedTransfers = transfers.filter(t => t.items?.some(it => it.fromLocationId == locId || it.toLocationId == locId));
+
+        const tabContent = document.getElementById('tabContent');
+        const renderTable = (rows, columns, type) => {
+            if (!rows.length) return '<div class="muted" style="padding:12px;">Нет данных</div>';
+            const head = '<tr>' + columns.map(c => `<th>${c}</th>`).join('') + '</tr>';
+            const body = rows.map((r, idx) => `
+                <tr>
+                    <td>${linkDoc(r, type, idx)}</td>
+                    <td>${r.status || '—'}</td>
+                    <td>${r.createdAt ? new Date(r.createdAt).toLocaleString('ru-RU') : '—'}</td>
+                </tr>
+            `).join('');
+            return `<table>${head}${body}</table>`;
+        };
+        const linkDoc = (row, type, idx) => {
+            const num = row.number || row.id || (idx + 1);
+            let href = '#';
+            if (type === 'receipts' && row.id) {
+                href = `/pages/receipt-detail.html?id=${row.id}`;
+            } else if (type === 'issues' && row.id) {
+                href = `/pages/issues.html#${row.id}`;
+            } else if (type === 'transfers' && row.id) {
+                href = `/pages/transfers.html#${row.id}`;
+            }
+            return `<a class="clickable-link" href="${href}">${num}</a>`;
+        };
+
+        const updateTab = () => {
+            if (!tabContent) return;
+            if (activeTabLoc.current === 'receipts') {
+                tabContent.innerHTML = renderTable(relatedReceipts, ['№', 'Статус', 'Дата'], 'receipts');
+            } else if (activeTabLoc.current === 'issues') {
+                tabContent.innerHTML = renderTable(relatedIssues, ['№', 'Статус', 'Дата'], 'issues');
+            } else {
+                tabContent.innerHTML = renderTable(relatedTransfers, ['№', 'Статус', 'Дата'], 'transfers');
+            }
+        };
+        updateTab();
+
+        document.querySelectorAll('.doc-tab').forEach(el => {
+            el.onclick = () => {
+                document.querySelectorAll('.doc-tab').forEach(t => t.classList.remove('active'));
+                el.classList.add('active');
+                activeTabLoc.current = el.dataset.tab;
+                updateTab();
+            };
         });
 
-        const productHeaders = [
-            { title: 'Артикул', key: 'sku' },
-            { title: 'Название', key: 'name' },
-            { title: 'Цена', key: 'costPrice' },
-            { title: 'Кол-во', key: 'quantity' },
-        ];
-
-        const receiptHeaders = [
-            { title: '№', key: 'number' },
-            { title: 'Статус', key: 'status' },
-            { title: 'Поставщик', key: 'supplierName' },
-            { title: 'Дата', key: 'createdAt' },
-        ];
-
-        const issueHeaders = [
-            { title: '№', key: 'number' },
-            { title: 'Статус', key: 'status' },
-            { title: 'Причина', key: 'reason' },
-            { title: 'Дата', key: 'createdAt' },
-        ];
-
-        const transferHeaders = [
-            { title: '№', key: 'number' },
-            { title: 'Статус', key: 'status' },
-            { title: 'Откуда', key: 'fromWarehouseName' },
-            { title: 'Куда', key: 'toWarehouseName' },
-            { title: 'Дата', key: 'createdAt' },
-        ];
-
-        const loadLocation = async () => {
-            if (!locationId) {
-                loading.value = false;
-                return;
-            }
-
-            loading.value = true;
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`/api/locations/${locationId}`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-
-                if (response.ok) {
-                    location.value = await response.json();
-                    document.title = `Ячейка ${location.value.code} — WMS`;
-                    await loadProducts();
-                    await loadRelatedDocuments();
-                } else {
-                    location.value = null;
-                }
-            } catch (error) {
-                console.error('Error loading location:', error);
-                location.value = null;
-            } finally {
-                loading.value = false;
-            }
-        };
-
-        const loadProducts = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`/api/stocks?locationId=${locationId}`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-
-                if (response.ok) {
-                    const stocks = await response.json();
-                    // Преобразуем в формат для таблицы
-                    products.value = stocks.map(s => ({
-                        id: s.productId,
-                        sku: s.productSku,
-                        name: s.productName,
-                        costPrice: s.costPrice,
-                        quantity: s.quantity,
-                        locationId: s.locationId
-                    }));
-                }
-            } catch (e) {
-                console.error('[loadProducts] Error:', e);
-            }
-        };
-
-        const loadRelatedDocuments = async () => {
-            loadingRelated.value = true;
-            try {
-                const token = localStorage.getItem('token');
-
-                // Приёмки
-                const receiptsResponse = await fetch('/api/receipts?page=0&size=100', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (receiptsResponse.ok) {
-                    const receiptsData = await receiptsResponse.json();
-                    relatedReceipts.value = (receiptsData.content || []).filter(r =>
-                        r.items && r.items.some(item => item.locationId == locationId)
-                    );
-                }
-
-                // Списания
-                const issuesResponse = await fetch('/api/issues?page=0&size=100', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (issuesResponse.ok) {
-                    const issuesData = await issuesResponse.json();
-                    relatedIssues.value = (issuesData.content || []).filter(i =>
-                        i.items && i.items.some(item => item.locationId == locationId)
-                    );
-                }
-
-                // Перемещения
-                const transfersResponse = await fetch('/api/transfers?page=0&size=100', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (transfersResponse.ok) {
-                    const transfersData = await transfersResponse.json();
-                    relatedTransfers.value = (transfersData.content || []).filter(t =>
-                        t.items && (t.items.some(item => item.fromLocationId == locationId) || t.items.some(item => item.toLocationId == locationId))
-                    );
-                }
-            } catch (e) {
-                console.error('[loadRelatedDocuments] Error:', e);
-            } finally {
-                loadingRelated.value = false;
-            }
-        };
-
-        const goBack = () => {
-            if (location.value?.warehouseId) {
-                window.location.href = `/pages/warehouse-detail.html?id=${location.value.warehouseId}`;
-            } else {
-                window.location.href = '/pages/warehouses.html';
-            }
-        };
-
-        const goToProduct = (event, item) => {
-            if (item.id) {
-                window.location.href = `/pages/product-detail.html?id=${item.id}`;
-            }
-        };
-
-        const goToWarehouse = (warehouseId) => {
-            if (warehouseId) {
-                window.location.href = `/pages/warehouse-detail.html?id=${warehouseId}`;
-            }
-        };
-
-        const goToParentLocation = (parentId) => {
-            if (parentId) {
-                window.location.href = `/pages/location-detail.html?id=${parentId}`;
-            }
-        };
-
-        const goToReceipt = (event, item) => {
-            window.location.href = `/pages/receipt-detail-vue.html?id=${item.id}`;
-        };
-
-        const printDocument = () => {
-            window.print();
-        };
-
-        const formatDate = (dateString) => {
-            if (!dateString) return '—';
-            return new Date(dateString).toLocaleString('ru-RU', {
-                day: '2-digit', month: '2-digit', year: 'numeric',
-                hour: '2-digit', minute: '2-digit'
-            });
-        };
-
-        const formatMoney = (amount) => {
-            if (amount === null || amount === undefined) return '—';
-            return new Intl.NumberFormat('ru-RU', {
-                style: 'currency',
-                currency: 'RUB',
-                minimumFractionDigits: 0
-            }).format(amount);
-        };
-
-        const logout = () => {
-            localStorage.clear();
-            window.location.href = '/index.html';
-        };
-
-        onMounted(() => {
-            if (!localStorage.getItem('token')) {
-                window.location.href = '/index.html';
-                return;
-            }
-            loadLocation();
-        });
-
-        return {
-            drawer,
-            loading,
-            loadingRelated,
-            location,
-            products,
-            relatedReceipts,
-            relatedIssues,
-            relatedTransfers,
-            activeTab,
-            menuItems,
-            breadcrumbs,
-            productHeaders,
-            receiptHeaders,
-            issueHeaders,
-            transferHeaders,
-            goBack,
-            goToProduct,
-            goToWarehouse,
-            goToParentLocation,
-            goToReceipt,
-            printDocument,
-            formatDate,
-            formatMoney,
-            logout
-        };
+        document.getElementById('btnBack').onclick = () => history.back();
+        document.getElementById('btnPrint').onclick = () => window.print();
+    } catch (e) {
+        console.error(e);
     }
-});
+}
 
-app.use(vuetify);
-app.mount('#app');
+document.addEventListener('DOMContentLoaded', loadLocationPage);

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Задачи</title>
+    <link href="/css/worker.css" rel="stylesheet">
+</head>
+<body class="worker-layout">
+
+    <!-- Header -->
+    <header class="worker-header">
+        <h1>Мои задачи</h1>
+        <a href="index.html" style="font-size: 14px; color: var(--worker-primary);">Назад</a>
+    </header>
+
+    <!-- Tabs -->
+    <div style="display: flex; padding: 0 16px; gap: 10px;">
+        <button class="btn-worker btn-primary" style="padding: 10px; font-size: 14px;" onclick="loadTasks('assigned')">Мои</button>
+        <button class="btn-worker btn-outline" style="padding: 10px; font-size: 14px;" onclick="loadTasks('available')">Доступные</button>
+    </div>
+
+    <!-- List -->
+    <div id="tasksContainer" style="padding-top: 10px;">
+        <!-- JS renders items here -->
+    </div>
+
+    <script src="/js/worker.js"></script>
+</body>
+</html>
