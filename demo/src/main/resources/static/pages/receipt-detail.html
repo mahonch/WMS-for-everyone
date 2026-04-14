@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Приёмка — WMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="/css/app-v2.css" rel="stylesheet">
+    <link href="/css/mobile.css" rel="stylesheet">
+    <style>
+        .breadcrumb-bar {
+            padding: 10px 24px;
+            background: #fff;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .breadcrumb-bar a { color: var(--primary); text-decoration: none; }
+        .breadcrumb-bar a:hover { text-decoration: underline; }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .info-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+        }
+        .info-box .label { color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+        .info-box .value { font-weight: 600; }
+        .info-box .value.big { font-size: 24px; color: var(--primary); }
+        .status-pill { display: inline-block; padding: 4px 12px; border-radius: 16px; font-size: 13px; font-weight: 500; }
+        .status-draft { background: #fff3cd; color: #856404; }
+        .status-committed { background: #d4edda; color: #155724; }
+        .clickable { color: var(--primary); text-decoration: none; cursor: pointer; }
+        .clickable:hover { text-decoration: underline; }
+        .edit-input { width: 70px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; text-align: center; font-size: 14px; }
+        .edit-input:focus { border-color: var(--primary); outline: none; }
+        .audit-box { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-top: 24px; }
+        .audit-box h4 { margin: 0 0 12px 0; font-size: 14px; color: var(--muted); }
+        .audit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+        .audit-item .label { color: var(--muted); font-size: 12px; }
+        .audit-item .value { font-weight: 500; }
+    </style>
+</head>
+<body class="layout">
+
+<!-- Breadcrumbs -->
+<div class="breadcrumb-bar">
+    <a href="/dashboard.html">Главная</a>
+    <span>›</span>
+    <a href="/pages/receipts.html">Журнал приёмки</a>
+    <span>›</span>
+    <span id="breadcrumbCurrent">Загрузка...</span>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+    <a href="/dashboard.html"><span class="nav-icon"></span><span>Главная</span></a>
+    <a href="/pages/receipts.html" class="active"><span class="nav-icon"></span><span>Приёмка</span></a>
+    <a href="/pages/issues.html"><span class="nav-icon"></span><span>Списание</span></a>
+    <a href="/pages/transfers.html"><span class="nav-icon"></span><span>Перемещ.</span></a>
+    <a href="/pages/products.html"><span class="nav-icon"></span><span>Товары</span></a>
+    <a href="/pages/suppliers.html"><span class="nav-icon"></span><span>Поставщ.</span></a>
+</nav>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="logo"> WMS</div>
+    <nav>
+        <a href="/dashboard.html"> Главная</a>
+        <a href="/pages/receipts.html" class="active"> Приёмки</a>
+        <a href="/pages/issues.html"> Списание</a>
+        <a href="/pages/transfers.html"> Перемещения</a>
+        <a href="/pages/products.html"> Товары</a>
+        <a href="/pages/suppliers.html"> Поставщики</a>
+        <a href="/pages/warehouses.html"> Склады</a>
+        <a href="/pages/profile.html"> Профиль</a>
+        <a href="/scan.html"> Скан QR</a>
+    </nav>
+    <div class="user-chip">
+        <span id="usernameLabel">—</span>
+        <button id="logoutBtn" class="btn btn-secondary">Выйти</button>
+    </div>
+</aside>
+
+<main class="content">
+    <header class="topbar">
+        <div>
+            <div class="tag-muted">Документ</div>
+            <strong id="headerTitle">Приёмка — Загрузка...</strong>
+        </div>
+        <div class="toolbar" id="actionButtons"></div>
+    </header>
+
+    <!-- Error -->
+    <div id="errorBlock" class="card" style="display:none; margin: 24px;">
+        <div class="section-title"><h3>Ошибка загрузки</h3></div>
+        <p id="errorText" class="muted"></p>
+        <a href="/pages/receipts.html" class="btn btn-primary" style="margin-top:12px;">← Назад к списку</a>
+    </div>
+
+    <!-- Content -->
+    <div id="receiptContent" style="padding: 24px;">
+        <!-- Info Cards -->
+        <div class="info-grid" id="infoCards"></div>
+
+        <!-- Items Table -->
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <p class="eyebrow">Позиции</p>
+                    <h3 id="itemsTitle">Позиции</h3>
+                </div>
+                <div id="itemsToolbar" class="toolbar"></div>
+            </div>
+            <div class="table-wrapper">
+                <table class="table" id="itemsTable">
+                    <thead><tr>
+                        <th>№</th><th>Товар</th><th>Артикул</th>
+                        <th class="right">Кол-во</th><th class="right">Цена</th>
+                        <th class="right">Сумма</th><th>Локация</th><th id="actionsTh"></th>
+                    </tr></thead>
+                    <tbody id="itemsBody"></tbody>
+                    <tfoot id="itemsFoot"></tfoot>
+                </table>
+            </div>
+        </section>
+
+        <!-- Audit -->
+        <div class="audit-box">
+            <h4> Информация о документе</h4>
+            <div class="audit-grid" id="auditGrid"></div>
+        </div>
+    </div>
+</main>
+
+<!-- МОДАЛЬНОЕ ОКНО ВЫБОРА ТОВАРА -->
+<div id="productSelectModal" class="modal-overlay hidden">
+    <div class="modal" style="max-width:1100px;width:95%;">
+        <div class="section-title">
+            <div><p class="eyebrow">Выбор товара</p><h3> Добавить товар в приёмку</h3></div>
+            <button class="btn btn-secondary" onclick="ProductSelector.close()"> Закрыть</button>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+            <div class="toolbar" style="gap:12px;flex-wrap:wrap;">
+                <input type="text" id="productSearch" class="input" placeholder=" Поиск по названию, SKU..." style="flex:1;min-width:250px;" oninput="ProductSelector.search()">
+                <select id="productCategoryFilter" class="input" style="width:200px;" onchange="ProductSelector.filter()"><option value="">Все категории</option></select>
+                <select id="productSort" class="input" style="width:200px;" onchange="ProductSelector.sort()">
+                    <option value="name_asc">По названию (А-Я)</option><option value="name_desc">По названию (Я-А)</option>
+                    <option value="price_asc">По цене (возрастание)</option><option value="price_desc">По цене (убывание)</option>
+                    <option value="created_desc">Сначала новые</option><option value="created_asc">Сначала старые</option>
+                </select>
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:280px 1fr;gap:16px;max-height:500px;">
+            <aside class="card" style="overflow-y:auto;"><div class="section-title"><h4> Категории</h4></div><div id="productCategoryTree" style="padding:8px;"></div></aside>
+            <div class="card" style="overflow-y:auto;">
+                <div class="section-title"><h4> Товары</h4><span class="muted" id="productCount">0 товаров</span></div>
+                <div class="table-wrapper">
+                    <table class="table" id="productsTable">
+                        <thead><tr><th>Фото</th><th>Артикул</th><th>Название</th><th>Категория</th><th>Цена</th><th></th></tr></thead>
+                        <tbody id="productsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- LOCATION EXPLORER -->
+<div id="locationExplorerOverlay" class="modal-overlay hidden">
+    <div class="location-explorer-modal">
+        <div class="explorer-header"><div class="explorer-title"><h3> Выбор локации</h3><button class="btn btn-secondary btn-sm" onclick="LocationExplorer.close()"></button></div></div>
+        <div class="explorer-body">
+            <div class="explorer-panel explorer-tree-panel"><div class="panel-header"><strong> Дерево склада</strong><span class="panel-hint">Навигация</span></div><div class="explorer-tree" id="locationTree"></div></div>
+            <div class="explorer-panel explorer-content-panel"><div class="panel-header"><strong> Содержимое</strong><span class="panel-hint" id="contentHint">Выберите узел</span></div><div class="explorer-content" id="locationContent"></div></div>
+        </div>
+    </div>
+</div>
+
+<script src="/js/auth-service.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/location-explorer.js"></script>
+<script src="/js/receipt-detail.js?v=4"></script>
+</body>
+</html>

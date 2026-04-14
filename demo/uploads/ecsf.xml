@@ -1,0 +1,114 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="ER Diagram WMS">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- USERS -->
+        <mxCell id="users" value="users" style="shape=rectangle;" vertex="1" parent="1">
+          <mxGeometry x="100" y="100" width="120" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="roles" value="roles" style="shape=rectangle;" vertex="1" parent="1">
+          <mxGeometry x="100" y="20" width="120" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="user_roles" value="user_roles" style="shape=rectangle;" vertex="1" parent="1">
+          <mxGeometry x="260" y="60" width="140" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- PRODUCTS -->
+        <mxCell id="products" value="products" style="shape=rectangle;" vertex="1" parent="1">
+          <mxGeometry x="400" y="100" width="140" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="categories" value="categories" style="shape=rectangle;" vertex="1" parent="1">
+          <mxGeometry x="400" y="20" width="140" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- WAREHOUSE -->
+        <mxCell id="warehouses" value="warehouses" style="shape=rectangle;" vertex="1" parent="1">
+          <mxGeometry x="600" y="20" width="140" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="locations" value="locations" style="shape=rectangle;" vertex="1" parent="1">
+          <mxGeometry x="600" y="100" width="140" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- STOCK -->
+        <mxCell id="stock" value="stock" style="shape=rectangle;" vertex="1" parent="1">
+          <mxGeometry x="800" y="100" width="140" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="batches" value="batches" style="shape=rectangle;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="100" width="140" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- DOCUMENTS -->
+        <mxCell id="receipts" value="receipts" style="shape=rectangle;" vertex="1" parent="1">
+          <mxGeometry x="200" y="250" width="140" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="receipt_items" value="receipt_items" style="shape=rectangle;" vertex="1" parent="1">
+          <mxGeometry x="400" y="250" width="160" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="issues" value="issues" style="shape=rectangle;" vertex="1" parent="1">
+          <mxGeometry x="200" y="350" width="140" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="issue_items" value="issue_items" style="shape=rectangle;" vertex="1" parent="1">
+          <mxGeometry x="400" y="350" width="160" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- EDGES -->
+
+        <mxCell id="e1" source="users" target="user_roles" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e2" source="roles" target="user_roles" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e3" source="categories" target="products" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e4" source="warehouses" target="locations" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e5" source="products" target="stock" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e6" source="locations" target="stock" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e7" source="stock" target="batches" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e8" source="receipts" target="receipt_items" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e9" source="products" target="receipt_items" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e10" source="issues" target="issue_items" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e11" source="products" target="issue_items" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

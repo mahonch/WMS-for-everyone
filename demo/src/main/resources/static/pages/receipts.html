@@ -6,42 +6,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="/css/app-v2.css" rel="stylesheet">
     <link href="/css/mobile.css" rel="stylesheet">
-    <script src="/js/auth-service.js"></script>
-    <script src="/js/modal.js"></script>
-    <script src="/js/location-explorer.js"></script>
-    <script src="/js/receipts.js"></script>
+    <style>
+        .clickable-row { cursor: pointer; }
+        .clickable-row:hover { background: #f0f4ff; }
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 16px; }
+        .pagination button { padding: 6px 14px; border: 1px solid var(--border); background: #fff; border-radius: 6px; cursor: pointer; }
+        .pagination button:hover:not(:disabled) { background: #e3f2fd; }
+        .pagination button:disabled { opacity: 0.4; cursor: default; }
+        .pagination button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .pagination .page-info { color: #666; font-size: 14px; }
+    </style>
 </head>
 <body class="layout">
 
-<!-- BOTTOM NAV (MOBILE) -->
 <nav class="bottom-nav">
-    <a href="/dashboard.html">
-        <span class="nav-icon"></span>
-        <span>Главная</span>
-    </a>
-    <a href="/pages/receipts.html" class="active">
-        <span class="nav-icon"></span>
-        <span>Приёмка</span>
-    </a>
-    <a href="/pages/issues.html">
-        <span class="nav-icon"></span>
-        <span>Списание</span>
-    </a>
-    <a href="/pages/transfers.html">
-        <span class="nav-icon"></span>
-        <span>Перемещ.</span>
-    </a>
-    <a href="/pages/products.html">
-        <span class="nav-icon"></span>
-        <span>Товары</span>
-    </a>
-    <a href="/pages/suppliers.html">
-        <span class="nav-icon"></span>
-        <span>Поставщ.</span>
-    </a>
+    <a href="/dashboard.html"><span class="nav-icon"></span><span>Главная</span></a>
+    <a href="/pages/receipts.html" class="active"><span class="nav-icon"></span><span>Приёмка</span></a>
+    <a href="/pages/issues.html"><span class="nav-icon"></span><span>Списание</span></a>
+    <a href="/pages/transfers.html"><span class="nav-icon"></span><span>Перемещ.</span></a>
+    <a href="/pages/products.html"><span class="nav-icon"></span><span>Товары</span></a>
+    <a href="/pages/suppliers.html"><span class="nav-icon"></span><span>Поставщ.</span></a>
 </nav>
 
-<!-- SIDEBAR -->
 <aside class="sidebar">
     <div class="logo"> WMS</div>
     <nav>
@@ -80,7 +66,7 @@
             </div>
             <div class="toolbar">
                 <input id="filterInput" class="input" placeholder=" Поиск по номеру, поставщику..." style="flex: 1;">
-                <button class="btn btn-primary" id="btnCreate"> Новая приёмка</button>
+                <button class="btn btn-primary" id="btnCreate"> Создать приёмку</button>
             </div>
         </div>
 
@@ -95,12 +81,14 @@
                     <th>Создал</th>
                     <th>Дата</th>
                     <th class="right">Сумма</th>
-                    <th></th>
                 </tr>
                 </thead>
-                <tbody></tbody>
+                <tbody id="receiptsBody"></tbody>
             </table>
         </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination"></div>
     </section>
 </main>
 
@@ -118,7 +106,6 @@
         <form id="receiptForm" onsubmit="ReceiptForm.handleSubmit(event)">
             <input type="hidden" id="receiptId">
 
-            <!-- ИНФО БЛОК -->
             <div class="card card-inline" style="margin-bottom: 16px;">
                 <div class="grid4">
                     <div class="info-item">
@@ -133,7 +120,7 @@
                         <span class="label">Склад</span>
                         <input type="text" id="receiptWarehouse" class="input" readonly placeholder="Склад не назначен">
                         <input type="hidden" id="receiptWarehouseId">
-                        <small class="muted" style="display: block; margin-top: 4px;">Склад берётся из вашего профиля</small>
+                        <small class="muted" style="display:block;margin-top:4px;">Склад берётся из вашего профиля</small>
                     </div>
                     <div class="info-item">
                         <span class="label">Статус</span>
@@ -146,7 +133,6 @@
                 </div>
             </div>
 
-            <!-- ПОЗИЦИИ -->
             <div class="card" style="margin-bottom: 16px;">
                 <div class="section-title">
                     <h4>Позиции</h4>
@@ -154,34 +140,16 @@
                         <button type="button" class="btn btn-primary" onclick="ReceiptForm.openProductSelector()"> Добавить товар</button>
                     </div>
                 </div>
-
                 <div class="table-wrapper">
                     <table class="table" id="receiptItemsTable">
-                        <thead>
-                        <tr>
-                            <th>№</th>
-                            <th>Товар</th>
-                            <th>Кол-во</th>
-                            <th>Цена</th>
-                            <th>Сумма</th>
-                            <th>Локация</th>
-                            <th style="width: 100px;"></th>
-                        </tr>
-                        </thead>
-                        <tbody id="receiptItemsBody">
-                            <tr><td colspan="7" class="muted" style="padding: 2rem; text-align: center;">Нет позиций</td></tr>
-                        </tbody>
+                        <thead><tr><th>№</th><th>Товар</th><th>Кол-во</th><th>Цена</th><th>Сумма</th><th>Локация</th><th style="width:100px;"></th></tr></thead>
+                        <tbody id="receiptItemsBody"><tr><td colspan="7" class="muted" style="padding:2rem;text-align:center;">Нет позиций</td></tr></tbody>
                     </table>
                 </div>
-
-                <div class="total-row">
-                    <span>Итого:</span>
-                    <strong id="receiptTotal">0 ₽</strong>
-                </div>
+                <div class="total-row"><span>Итого:</span><strong id="receiptTotal">0 ₽</strong></div>
             </div>
 
-            <!-- КНОПКИ -->
-            <div class="toolbar" style="justify-content: flex-end; gap: 8px;">
+            <div class="toolbar" style="justify-content:flex-end;gap:8px;">
                 <button type="button" class="btn btn-secondary" onclick="ReceiptForm.close()">Отмена</button>
                 <button type="button" class="btn btn-danger" id="btnDeleteDraft" onclick="ReceiptForm.delete()"> Удалить</button>
                 <button type="button" class="btn btn-success" id="btnCommit" onclick="ReceiptForm.commit()"> Провести</button>
@@ -193,25 +161,17 @@
 
 <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА ПОСТАВЩИКА -->
 <div id="supplierSelectModal" class="modal-overlay hidden">
-    <div class="modal" style="max-width: 700px;">
+    <div class="modal" style="max-width:700px;">
         <div class="section-title">
             <h3> Выбор поставщика</h3>
             <button class="btn btn-secondary" onclick="SupplierSelector.close()"> Закрыть</button>
         </div>
-
-        <div style="margin-bottom: 16px;">
+        <div style="margin-bottom:16px;">
             <input type="text" id="supplierSearch" class="input" placeholder=" Поиск поставщика..." oninput="SupplierSelector.search()">
         </div>
-
-        <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
+        <div class="table-wrapper" style="max-height:400px;overflow-y:auto;">
             <table class="table" id="suppliersTable">
-                <thead>
-                <tr>
-                    <th>Название</th>
-                    <th>ИНН</th>
-                    <th>Телефон</th>
-                </tr>
-                </thead>
+                <thead><tr><th>Название</th><th>ИНН</th><th>Телефон</th></tr></thead>
                 <tbody id="suppliersBody"></tbody>
             </table>
         </div>
@@ -220,23 +180,16 @@
 
 <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА ТОВАРА -->
 <div id="productSelectModal" class="modal-overlay hidden">
-    <div class="modal" style="max-width: 1100px; width: 95%;">
+    <div class="modal" style="max-width:1100px;width:95%;">
         <div class="section-title">
-            <div>
-                <p class="eyebrow">Выбор товара</p>
-                <h3> Добавить товар в приёмку</h3>
-            </div>
+            <div><p class="eyebrow">Выбор товара</p><h3> Добавить товар в приёмку</h3></div>
             <button class="btn btn-secondary" onclick="ProductSelector.close()"> Закрыть</button>
         </div>
-
-        <!-- Фильтры -->
-        <div class="card" style="margin-bottom: 16px;">
-            <div class="toolbar" style="gap: 12px; flex-wrap: wrap;">
-                <input type="text" id="productSearch" class="input" placeholder=" Поиск по названию, SKU..." style="flex: 1; min-width: 250px;" oninput="ProductSelector.search()">
-                <select id="productCategoryFilter" class="input" style="width: 200px;" onchange="ProductSelector.filter()">
-                    <option value="">Все категории</option>
-                </select>
-                <select id="productSort" class="input" style="width: 200px;" onchange="ProductSelector.sort()">
+        <div class="card" style="margin-bottom:16px;">
+            <div class="toolbar" style="gap:12px;flex-wrap:wrap;">
+                <input type="text" id="productSearch" class="input" placeholder=" Поиск по названию, SKU..." style="flex:1;min-width:250px;" oninput="ProductSelector.search()">
+                <select id="productCategoryFilter" class="input" style="width:200px;" onchange="ProductSelector.filter()"><option value="">Все категории</option></select>
+                <select id="productSort" class="input" style="width:200px;" onchange="ProductSelector.sort()">
                     <option value="name_asc">По названию (А-Я)</option>
                     <option value="name_desc">По названию (Я-А)</option>
                     <option value="price_asc">По цене (возрастание)</option>
@@ -246,38 +199,17 @@
                 </select>
             </div>
         </div>
-
-        <!-- Дерево категорий -->
-        <div style="display: grid; grid-template-columns: 280px 1fr; gap: 16px; max-height: 500px;">
-            <aside class="card" style="overflow-y: auto;">
-                <div class="section-title">
-                    <h4> Категории</h4>
-                </div>
-                <div id="productCategoryTree" style="padding: 8px;">
-                    <!-- Категории -->
-                </div>
+        <div style="display:grid;grid-template-columns:280px 1fr;gap:16px;max-height:500px;">
+            <aside class="card" style="overflow-y:auto;">
+                <div class="section-title"><h4> Категории</h4></div>
+                <div id="productCategoryTree" style="padding:8px;"></div>
             </aside>
-
-            <div class="card" style="overflow-y: auto;">
-                <div class="section-title">
-                    <h4> Товары</h4>
-                    <span class="muted" id="productCount">0 товаров</span>
-                </div>
+            <div class="card" style="overflow-y:auto;">
+                <div class="section-title"><h4> Товары</h4><span class="muted" id="productCount">0 товаров</span></div>
                 <div class="table-wrapper">
                     <table class="table" id="productsTable">
-                        <thead>
-                        <tr>
-                            <th>Фото</th>
-                            <th>Артикул</th>
-                            <th>Название</th>
-                            <th>Категория</th>
-                            <th>Цена</th>
-                            <th></th>
-                        </tr>
-                        </thead>
-                        <tbody id="productsBody">
-                            <!-- Товары -->
-                        </tbody>
+                        <thead><tr><th>Фото</th><th>Артикул</th><th>Название</th><th>Категория</th><th>Цена</th><th></th></tr></thead>
+                        <tbody id="productsBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -285,374 +217,28 @@
     </div>
 </div>
 
-<style>
-.required {
-    color: #dc3545;
-}
-
-.input-row {
-    display: flex;
-    gap: 8px;
-}
-
-.input-row .input {
-    flex: 1;
-}
-
-.input-row .btn {
-    flex-shrink: 0;
-}
-
-.pill-draft {
-    background: #fff3cd;
-    color: #856404;
-}
-
-.pill-committed {
-    background: #d4edda;
-    color: #155724;
-}
-
-/* Location Explorer Styles */
-.location-explorer-modal {
-    background: #fff;
-    border-radius: 12px;
-    width: 95%;
-    max-width: 1100px;
-    height: 80vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.explorer-header {
-    padding: 16px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.explorer-title {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.explorer-search {
-    display: flex;
-    gap: 8px;
-}
-
-.explorer-body {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 1px;
-    background: var(--border);
-    flex: 1;
-    overflow: hidden;
-}
-
-.explorer-panel {
-    background: #fff;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.explorer-panel-header {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 14px;
-}
-
-.explorer-tree {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px;
-}
-
-.explorer-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
-}
-
-.tree-node {
-    display: flex;
-    align-items: center;
-    padding: 8px 12px;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: background 0.2s;
-}
-
-.tree-node:hover {
-    background: #f0f1f7;
-}
-
-.tree-node.selected {
-    background: #e3f2fd;
-}
-
-.tree-toggle {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 0 4px;
-    font-size: 10px;
-    color: #6c757d;
-}
-
-.tree-spacer {
-    width: 20px;
-    display: inline-block;
-}
-
-.tree-icon {
-    margin-right: 8px;
-    font-size: 16px;
-}
-
-.tree-code {
-    font-weight: 600;
-    margin-right: 8px;
-}
-
-.tree-name {
-    color: #6c757d;
-    font-size: 13px;
-}
-
-.tree-badge {
-    margin-left: auto;
-    background: #e3f2fd;
-    color: #1976d2;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-}
-
-.content-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-}
-
-.content-count {
-    color: #6c757d;
-    font-size: 14px;
-}
-
-.type-group {
-    margin-bottom: 16px;
-}
-
-.type-header {
-    font-weight: 600;
-    color: #6c757d;
-    margin-bottom: 8px;
-    font-size: 14px;
-}
-
-.type-items {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 8px;
-}
-
-.content-item {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.content-item:hover {
-    background: #e9ecef;
-    transform: translateY(-2px);
-}
-
-.content-item.selectable:hover {
-    background: #e3f2fd;
-}
-
-.item-icon {
-    font-size: 24px;
-    margin-right: 12px;
-}
-
-.item-info {
-    flex: 1;
-}
-
-.item-code {
-    font-weight: 600;
-}
-
-.item-name {
-    font-size: 13px;
-    color: #6c757d;
-}
-
-.item-badge {
-    background: #e3f2fd;
-    color: #1976d2;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-}
-
-.btn-select {
-    margin-left: 8px;
-}
-
-.products-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.product-item {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    background: #f8f9fa;
-    border-radius: 8px;
-}
-
-.product-icon {
-    font-size: 24px;
-    margin-right: 12px;
-}
-
-.product-info {
-    flex: 1;
-}
-
-.product-name {
-    font-weight: 600;
-}
-
-.product-sku {
-    font-size: 13px;
-    color: #6c757d;
-}
-
-.product-qty {
-    font-weight: 600;
-    color: var(--primary);
-}
-
-.location-actions {
-    margin-top: 16px;
-    text-align: center;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 48px 16px;
-}
-
-.empty-icon {
-    font-size: 64px;
-    display: block;
-    margin-bottom: 16px;
-}
-
-.empty-title {
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-
-.empty-text {
-    color: #6c757d;
-    font-size: 14px;
-}
-
-.search-header {
-    font-weight: 600;
-    margin-bottom: 16px;
-}
-
-.search-group {
-    margin-bottom: 16px;
-}
-
-.search-group-title {
-    font-weight: 600;
-    color: #6c757d;
-    margin-bottom: 8px;
-}
-
-.search-item {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    cursor: pointer;
-    margin-bottom: 8px;
-}
-
-.search-item:hover {
-    background: #e9ecef;
-}
-
-.search-code {
-    font-weight: 600;
-    margin-right: 8px;
-}
-
-.search-name {
-    flex: 1;
-    color: #6c757d;
-}
-
-.search-badge {
-    background: #e3f2fd;
-    color: #1976d2;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-}
-</style>
-
-<!-- LOCATION EXPLORER OVERLAY -->
+<!-- LOCATION EXPLORER -->
 <div id="locationExplorerOverlay" class="modal-overlay hidden">
     <div class="location-explorer-modal">
         <div class="explorer-header">
-            <div class="explorer-title">
-                <h3> Выбор локации</h3>
-                <button class="btn btn-secondary btn-sm" onclick="LocationExplorer.close()"></button>
-            </div>
+            <div class="explorer-title"><h3> Выбор локации</h3><button class="btn btn-secondary btn-sm" onclick="LocationExplorer.close()"></button></div>
         </div>
         <div class="explorer-body">
             <div class="explorer-panel explorer-tree-panel">
-                <div class="panel-header">
-                    <strong> Дерево склада</strong>
-                    <span class="panel-hint">Навигация</span>
-                </div>
+                <div class="panel-header"><strong> Дерево склада</strong><span class="panel-hint">Навигация</span></div>
                 <div class="explorer-tree" id="locationTree"></div>
             </div>
             <div class="explorer-panel explorer-content-panel">
-                <div class="panel-header">
-                    <strong> Содержимое</strong>
-                    <span class="panel-hint" id="contentHint">Выберите узел</span>
-                </div>
+                <div class="panel-header"><strong> Содержимое</strong><span class="panel-hint" id="contentHint">Выберите узел</span></div>
                 <div class="explorer-content" id="locationContent"></div>
             </div>
         </div>
     </div>
 </div>
 
-<script src="/js/receipts.js"></script>
+<script src="/js/auth-service.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/location-explorer.js"></script>
+<script src="/js/receipts.js?v=8"></script>
 </body>
 </html>

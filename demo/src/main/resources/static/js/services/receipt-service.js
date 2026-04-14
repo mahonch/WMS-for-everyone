@@ -7,10 +7,10 @@ const ReceiptService = {
         return localStorage.getItem('token');
     },
 
-    async getReceipts(page = 0, size = 20, filters = {}) {
+    async getReceipts(page = 0, size = 10, filters = {}) {
         const token = await this.getToken();
         const params = new URLSearchParams({ page, size: size.toString() });
-        
+
         Object.entries(filters).forEach(([key, value]) => {
             if (value) params.append(key, value);
         });
@@ -20,6 +20,25 @@ const ReceiptService = {
         });
 
         if (!response.ok) throw new Error('Failed to fetch receipts');
+        return response.json();
+    },
+
+    async createReceipt(dto) {
+        const token = await this.getToken();
+        const response = await fetch('/api/receipts', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dto)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to create receipt');
+        }
+
         return response.json();
     },
 

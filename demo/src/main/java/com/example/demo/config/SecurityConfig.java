@@ -44,9 +44,10 @@ public class SecurityConfig {
                         .requestMatchers("/", "/index.html", "/dashboard.html", "/dashboard-vue.html", "/scan.html",
                                 "/labels.html", "/admin.html", "/admin-user-profile.html", "/favicon.ico",
                                 "/pages/warehouses.html", "/pages/warehouse-detail.html",
-                                "/pages/receipts.html", "/pages/receipts-vue.html", "/pages/receipt-detail-vue.html",
+                                "/pages/receipts.html", "/pages/receipts-vue.html", "/pages/receipt-detail.html", "/pages/receipt-detail-vue.html",
                                 "/pages/issues.html",
-                                "/pages/transfers.html", "/pages/products.html",
+                                "/pages/transfers.html", "/pages/products.html", "/pages/product-detail.html",
+                                "/pages/location-detail.html",
                                 "/pages/suppliers.html", "/pages/profile.html",
                                 "/components/**","/dashboard-vue.html").permitAll()
 

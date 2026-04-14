@@ -10,7 +10,7 @@ const useReceiptsStore = Pinia.defineStore('receipts', {
         error: null,
         pagination: {
             page: 0,
-            size: 20,
+            size: 10,
             total: 0,
             totalPages: 0
         },
@@ -24,41 +24,73 @@ const useReceiptsStore = Pinia.defineStore('receipts', {
     getters: {
         pendingReceipts: (state) => state.receipts.filter(r => r.status === 'DRAFT'),
         committedReceipts: (state) => state.receipts.filter(r => r.status === 'COMMITTED'),
-        
+
         receiptById: (state) => (id) => {
             return state.receipts.find(r => r.id === id) || state.currentReceipt;
         }
     },
 
     actions: {
-        async fetchReceipts(page = 0, size = 20) {
+        async fetchReceipts(page = 0, size = 10) {
             this.loading = true;
             this.error = null;
 
             try {
                 const token = localStorage.getItem('token');
                 const params = new URLSearchParams({ page, size: size.toString() });
-                
+
                 if (this.filters.search) params.append('search', this.filters.search);
                 if (this.filters.status) params.append('status', this.filters.status);
-                
+
                 const response = await fetch(`/api/receipts?${params}`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
-                
+
                 if (!response.ok) throw new Error('Failed to fetch receipts');
-                
+
                 const data = await response.json();
                 this.receipts = data.content || [];
                 this.pagination = {
                     page: data.number || 0,
-                    size: data.size || 20,
+                    size: data.size || 10,
                     total: data.totalElements || 0,
                     totalPages: data.totalPages || 0
                 };
             } catch (error) {
                 this.error = error.message;
                 console.error('[ReceiptsStore] Error:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async createReceipt(dto) {
+            this.loading = true;
+            this.error = null;
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/receipts', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dto)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to create receipt');
+                }
+
+                const created = await response.json();
+                await this.fetchReceipts(0, this.pagination.size);
+                return created;
+            } catch (error) {
+                this.error = error.message;
+                console.error('[ReceiptsStore] Create error:', error);
+                throw error;
             } finally {
                 this.loading = false;
             }
@@ -73,9 +105,9 @@ const useReceiptsStore = Pinia.defineStore('receipts', {
                 const response = await fetch(`/api/receipts/${id}`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
-                
+
                 if (!response.ok) throw new Error('Failed to fetch receipt');
-                
+
                 this.currentReceipt = await response.json();
                 return this.currentReceipt;
             } catch (error) {
@@ -94,12 +126,12 @@ const useReceiptsStore = Pinia.defineStore('receipts', {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
-                
+
                 if (!response.ok) {
                     const error = await response.json();
                     throw new Error(error.message || 'Failed to commit receipt');
                 }
-                
+
                 await this.fetchReceiptById(id);
                 await this.fetchReceipts();
             } catch (error) {
@@ -115,9 +147,9 @@ const useReceiptsStore = Pinia.defineStore('receipts', {
                     method: 'DELETE',
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
-                
+
                 if (!response.ok) throw new Error('Failed to delete receipt');
-                
+
                 await this.fetchReceipts();
             } catch (error) {
                 console.error('[ReceiptsStore] Delete error:', error);

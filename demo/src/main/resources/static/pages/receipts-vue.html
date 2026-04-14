@@ -2,25 +2,23 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Приёмки — WMS</title>
+    <title>Журнал приёмки — WMS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    
-    <!-- Vuetify CSS -->
     <link href="https://cdn.jsdelivr.net/npm/vuetify@3.7.1/dist/vuetify.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
     <link href="/css/app-v2.css" rel="stylesheet">
     <link href="/css/mobile.css" rel="stylesheet">
-    
     <style>
         [v-cloak] { display: none; }
         .page-container { padding: 24px; max-width: 1400px; margin: 0 auto; }
         .status-chip { font-weight: 500; }
+        .clickable-row { cursor: pointer; }
+        .clickable-row:hover { background: #f5f5f5; }
     </style>
 </head>
 <body>
     <div id="app" v-cloak>
         <v-app>
-            <!-- Sidebar -->
             <v-navigation-drawer v-model="drawer" app permanent>
                 <div class="d-flex align-center pa-4">
                     <span class="text-h5 font-weight-bold">📦 WMS</span>
@@ -41,24 +39,19 @@
                 </template>
             </v-navigation-drawer>
 
-            <!-- Top App Bar -->
             <v-app-bar app elevation="1">
                 <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
-                <v-app-bar-title>Приёмка товаров</v-app-bar-title>
+                <v-app-bar-title>Журнал приёмки</v-app-bar-title>
                 <v-chip class="mr-2" color="primary" variant="outlined">
                     <v-avatar start><v-icon icon="mdi-account"></v-icon></v-avatar>
                     {{ username }}
                 </v-chip>
             </v-app-bar>
 
-            <!-- Main Content -->
             <v-main>
                 <v-container fluid class="page-container">
-                    <!-- Breadcrumbs -->
                     <v-breadcrumbs :items="breadcrumbs" class="pa-0 mb-4">
-                        <template v-slot:divider>
-                            <v-icon icon="mdi-chevron-right" size="small"></v-icon>
-                        </template>
+                        <template v-slot:divider><v-icon icon="mdi-chevron-right" size="small"></v-icon></template>
                     </v-breadcrumbs>
 
                     <!-- Toolbar -->
@@ -70,23 +63,20 @@
                                         v-model="searchQuery"
                                         label="Поиск по номеру, поставщику..."
                                         prepend-inner-icon="mdi-magnify"
-                                        variant="outlined"
-                                        density="compact"
-                                        hide-details
-                                        clearable
+                                        variant="outlined" density="compact" hide-details clearable
                                         @update:model-value="debouncedSearch"
                                     ></v-text-field>
                                 </v-col>
                                 <v-col cols="12" md="6" class="text-right">
-                                    <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreateDialog">
-                                        Новая приёмка
+                                    <v-btn color="primary" prepend-icon="mdi-plus" @click="createReceipt" :loading="createLoading">
+                                        Создать приёмку
                                     </v-btn>
                                 </v-col>
                             </v-row>
                         </v-card-text>
                     </v-card>
 
-                    <!-- Receipts Table -->
+                    <!-- Table -->
                     <v-card>
                         <v-data-table
                             :headers="headers"
@@ -99,80 +89,47 @@
                             <template v-slot:item.number="{ item }">
                                 <v-chip variant="text" class="font-weight-bold">{{ item.number }}</v-chip>
                             </template>
-
                             <template v-slot:item.status="{ item }">
-                                <v-chip
-                                    :color="item.status === 'COMMITTED' ? 'success' : 'warning'"
-                                    size="small"
-                                    variant="tonal"
-                                    class="status-chip"
-                                >
+                                <v-chip :color="item.status === 'COMMITTED' ? 'success' : 'warning'" size="small" variant="tonal" class="status-chip">
                                     <v-icon start :icon="item.status === 'COMMITTED' ? 'mdi-check-circle' : 'mdi-clock-outline'"></v-icon>
-                                    {{ item.status === 'COMMITTED' ? 'Проведён' : 'Черновик' }}
+                                    {{ item.status === 'COMMITTED' ? 'Подписана' : 'Черновик' }}
                                 </v-chip>
                             </template>
-
                             <template v-slot:item.createdAt="{ item }">
                                 {{ formatDate(item.createdAt) }}
                             </template>
-
                             <template v-slot:item.totalSum="{ item }">
                                 {{ formatMoney(item.totalSum) }}
                             </template>
-
                             <template v-slot:item.actions="{ item }">
                                 <v-btn icon="mdi-eye" size="small" variant="text" @click.stop="openReceiptDetail(null, item)"></v-btn>
-                                <v-btn 
-                                    v-if="item.status === 'DRAFT'"
-                                    icon="mdi-check" 
-                                    size="small" 
-                                    variant="text" 
-                                    color="success"
-                                    @click.stop="commitReceipt(item)"
-                                ></v-btn>
-                                <v-btn 
-                                    v-if="item.status === 'DRAFT'"
-                                    icon="mdi-delete" 
-                                    size="small" 
-                                    variant="text" 
-                                    color="error"
-                                    @click.stop="deleteReceipt(item)"
-                                ></v-btn>
                             </template>
-
                             <template v-slot:no-data>
-                                <v-alert type="info" variant="tonal" class="ma-4">
-                                    Нет документов приёмки
-                                </v-alert>
+                                <v-alert type="info" variant="tonal" class="ma-4">Нет документов приёмки</v-alert>
                             </template>
                         </v-data-table>
 
                         <!-- Pagination -->
-                        <template v-slot:bottom>
+                        <div class="d-flex justify-center pa-4">
                             <v-pagination
                                 v-model="currentPage"
-                                :length="receiptsStore.pagination.totalPages"
+                                :length="receiptsStore.pagination.totalPages || 1"
                                 :total-visible="5"
                                 @update:model-value="loadReceipts"
                             ></v-pagination>
-                        </template>
+                        </div>
                     </v-card>
                 </v-container>
             </v-main>
         </v-app>
     </div>
 
-    <!-- Vue 3 + Pinia + Vuetify -->
     <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue-demi@0.14.7/lib/index.iife.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pinia@2.1.7/dist/pinia.iife.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@3.7.1/dist/vuetify.min.js"></script>
-    
-    <!-- Stores & Services (должны быть до приложения) -->
-    <script src="/js/stores/receipts-store.js?v=2"></script>
-    <script src="/js/services/receipt-service.js?v=2"></script>
-    
-    <!-- App -->
-    <script src="/js/vue-receipts-list.js?v=2"></script>
+    <script src="/js/stores/receipts-store.js?v=5"></script>
+    <script src="/js/services/receipt-service.js?v=5"></script>
+    <script src="/js/vue-receipts-list.js?v=5"></script>
 </body>
 </html>
