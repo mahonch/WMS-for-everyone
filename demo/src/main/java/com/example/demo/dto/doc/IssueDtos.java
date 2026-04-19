@@ -21,13 +21,15 @@ public class IssueDtos {
     public record ItemCreate(
             @NotNull Long productId,
             Long batchId,
-            @NotNull @Min(1) Integer qty
+            @NotNull @Min(1) Integer qty,
+            Long locationId
     ) {}
 
     public record ItemUpdate(
             @NotNull Long productId,
             Long batchId,
-            @NotNull @Min(1) Integer qty
+            @NotNull @Min(1) Integer qty,
+            Long locationId
     ) {}
 
     public record View(
@@ -54,6 +56,9 @@ public class IssueDtos {
             Long productId,
             Long batchId,
             Integer qty,
-            BigDecimal costPrice
+            BigDecimal costPrice,
+            Long locationId,
+            String locationCode,
+            String locationName
     ) {}
 }

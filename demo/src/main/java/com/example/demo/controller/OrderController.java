@@ -112,8 +112,9 @@ public class OrderController {
                 
                 items.add(new IssueDtos.ItemCreate(
                         p.getId(),
-                        loc != null ? loc.getId() : null,
-                        rand.nextInt(3) + 1
+                        null, // batchId
+                        rand.nextInt(3) + 1,
+                        loc != null ? loc.getId() : null
                 ));
             }
 

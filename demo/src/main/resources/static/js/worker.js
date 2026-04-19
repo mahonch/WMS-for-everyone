@@ -167,16 +167,18 @@ async function loadTasks(filter = 'assigned') {
     container.innerHTML = '<p style="text-align:center; padding:20px;">Загрузка...</p>';
 
     try {
-        let url = '';
-        if (filter === 'assigned') {
-            url = '/api/tasks/my?page=0&size=50';
-        } else {
-            // берем все доступные типы; бэкенд понимает пустой type как "любой"
-            url = '/api/tasks/available?page=0&size=50';
-        }
+        let tasks = [];
         
-        const data = await api('GET', url);
-        const tasks = data.content || [];
+        if (filter === 'assigned') {
+            const data = await api('GET', '/api/tasks/my?page=0&size=50');
+            tasks = data.content || [];
+        } else {
+            // Загружаем оба типа задач
+            const receipts = await api('GET', '/api/tasks/available?type=RECEIPT&page=0&size=50');
+            const picking = await api('GET', '/api/tasks/available?type=PICKING&page=0&size=50');
+            
+            tasks = [...(receipts.content || []), ...(picking.content || [])];
+        }
 
         if (tasks.length === 0) {
             container.innerHTML = '<p style="text-align:center; padding:40px; color:#999;">Задач нет</p>';
@@ -187,9 +189,9 @@ async function loadTasks(filter = 'assigned') {
         tasks.forEach(t => {
             const taskPage = resolveTaskPage(t.type);
             const el = document.createElement('div');
-            el.className = `task-item type-${t.type.toLowerCase()}`;
+            el.className = `task-item type-${(t.type||'').toLowerCase()}`;
             el.onclick = () => window.location.href = `${taskPage}?id=${t.id}`;
-            
+
             el.innerHTML = `
                 <div class="task-header">
                     <span class="task-number">${t.number}</span>

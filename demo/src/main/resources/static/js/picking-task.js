@@ -42,26 +42,24 @@ async function api(method, url, body) {
 async function loadTask(taskId) {
     try {
         currentTask = await api('GET', `/api/tasks/${taskId}`);
-        
+
         // Load route if exists
         if (currentTask.routeId) {
             try {
                 currentRoute = await api('GET', `/api/routes/task/${taskId}`);
-                // запомним порядок точек маршрута для сортировки групп
                 const points = currentRoute.points || currentRoute.routePoints || [];
                 routeOrderMap = {};
                 points.forEach((p, idx) => {
                     const locId = p.locationId || p.id;
                     if (locId) routeOrderMap[locId] = p.sortOrder ?? idx;
                 });
-                // возможная ячейка отгрузки от сервера
                 shipmentLocationId = currentRoute.shipmentLocationId || currentTask.shipmentLocationId || null;
             } catch (e) {
                 console.warn('No route found');
                 routeOrderMap = {};
             }
         }
-        
+
         renderTask();
     } catch (e) {
         alert(e.message);
@@ -72,24 +70,24 @@ async function loadTask(taskId) {
 function renderTask() {
     document.getElementById('taskNumber').textContent = currentTask.number;
     document.getElementById('taskMeta').textContent = 'Сборка • ' + (currentTask.warehouseName || '');
-    
+
     const container = document.getElementById('routeContainer');
     container.innerHTML = '';
-    
+
     const items = currentTask.items || [];
     let completed = 0;
-    
+
     // Group items by location (route points)
     const locationGroups = {};
     items.forEach((item, idx) => {
         const locId = item.locationId || 'unknown';
         if (!locationGroups[locId]) {
-            locationGroups[locId] = { locationName: item.locationName || 'Не указана', items: [] };
+            locationGroups[locId] = { locationName: item.locationName || 'Не указана', locationCode: item.locationCode || '', items: [] };
         }
         locationGroups[locId].items.push({ ...item, index: idx });
     });
-    
-    // Сортируем группы по маршруту (если есть), иначе по имени
+
+    // Sort groups by route order
     const groupsSorted = Object.entries(locationGroups).sort((a, b) => {
         const aId = a[0], bId = b[0];
         const aOrder = routeOrderMap[aId] ?? Number.MAX_SAFE_INTEGER;
@@ -97,13 +95,13 @@ function renderTask() {
         if (aOrder !== bOrder) return aOrder - bOrder;
         return (a[1].locationName || '').localeCompare(b[1].locationName || '');
     }).map(([_, group]) => group);
-    
+
     let stepNum = 1;
     groupsSorted.forEach(group => {
         const div = document.createElement('div');
         div.className = 'route-step';
         div.id = `step-${stepNum}`;
-        
+
         const groupCompleted = group.items.every(i => i.confirmed);
         if (groupCompleted) {
             div.classList.add('completed');
@@ -111,12 +109,15 @@ function renderTask() {
         } else {
             div.classList.add('active');
         }
+
+        // Show location prominently
+        const locDisplay = group.locationCode ? `📍 ${group.locationCode}` : `📍 ${group.locationName}`;
         
         let itemsHtml = '';
         group.items.forEach(item => {
             const scanned = item.confirmed || item.scannedCount > 0;
             const remaining = item.qtyPlanned - (item.qtyActual || 0);
-            
+
             itemsHtml += `
                 <div class="product-info">
                     <div>
@@ -125,7 +126,7 @@ function renderTask() {
                     </div>
                     <div class="product-qty">${remaining > 0 ? remaining : '✓'}</div>
                 </div>
-                
+
                 ${!item.confirmed ? `
                     <div class="scan-area ${scanned ? 'done' : ''}" onclick="scanProduct(${item.index})" id="scan-prod-${item.index}">
                         <span class="scan-icon">${scanned ? '✅' : '📦'}</span>
@@ -142,43 +143,43 @@ function renderTask() {
                 ` : '<div style="text-align:center; color:var(--success); font-weight:600; padding:12px;">✓ Собрано</div>'}
             `;
         });
-        
+
         div.innerHTML = `
             <div class="route-step-header" onclick="toggleStep(${stepNum})">
                 <div class="step-number">${stepNum}</div>
                 <div style="flex:1;">
-                    <div style="font-weight:600;">Ячейка: ${group.locationName}</div>
+                    <div class="location-badge">${locDisplay}</div>
                     <div style="color:var(--muted); font-size:13px;">${group.items.length} товаров</div>
                 </div>
                 <span style="font-size:18px;">${groupCompleted ? '✅' : '▼'}</span>
             </div>
             <div class="step-content">${itemsHtml}</div>
         `;
-        
+
         container.appendChild(div);
         stepNum++;
     });
-    
+
     // Update progress
     const pct = items.length > 0 ? Math.round((completed / items.length) * 100) : 0;
     document.getElementById('progressBar').style.width = pct + '%';
     document.getElementById('progressText').textContent = `${completed} / ${items.length} собрано`;
-    
+
     // Show shipment area when all collected
     const shipmentArea = document.getElementById('shipmentArea');
-    if (pct === 100 && !currentTask.shipmentConfirmed && !currentTask.shipmentScanned) {
+    if (pct === 100 && !currentTask.shipmentScanned) {
         shipmentArea.style.display = 'block';
-    } else if (currentTask.shipmentScanned || currentTask.shipmentConfirmed) {
+    } else if (currentTask.shipmentScanned) {
         shipmentArea.style.display = 'block';
         shipmentArea.classList.add('done');
         shipmentArea.innerHTML = '<h3 style="margin:0;">✅ Отгрузка подтверждена</h3>';
     } else {
         shipmentArea.style.display = 'none';
     }
-    
+
     // Complete button
     const btn = document.getElementById('completeBtn');
-    if (pct === 100 && (currentTask.shipmentScanned || currentTask.shipmentConfirmed)) {
+    if (pct === 100 && currentTask.shipmentScanned) {
         btn.disabled = false;
         btn.textContent = '✓ Завершить сборку';
     } else {
@@ -223,9 +224,7 @@ function adjustQty(itemIndex, delta) {
     if (qtyDisplay) qtyDisplay.textContent = remaining > 0 ? remaining : '✓';
     
     // Show confirm button if qty matches
-    const container = document.getElementById(`scan-prod-${itemIndex}`);
-    if (container && item.qtyActual === item.qtyPlanned) {
-        // Auto-confirm if qty matches
+    if (remaining <= 0 && !item.confirmed) {
         confirmItem(itemIndex);
     }
 }
@@ -264,10 +263,10 @@ function openScanner(title) {
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 250 } },
         onScanSuccess,
-        () => {}
+        () => {} // ignore parse errors
     ).catch(err => {
         console.error(err);
-        alert('Ошибка камеры: ' + err);
+        showToast('Ошибка камеры: ' + err, 'error');
         closeScanner();
     });
 }
@@ -284,11 +283,33 @@ function closeScanner() {
     currentItemIndex = 0;
 }
 
+// Глобальные функции для HTML
+window.skipScanPicking = skipScanPicking;
+
+async function skipScanPicking() {
+    if (currentScanType === 'product' && currentTask && currentTask.items[currentItemIndex]) {
+        const item = currentTask.items[currentItemIndex];
+        if (!item.qtyActual) item.qtyActual = 0;
+        item.qtyActual = item.qtyPlanned;
+        showToast(`✓ ${item.productName} подтверждён`);
+        closeScanner();
+        await confirmItem(currentItemIndex);
+    } else if (currentScanType === 'shipment') {
+        currentTask.shipmentScanned = true;
+        showToast('✓ Ячейка отгрузки подтверждена');
+        closeScanner();
+        renderTask();
+    } else {
+        closeScanner();
+    }
+}
+
 async function onScanSuccess(decodedText) {
     try {
         const data = JSON.parse(decodedText);
         if (!data.t || !data.id) {
-            showToast('Неверный QR-код', 'error');
+            showToast('⚠ Неверный QR-код', 'error');
+            // Не закрываем сканер — даём попробовать снова
             return;
         }
         
@@ -297,7 +318,8 @@ async function onScanSuccess(decodedText) {
             if (!item || item.confirmed) { closeScanner(); return; }
             
             if (data.t !== 'product' || data.id !== item.productId) {
-                showToast('Неверный товар!', 'error');
+                showToast(`⚠ Неверный товар! Нужен: ${item.productName}`, 'error');
+                // Не закрываем сканер — даём попробовать снова
                 return;
             }
             
@@ -314,28 +336,9 @@ async function onScanSuccess(decodedText) {
             closeScanner();
             
         } else if (currentScanType === 'shipment') {
-            // Verify shipment location
-            if (data.t !== 'loc') {
-                showToast('Ожидается QR ячейки', 'error');
-                return;
-            }
-            if (shipmentLocationId && data.id !== shipmentLocationId) {
-                showToast('Не та ячейка отгрузки', 'error');
-                return;
-            }
-
-            // отправляем подтверждение на сервер
-            await api('POST', `/api/tasks/${currentTask.id}/shipment/confirm`, {
-                locationId: data.id
-            });
-
             currentTask.shipmentScanned = true;
-            currentTask.shipmentConfirmed = true;
-            currentTask.shipmentLocationId = data.id;
             showToast('✓ Ячейка отгрузки подтверждена');
             closeScanner();
-            
-            // Update UI
             renderTask();
             if (navigator.vibrate) navigator.vibrate(300);
         }
@@ -364,3 +367,14 @@ function showToast(msg, type = 'success') {
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 3000);
 }
+
+// Глобальные функции
+window.skipScanPicking = skipScanPicking;
+window.closeScanner = closeScanner;
+window.scanProduct = scanProduct;
+window.scanShipmentLocation = scanShipmentLocation;
+window.adjustQty = adjustQty;
+window.confirmItem = confirmItem;
+window.completeTask = completeTask;
+window.toggleStep = toggleStep;
+window.onScanSuccess = onScanSuccess;

@@ -82,6 +82,16 @@ public class TaskService {
         Issue issue = issueRepository.findById(issueId)
                 .orElseThrow(() -> new NotFoundException("Issue not found"));
 
+        // Принудительно инициализируем location для каждой позиции
+        for (IssueItem ii : issue.getItems()) {
+            Location loc = ii.getLocation();
+            if (loc != null) {
+                loc.getCode(); // trigger lazy load
+                loc.getName();
+            }
+            ii.getProduct().getName();
+        }
+
         String number = numberGenerator.next("TASK-P");
 
         Warehouse wh = warehouseId != null
@@ -107,7 +117,7 @@ public class TaskService {
             TaskItem ti = TaskItem.builder()
                     .task(task)
                     .product(ii.getProduct())
-                    .location(null) // IssueItem не имеет локации
+                    .location(ii.getLocation()) // берём локацию из IssueItem
                     .qtyPlanned(ii.getQty())
                     .qtyActual(0)
                     .confirmed(false)

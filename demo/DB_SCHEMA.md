@@ -72,9 +72,9 @@
 - `is_active` — Активен ли товар
 
 **categories:**
-- `id` — ID категории
-- `name` — Название
-- `parent_id` — Родительская категория (FK → categories)
+- `id` 
+- `name`
+- `parent_id` 
 
 **suppliers:**
 - `id` — ID поставщика

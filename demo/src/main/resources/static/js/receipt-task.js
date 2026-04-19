@@ -155,6 +155,31 @@ function closeScanner() {
     currentScanType = '';
 }
 
+async function skipScan() {
+    if (!currentScanItem) { closeScanner(); return; }
+    
+    if (currentScanType === 'product') {
+        currentScanItem.scannedProduct = true;
+        showToast('Товар подтверждён (без сканирования) ✓');
+    } else if (currentScanType === 'location') {
+        currentScanItem.scannedLocation = true;
+        currentScanItem.confirmed = true;
+        currentScanItem.qtyActual = currentScanItem.qtyPlanned;
+        
+        try {
+            await api('POST', `/api/tasks/${currentTask.id}/items/${currentScanItem.id}/confirm`, {
+                qtyActual: currentScanItem.qtyPlanned
+            });
+        } catch(e) { console.warn('Confirm API error:', e); }
+        
+        showToast('Позиция подтверждена (без сканирования) ✓');
+    }
+    
+    closeScanner();
+    currentTask = await api('GET', `/api/tasks/${currentTask.id}`);
+    renderTask();
+}
+
 async function onScanSuccess(decodedText) {
     if (!currentScanItem) { closeScanner(); return; }
     
@@ -227,3 +252,11 @@ function showToast(msg, type = 'success') {
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 3000);
 }
+
+// Глобальные функции
+window.skipScan = skipScan;
+window.closeScanner = closeScanner;
+window.scanProduct = scanProduct;
+window.scanLocation = scanLocation;
+window.completeTask = completeTask;
+window.onScanSuccess = onScanSuccess;

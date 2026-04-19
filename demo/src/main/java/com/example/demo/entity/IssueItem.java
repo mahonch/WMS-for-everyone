@@ -26,6 +26,10 @@ public class IssueItem {
     @JoinColumn(name = "batch_id")
     private Batch batch;
 
+    @ManyToOne
+    @JoinColumn(name = "location_id")
+    private Location location;
+
     @Column(nullable = false)
     private Integer qty;
 

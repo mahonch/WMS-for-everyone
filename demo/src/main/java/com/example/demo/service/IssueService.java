@@ -59,10 +59,13 @@ public class IssueService {
         for (IssueDtos.ItemCreate ic : dto.items()) {
             Product p = productRepository.findById(ic.productId())
                     .orElseThrow(() -> new NotFoundException("Product not found"));
+            Location loc = ic.locationId() != null ? locationRepository.findById(ic.locationId()).orElse(null) : null;
             IssueItem ii = IssueItem.builder()
                     .issue(issue)
                     .product(p)
                     .qty(ic.qty())
+                    .location(loc)
+                    .costPrice(p.getCostPrice() != null ? p.getCostPrice() : java.math.BigDecimal.ZERO)
                     .build();
             ii = issueItemRepository.save(ii);
             items.add(ii);
@@ -82,7 +85,16 @@ public class IssueService {
                 null, null, issue.getCommittedAt(),
                 issue.getReason(), issue.getReasonCode().name(),
                 issue.getCreatedAt(),
-                issue.getItems().stream().map(i -> new IssueDtos.ViewItem(i.getId(), i.getProduct().getId(), i.getBatch() != null ? i.getBatch().getId() : null, i.getQty(), i.getCostPrice())).toList(),
+                issue.getItems().stream().map(i -> new IssueDtos.ViewItem(
+                        i.getId(),
+                        i.getProduct().getId(),
+                        i.getBatch() != null ? i.getBatch().getId() : null,
+                        i.getQty(),
+                        i.getCostPrice(),
+                        i.getLocation() != null ? i.getLocation().getId() : null,
+                        i.getLocation() != null ? i.getLocation().getCode() : null,
+                        i.getLocation() != null ? i.getLocation().getName() : null
+                )).toList(),
                 null, null,
                 null, null
         );

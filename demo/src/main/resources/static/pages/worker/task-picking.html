@@ -21,6 +21,8 @@
         .route-step.completed { opacity: 0.6; }
         .route-step.completed .route-step-header { border-left: 4px solid var(--success); }
         
+        .location-badge { display: inline-flex; align-items: center; gap: 6px; background: #f6f7fb; border: 1px solid var(--primary); border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; font-weight: 600; font-size: 15px; }
+        
         .step-number { width: 32px; height: 32px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
         .route-step.active .step-number { background: var(--primary); color: #fff; }
         .route-step.completed .step-number { background: var(--success); color: #fff; }
@@ -91,11 +93,12 @@
         <div id="reader" style="flex:1;"></div>
         <div style="padding:20px; text-align:center; color:#fff;">
             <p style="margin:0 0 8px; font-size:14px; opacity:0.7;">Наведите камеру на QR-код</p>
+            <button class="btn btn-secondary" onclick="skipScanPicking()" style="margin-top:12px; font-size:14px;">Пропустить сканирование</button>
         </div>
     </div>
 
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="/js/auth-service.js"></script>
-    <script src="/js/picking-task.js?v=1"></script>
+    <script src="/js/picking-task.js?v=4"></script>
 </body>
 </html>

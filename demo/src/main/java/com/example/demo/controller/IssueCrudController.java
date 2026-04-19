@@ -154,10 +154,13 @@ public class IssueCrudController {
 
                 BigDecimal cost = b != null ? b.getBuyPrice() : BigDecimal.ZERO;
 
+                Location loc = ic.locationId() != null ? locationRepository.findById(ic.locationId()).orElse(null) : null;
+
                 IssueItem item = IssueItem.builder()
                         .issue(doc)
                         .product(p)
                         .batch(b)
+                        .location(loc)
                         .qty(ic.qty())
                         .costPrice(cost)
                         .build();
@@ -186,10 +189,13 @@ public class IssueCrudController {
 
         BigDecimal cost = b != null ? b.getBuyPrice() : BigDecimal.ZERO;
 
+        Location loc = dto.locationId() != null ? locationRepository.findById(dto.locationId()).orElse(null) : null;
+
         IssueItem item = IssueItem.builder()
                 .issue(doc)
                 .product(p)
                 .batch(b)
+                .location(loc)
                 .qty(dto.qty())
                 .costPrice(cost)
                 .build();
@@ -198,7 +204,10 @@ public class IssueCrudController {
         doc.getItems().add(item);
 
         return new IssueDtos.ViewItem(item.getId(), p.getId(),
-                b != null ? b.getId() : null, item.getQty(), item.getCostPrice());
+                b != null ? b.getId() : null, item.getQty(), item.getCostPrice(),
+                loc != null ? loc.getId() : null,
+                loc != null ? loc.getCode() : null,
+                loc != null ? loc.getName() : null);
     }
 
     @PutMapping("/{id}/items/{itemId}")
@@ -229,7 +238,10 @@ public class IssueCrudController {
         issueItemRepository.save(item);
 
         return new IssueDtos.ViewItem(item.getId(), p.getId(),
-                b != null ? b.getId() : null, item.getQty(), item.getCostPrice());
+                b != null ? b.getId() : null, item.getQty(), item.getCostPrice(),
+                item.getLocation() != null ? item.getLocation().getId() : null,
+                item.getLocation() != null ? item.getLocation().getCode() : null,
+                item.getLocation() != null ? item.getLocation().getName() : null);
     }
 
     @DeleteMapping("/{id}/items/{itemId}")
@@ -259,7 +271,10 @@ public class IssueCrudController {
                         i.getProduct().getId(),
                         i.getBatch() != null ? i.getBatch().getId() : null,
                         i.getQty(),
-                        i.getCostPrice()
+                        i.getCostPrice(),
+                        i.getLocation() != null ? i.getLocation().getId() : null,
+                        i.getLocation() != null ? i.getLocation().getCode() : null,
+                        i.getLocation() != null ? i.getLocation().getName() : null
                 )).toList();
 
         return new IssueDtos.View(

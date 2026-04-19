@@ -73,7 +73,10 @@ public class IssueSearchController {
                         i.getProduct().getId(),
                         i.getBatch() != null ? i.getBatch().getId() : null,
                         i.getQty(),
-                        i.getCostPrice()
+                        i.getCostPrice(),
+                        i.getLocation() != null ? i.getLocation().getId() : null,
+                        i.getLocation() != null ? i.getLocation().getCode() : null,
+                        i.getLocation() != null ? i.getLocation().getName() : null
                 )).toList(),
                 d.getTargetWarehouse() != null ? d.getTargetWarehouse().getId() : null,
                 d.getTargetWarehouse() != null ? d.getTargetWarehouse().getName() : null,
