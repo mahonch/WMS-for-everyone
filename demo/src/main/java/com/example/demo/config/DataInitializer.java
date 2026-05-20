@@ -27,6 +27,7 @@ public class DataInitializer implements CommandLineRunner {
         // роли по-умолчанию
         ensureRole("ADMIN", "Администратор");
         ensureRole("STOREKEEPER", "Кладовщик");
+        ensureRole("PICKER", "Сборщик");
         ensureRole("MANAGER", "Менеджер");
         ensureRole("GUEST", "Гость");
 

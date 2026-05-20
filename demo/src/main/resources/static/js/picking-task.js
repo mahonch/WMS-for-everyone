@@ -36,7 +36,9 @@ async function api(method, url, body) {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.message || 'Request failed');
     }
-    return res.json();
+    if (res.status === 204) return null;
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
 }
 
 async function loadTask(taskId) {
@@ -165,26 +167,19 @@ function renderTask() {
     document.getElementById('progressBar').style.width = pct + '%';
     document.getElementById('progressText').textContent = `${completed} / ${items.length} собрано`;
 
-    // Show shipment area when all collected
     const shipmentArea = document.getElementById('shipmentArea');
-    if (pct === 100 && !currentTask.shipmentScanned) {
-        shipmentArea.style.display = 'block';
-    } else if (currentTask.shipmentScanned) {
-        shipmentArea.style.display = 'block';
-        shipmentArea.classList.add('done');
-        shipmentArea.innerHTML = '<h3 style="margin:0;">✅ Отгрузка подтверждена</h3>';
-    } else {
+    if (shipmentArea) {
         shipmentArea.style.display = 'none';
     }
 
     // Complete button
     const btn = document.getElementById('completeBtn');
-    if (pct === 100 && currentTask.shipmentScanned) {
+    if (pct === 100) {
         btn.disabled = false;
         btn.textContent = '✓ Завершить сборку';
     } else {
         btn.disabled = true;
-        btn.textContent = pct === 100 ? 'Отсканируйте ячейку отгрузки' : `Собрано ${completed}/${items.length}`;
+        btn.textContent = `Собрано ${completed}/${items.length}`;
     }
 }
 

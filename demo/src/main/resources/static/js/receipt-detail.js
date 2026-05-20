@@ -70,7 +70,8 @@ async function api(method, url, body) {
         throw new Error((j && j.message) || 'Ошибка ' + res.status);
     }
     if (res.status === 204) return null;
-    return res.json();
+    var text = await res.text();
+    return text ? JSON.parse(text) : null;
 }
 
 function showNotification(type, msg) {
@@ -226,8 +227,8 @@ function renderItems() {
         html += '<td>' + locHtml + '</td>';
 
         if (isDraft) {
-            html += '<td><button class="btn btn-sm btn-secondary" onclick="doSelectLocation(' + item.id + ')" title="Локация"></button> ';
-            html += '<button class="btn btn-sm btn-danger" onclick="doRemoveItem(' + item.id + ')" title="Удалить"></button></td>';
+            html += '<td><button class="btn btn-sm btn-secondary" onclick="doSelectLocation(' + item.id + ')" title="Выбрать локацию">Указать</button> ';
+            html += '<button class="btn btn-sm btn-danger" onclick="doRemoveItem(' + item.id + ')" title="Удалить позицию">Удалить</button></td>';
         }
         html += '</tr>';
     }

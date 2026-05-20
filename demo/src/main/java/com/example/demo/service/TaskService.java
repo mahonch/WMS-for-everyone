@@ -186,6 +186,13 @@ public class TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
 
+        if (task.getStatus() == TaskStatus.PENDING || task.getStatus() == TaskStatus.ASSIGNED) {
+            task.setStatus(TaskStatus.IN_PROGRESS);
+            if (task.getStartedAt() == null) {
+                task.setStartedAt(LocalDateTime.now());
+            }
+        }
+
         if (task.getStatus() != TaskStatus.IN_PROGRESS) {
             throw new IllegalStateException("Task is not in progress");
         }
@@ -197,7 +204,9 @@ public class TaskService {
         }
 
         // Для сборки дополнительно требуем подтверждение ячейки отгрузки
-        if (task.getType() == TaskType.PICKING && Boolean.FALSE.equals(task.getShipmentConfirmed())) {
+        if (task.getType() == TaskType.PICKING
+                && task.getShipmentLocation() != null
+                && Boolean.FALSE.equals(task.getShipmentConfirmed())) {
             throw new IllegalStateException("Не подтверждена ячейка отгрузки");
         }
 
@@ -294,10 +303,33 @@ public class TaskService {
     /**
      * Детальная задача.
      */
+    @Transactional
     public TaskDtos.View getTask(Long taskId) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
+        fillMissingReceiptLocations(task);
         return toView(task);
+    }
+
+    private void fillMissingReceiptLocations(Task task) {
+        if (task.getType() != TaskType.RECEIPT || task.getRelatedReceipt() == null || task.getItems() == null) {
+            return;
+        }
+
+        List<ReceiptItem> receiptItems = task.getRelatedReceipt().getItems();
+        for (TaskItem taskItem : task.getItems()) {
+            if (taskItem.getLocation() != null || taskItem.getSortOrder() == null) {
+                continue;
+            }
+            if (taskItem.getSortOrder() >= 0 && taskItem.getSortOrder() < receiptItems.size()) {
+                ReceiptItem receiptItem = receiptItems.get(taskItem.getSortOrder());
+                if (receiptItem.getLocation() != null
+                        && receiptItem.getProduct().getId().equals(taskItem.getProduct().getId())) {
+                    taskItem.setLocation(receiptItem.getLocation());
+                    taskItemRepository.save(taskItem);
+                }
+            }
+        }
     }
 
     private Task mustBeAssigned(Long taskId) {

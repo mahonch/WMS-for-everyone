@@ -188,10 +188,58 @@
 <!-- LOCATION EXPLORER -->
 <div id="locationExplorerOverlay" class="modal-overlay hidden">
     <div class="location-explorer-modal">
-        <div class="explorer-header"><div class="explorer-title"><h3> Выбор локации</h3><button class="btn btn-secondary btn-sm" onclick="LocationExplorer.close()"></button></div></div>
+        <div class="explorer-header">
+            <div class="explorer-title">
+                <h3>Выбор локации</h3>
+                <button class="btn btn-secondary btn-sm" onclick="LocationExplorer.close()">Закрыть</button>
+            </div>
+            <div class="explorer-search">
+                <input id="locationExplorerSearch"
+                       class="input"
+                       placeholder="Поиск по коду или названию..."
+                       oninput="onLocationSearch()">
+                <button class="btn btn-secondary" onclick="clearLocationSearch()">Очистить</button>
+            </div>
+        </div>
         <div class="explorer-body">
-            <div class="explorer-panel explorer-tree-panel"><div class="panel-header"><strong> Дерево склада</strong><span class="panel-hint">Навигация</span></div><div class="explorer-tree" id="locationTree"></div></div>
-            <div class="explorer-panel explorer-content-panel"><div class="panel-header"><strong> Содержимое</strong><span class="panel-hint" id="contentHint">Выберите узел</span></div><div class="explorer-content" id="locationContent"></div></div>
+            <div class="explorer-panel explorer-tree-panel">
+                <div class="panel-header">
+                    <strong>Дерево склада</strong>
+                    <span class="panel-hint">Навигация</span>
+                </div>
+                <div class="explorer-tree" id="locationTree">
+                    <div class="empty-state">
+                        <span class="empty-icon"></span>
+                        <div>Загрузка...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="explorer-panel explorer-content-panel">
+                <div class="panel-header">
+                    <strong>Содержимое</strong>
+                    <span class="panel-hint" id="contentHint">Выберите узел</span>
+                </div>
+                <div class="explorer-content" id="locationContent">
+                    <div class="empty-state">
+                        <span class="empty-icon"></span>
+                        <div class="empty-title">Выберите локацию</div>
+                        <div class="empty-text">Кликните на элемент в дереве слева</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="explorer-search-results" id="searchResults" style="display: none;"></div>
+        <div class="explorer-footer">
+            <div class="selected-info" id="selectedInfo">
+                <span class="selected-label">Выбрано:</span>
+                <span class="selected-value" id="selectedLocation">—</span>
+            </div>
+            <div class="explorer-actions">
+                <button class="btn btn-secondary" onclick="LocationExplorer.close()">Отмена</button>
+                <button class="btn btn-primary" id="btnConfirmLocation"
+                        onclick="LocationExplorer.selectLocation(LocationExplorer.selectedNode?.id)"
+                        disabled>Выбрать</button>
+            </div>
         </div>
     </div>
 </div>
@@ -199,6 +247,6 @@
 <script src="/js/auth-service.js"></script>
 <script src="/js/modal.js"></script>
 <script src="/js/location-explorer.js"></script>
-<script src="/js/receipt-detail.js?v=4"></script>
+<script src="/js/receipt-detail.js?v=6"></script>
 </body>
 </html>

@@ -37,6 +37,7 @@ public class IssueService {
     private final NumberGenerator numberGenerator;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final TaskService taskService;
 
     /**
      * Создать черновик Issue.
@@ -172,6 +173,11 @@ public class IssueService {
         for (Iterator<IssueItem> itIter = issue.getItems().iterator(); itIter.hasNext(); ) {
             IssueItem it = itIter.next();
 
+            if (it.getLocation() == null) {
+                it.setLocation(loc);
+                issueItemRepository.save(it);
+            }
+
             // Если партия известна → просто списываем
             if (it.getBatch() != null) {
 
@@ -216,6 +222,7 @@ public class IssueService {
                             .issue(issue)
                             .product(it.getProduct())
                             .batch(s.getBatch())
+                            .location(loc)
                             .qty(take)
                             .costPrice(s.getBatch().getBuyPrice())
                             .build();
@@ -265,6 +272,10 @@ public class IssueService {
         AuditSnapshot after = snapshot(issue);
 
         auditService.log(actor, "ISSUE_COMMIT", "Issue", issue.getId(), before, after);
+
+        if (reason == IssueReason.SALE) {
+            taskService.createTaskFromIssue(issue.getId(), loc.getWarehouse().getId());
+        }
     }
 
 

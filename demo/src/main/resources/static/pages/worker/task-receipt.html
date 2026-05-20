@@ -20,6 +20,11 @@
         .item-name { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
         .item-meta { color: var(--muted); font-size: 13px; }
         .item-qty { font-weight: 700; color: var(--primary); font-size: 18px; margin-top: 8px; }
+        .target-location { margin-top: 12px; padding: 12px; border-radius: 10px; background: #eef7ff; border: 1px solid #b9ddff; }
+        .target-location.missing { background: #fff4e5; border-color: #ffd8a8; }
+        .target-location-label { color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+        .target-location-value { font-weight: 700; color: #124a75; font-size: 16px; }
+        .target-location-code { display: inline-block; margin-right: 6px; padding: 2px 8px; border-radius: 999px; background: #d8edff; color: #0f4c81; font-size: 13px; }
         
         .scan-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
         .scan-step { padding: 10px; border: 2px dashed var(--border); border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; }
@@ -69,6 +74,6 @@
 
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="/js/auth-service.js"></script>
-    <script src="/js/receipt-task.js?v=3"></script>
+    <script src="/js/receipt-task.js?v=5"></script>
 </body>
 </html>

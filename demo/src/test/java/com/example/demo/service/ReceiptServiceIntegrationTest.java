@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.entity.*;
 import com.example.demo.entity.enums.DocStatus;
 import com.example.demo.entity.enums.LocationType;
+import com.example.demo.entity.enums.TaskType;
 import com.example.demo.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ class ReceiptServiceIntegrationTest {
     @Autowired private SupplierRepository supplierRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private StockRepository stockRepository;
+    @Autowired private TaskRepository taskRepository;
 
     private User user;
     private Warehouse warehouse;
@@ -118,10 +120,25 @@ class ReceiptServiceIntegrationTest {
         Receipt committed = receiptRepository.findById(receipt.getId()).orElseThrow();
         assertThat(committed.getStatus()).isEqualTo(DocStatus.COMMITTED);
         assertThat(committed.getTotalSum()).isEqualByComparingTo("37.50");
+        assertThat(committed.getItems().get(0).getLocation().getId()).isEqualTo(location.getId());
 
         List<Stock> stocks = stockRepository.findByLocation_Id(location.getId());
         assertThat(stocks).hasSize(1);
         assertThat(stocks.get(0).getQty()).isEqualTo(3);
         assertThat(stocks.get(0).getProduct().getId()).isEqualTo(product.getId());
+
+        List<Task> tasks = taskRepository.findAll();
+        assertThat(tasks).hasSize(1);
+
+        Task task = tasks.get(0);
+        assertThat(task.getType()).isEqualTo(TaskType.RECEIPT);
+        assertThat(task.getRelatedReceipt().getId()).isEqualTo(receipt.getId());
+        assertThat(task.getWarehouse().getId()).isEqualTo(warehouse.getId());
+        assertThat(task.getItems()).hasSize(1);
+
+        TaskItem taskItem = task.getItems().get(0);
+        assertThat(taskItem.getProduct().getId()).isEqualTo(product.getId());
+        assertThat(taskItem.getQtyPlanned()).isEqualTo(3);
+        assertThat(taskItem.getLocation().getId()).isEqualTo(location.getId());
     }
 }

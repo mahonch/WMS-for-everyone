@@ -442,7 +442,8 @@ window.createTransfer = async function() {
     
     const items = Array.from(transferProducts.entries()).map(([productId, data]) => ({
         productId,
-        qty: data.qty
+        qty: data.qty,
+        locationId: Number(locationId)
     }));
     
     try {
@@ -757,8 +758,13 @@ window.createSale = async function() {
             reasonCode: "SALE",
             items: items
         });
+
+        await api("POST", "/api/issues/" + issue.id + "/commit", {
+            fromLocationId: Number(locationId),
+            reasonCode: "SALE"
+        });
         
-        alertBox("success", `Продажа ${issue.number} создана`);
+        alertBox("success", `Продажа ${issue.number} проведена. Задача сборки создана.`);
         closeSale();
         await loadIssues();
     } catch (e) {

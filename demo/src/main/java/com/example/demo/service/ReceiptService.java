@@ -127,6 +127,11 @@ public class ReceiptService {
                 throw new IllegalStateException("Location warehouse mismatch with receipt warehouse");
             }
 
+            if (it.getLocation() == null && targetLocation != null) {
+                it.setLocation(targetLocation);
+                receiptItemRepository.save(it);
+            }
+
             // ---------------- PUT TO STOCK ----------------
             stockService.increase(it.getProduct(), batch, targetLocation, it.getQty());
 
@@ -150,11 +155,6 @@ public class ReceiptService {
         auditService.log(actor, "RECEIPT_COMMIT", "Receipt", receipt.getId(), before, after);
 
         // Авто-создание задачи для кладовщика
-        try {
-            taskService.createTaskFromReceipt(receipt.getId(), receipt.getWarehouse().getId());
-        } catch (Exception e) {
-            // Не прерываем коммит если создание задачи упало
-            System.err.println("[ReceiptService] Failed to create task: " + e.getMessage());
-        }
+        taskService.createTaskFromReceipt(receipt.getId(), receipt.getWarehouse().getId());
     }
 }

@@ -33,7 +33,9 @@ async function api(method, url, body) {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.message || 'Request failed');
     }
-    return res.json();
+    if (res.status === 204) return null;
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
 }
 
 async function loadTask(taskId) {
@@ -65,11 +67,24 @@ function renderTask() {
         
         const productStep = item.confirmed ? 'done' : (item.scannedProduct ? 'done' : '');
         const locationStep = item.confirmed ? 'done' : (item.scannedLocation ? 'done' : '');
+        const locationHtml = item.locationId
+            ? `<div class="target-location">
+                    <div class="target-location-label">Отнести в ячейку</div>
+                    <div class="target-location-value">
+                        <span class="target-location-code">${item.locationCode || ('#' + item.locationId)}</span>
+                        ${item.locationName || ''}
+                    </div>
+               </div>`
+            : `<div class="target-location missing">
+                    <div class="target-location-label">Ячейка не указана</div>
+                    <div class="target-location-value">Проверьте строку приёмки</div>
+               </div>`;
         
         div.innerHTML = `
             <div class="item-name">${item.productName}</div>
             <div class="item-meta">Артикул: ${item.productSku || '—'}</div>
             <div class="item-qty">Кол-во: ${item.qtyPlanned}</div>
+            ${locationHtml}
             
             <div class="scan-steps">
                 <div class="scan-step ${productStep}" onclick="scanProduct(${item.id})" id="scan-prod-${item.id}">
