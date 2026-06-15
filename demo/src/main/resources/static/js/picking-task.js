@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const taskId = params.get('id');
     if (!taskId) {
         alert('Нет ID задачи');
-        window.location.href = 'tasks.html';
+        window.location.href = '/pages/worker/index.html';
         return;
     }
     loadTask(taskId);
@@ -65,7 +65,7 @@ async function loadTask(taskId) {
         renderTask();
     } catch (e) {
         alert(e.message);
-        window.location.href = 'tasks.html';
+        window.location.href = '/pages/worker/index.html';
     }
 }
 
@@ -121,12 +121,15 @@ function renderTask() {
             const remaining = item.qtyPlanned - (item.qtyActual || 0);
 
             itemsHtml += `
-                <div class="product-info">
-                    <div>
-                        <div class="product-name">${item.productName}</div>
-                        <div style="color:var(--muted); font-size:13px;">Артикул: ${item.productSku || '—'}</div>
+                <div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:12px;">
+                    ${item.productImageUrl ? `<img src="${item.productImageUrl}" style="width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid var(--border); flex-shrink:0;" onerror="this.style.display='none'">` : ''}
+                    <div class="product-info" style="flex:1;">
+                        <div>
+                            <div class="product-name">${item.productName}</div>
+                            <div style="color:var(--muted); font-size:13px;">Артикул: ${item.productSku || '—'}</div>
+                        </div>
+                        <div class="product-qty">${remaining > 0 ? remaining : '✓'}</div>
                     </div>
-                    <div class="product-qty">${remaining > 0 ? remaining : '✓'}</div>
                 </div>
 
                 ${!item.confirmed ? `
@@ -349,7 +352,7 @@ async function completeTask() {
     try {
         await api('POST', `/api/tasks/${currentTask.id}/complete`);
         showToast('Сборка завершена!');
-        setTimeout(() => window.location.href = 'tasks.html', 1500);
+        setTimeout(() => window.location.href = '/pages/worker/index.html', 1500);
     } catch (e) {
         showToast(e.message, 'error');
     }

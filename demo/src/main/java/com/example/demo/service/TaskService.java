@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.dto.worker.TaskDtos;
 import com.example.demo.entity.*;
+import com.example.demo.entity.enums.ShiftStatus;
 import com.example.demo.entity.enums.TaskStatus;
 import com.example.demo.entity.enums.TaskType;
 import com.example.demo.exception.NotFoundException;
@@ -9,12 +10,14 @@ import com.example.demo.repository.*;
 import com.example.demo.util.NumberGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -32,6 +35,7 @@ public class TaskService {
     private final RouteRepository routeRepository;
     private final NumberGenerator numberGenerator;
     private final RouteService routeService;
+    private final WorkerShiftRepository workerShiftRepository;
 
     /**
      * Создать задачу приёмки автоматически при подписании Receipt.
@@ -167,6 +171,55 @@ public class TaskService {
     }
 
     /**
+     * Взять случайную доступную задачу.
+     */
+    @Transactional
+    public TaskDtos.View takeRandomTask(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        Long whId = user.getWarehouseId();
+        if (whId == null) {
+            throw new IllegalStateException("User warehouse is not set");
+        }
+
+        // Определяем тип задачи по роли пользователя
+        String role = user.getRoles().isEmpty() ? "GUEST" : user.getRoles().iterator().next().getCode();
+        TaskType preferredType = null;
+        if ("STOREKEEPER".equals(role)) {
+            preferredType = TaskType.RECEIPT;
+        } else if ("PICKER".equals(role)) {
+            preferredType = TaskType.PICKING;
+        }
+
+        // Ищем доступные задачи (сначала предпочтительного типа, потом все)
+        List<Task> candidates;
+        if (preferredType != null) {
+            candidates = taskRepository.findAvailableByTypeAndWarehouse(preferredType, TaskStatus.PENDING, whId, PageRequest.of(0, 50)).getContent();
+            if (candidates.isEmpty()) {
+                candidates = taskRepository.findAvailableByWarehouse(TaskStatus.PENDING, whId, PageRequest.of(0, 50)).getContent();
+            }
+        } else {
+            candidates = taskRepository.findAvailableByWarehouse(TaskStatus.PENDING, whId, PageRequest.of(0, 50)).getContent();
+        }
+
+        if (candidates.isEmpty()) {
+            throw new IllegalStateException("Нет доступных задач");
+        }
+
+        // Выбираем случайную
+        Collections.shuffle(candidates);
+        Task task = candidates.get(0);
+
+        task.setAssignee(user);
+        task.setStatus(TaskStatus.ASSIGNED);
+        task.setAssignedAt(LocalDateTime.now());
+        task = taskRepository.save(task);
+
+        return toView(task);
+    }
+
+    /**
      * Начать выполнение задачи.
      */
     @Transactional
@@ -214,10 +267,13 @@ public class TaskService {
         task.setCompletedAt(LocalDateTime.now());
         task = taskRepository.save(task);
 
-        // Обновляем статистику смены
+        // Обновляем счётчик задач в активной смене
         if (task.getAssignee() != null) {
-            // Увеличиваем tasks_completed в активной смене
-            // Это делается в WorkerService
+            workerShiftRepository.findByUserIdAndStatus(task.getAssignee().getId(), ShiftStatus.ACTIVE)
+                    .ifPresent(shift -> {
+                        shift.setTasksCompleted(shift.getTasksCompleted() + 1);
+                        workerShiftRepository.save(shift);
+                    });
         }
 
         return toView(task);
@@ -374,6 +430,7 @@ public class TaskService {
                 ti.getProduct().getId(),
                 ti.getProduct().getName(),
                 ti.getProduct().getSku(),
+                ti.getProduct().getImageUrl(),
                 ti.getLocation() != null ? ti.getLocation().getId() : null,
                 ti.getLocation() != null ? ti.getLocation().getCode() : null,
                 ti.getLocation() != null ? ti.getLocation().getName() : null,

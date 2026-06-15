@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Пользователи — WMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="/css/app-v2.css" rel="stylesheet">
+    <link href="/css/mobile.css" rel="stylesheet">
+    <script src="/js/auth-service.js"></script>
+    <script src="/js/users-v2.js?v=1"></script>
+</head>
+<body class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="logo">📦 WMS</div>
+    <nav>
+        <a href="/dashboard.html">Главная</a>
+        <a href="/receipts.html">Поступления</a>
+        <a href="/products.html">Товары</a>
+        <a href="/warehouses.html">Склады</a>
+        <a href="/locations.html">Ячейки</a>
+        <a href="/transfers.html">Перемещения</a>
+        <a href="/issues.html">Отгрузки</a>
+        <a href="/workflow.html">Воркфлоу</a>
+        <a href="/users-v2.html" class="active">👥 Пользователи</a>
+        <a href="/admin.html">Админ</a>
+    </nav>
+    <div class="user-chip">
+        <span id="usernameLabel">—</span>
+        <button id="logoutBtn" class="btn btn-secondary">Выйти</button>
+    </div>
+</aside>
+
+<!-- PAGE -->
+<main class="content">
+    <header class="topbar">
+        <div>
+            <div class="tag-muted">Управление персоналом</div>
+            <strong>Пользователи системы</strong>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <span id="onlineIndicator" style="font-size: 13px; color: var(--muted);">
+                🟢 Онлайн: <strong id="onlineCountTop">0</strong>
+            </span>
+            <button class="btn btn-primary" id="btnCreateUser">+ Новый пользователь</button>
+        </div>
+    </header>
+
+    <div id="alerts"></div>
+
+    <!-- STATS CARDS -->
+    <section style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon--total">👥</div>
+            <div class="stat-body">
+                <div class="stat-value" id="statTotal">0</div>
+                <div class="stat-label">Всего пользователей</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon stat-icon--online">🟢</div>
+            <div class="stat-body">
+                <div class="stat-value" id="statOnline">0</div>
+                <div class="stat-label">Сейчас онлайн</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon stat-icon--active">✅</div>
+            <div class="stat-body">
+                <div class="stat-value" id="statActive">0</div>
+                <div class="stat-label">Активных</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon stat-icon--blocked">🚫</div>
+            <div class="stat-body">
+                <div class="stat-value" id="statBlocked">0</div>
+                <div class="stat-label">Заблокировано</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FILTERS -->
+    <section class="card">
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <input type="text" id="searchInput" placeholder="🔍 Поиск по имени, email, роли…"
+                   style="flex: 1; min-width: 200px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px;">
+            <select id="filterRole" style="padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px;">
+                <option value="">Все роли</option>
+                <option value="ADMIN">Администратор</option>
+                <option value="MANAGER">Менеджер</option>
+                <option value="STOREKEEPER">Кладовщик</option>
+                <option value="PICKER">Комплектовщик</option>
+                <option value="GUEST">Гость</option>
+            </select>
+            <select id="filterStatus" style="padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px;">
+                <option value="">Все статусы</option>
+                <option value="online">🟢 Онлайн</option>
+                <option value="active">✅ Активен</option>
+                <option value="blocked">🚫 Заблокирован</option>
+            </select>
+            <button class="btn btn-secondary" onclick="resetFilters()">Сбросить</button>
+        </div>
+    </section>
+
+    <!-- ONLINE USERS -->
+    <section class="card" id="onlineSection">
+        <div class="section-header section-header--online">
+            <div class="section-header__title">
+                <span class="pulse-dot"></span>
+                <span>Пользователи онлайн</span>
+            </div>
+            <span class="board-count" id="onlineCount">0</span>
+        </div>
+        <div id="onlineGrid" class="users-grid">
+            <!-- Карточки онлайн-пользователей -->
+        </div>
+        <div id="noOnline" class="empty-state" style="display: none;">
+            Нет пользователей онлайн
+        </div>
+    </section>
+
+    <!-- OFFLINE ACTIVE USERS -->
+    <section class="card" id="offlineSection">
+        <div class="section-header section-header--offline">
+            <div class="section-header__title">
+                <span>💤 Неактивные (оффлайн)</span>
+            </div>
+            <span class="board-count" id="offlineCount">0</span>
+        </div>
+        <div id="offlineGrid" class="users-grid">
+            <!-- Карточки оффлайн-пользователей -->
+        </div>
+        <div id="noOffline" class="empty-state" style="display: none;">
+            Все пользователи онлайн
+        </div>
+    </section>
+
+    <!-- BLOCKED USERS -->
+    <section class="card" id="blockedSection">
+        <div class="section-header section-header--blocked">
+            <div class="section-header__title">
+                <span>🚫 Заблокированные</span>
+            </div>
+            <span class="board-count" id="blockedCount">0</span>
+        </div>
+        <div id="blockedGrid" class="users-grid">
+            <!-- Карточки заблокированных пользователей -->
+        </div>
+        <div id="noBlocked" class="empty-state" style="display: none;">
+            Нет заблокированных пользователей
+        </div>
+    </section>
+</main>
+
+<!-- CREATE USER MODAL -->
+<div class="modal-overlay" id="createModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Новый пользователь</h3>
+            <button class="modal-close" onclick="closeCreateModal()">✕</button>
+        </div>
+        <form id="createForm" style="display: flex; flex-direction: column; gap: 14px;">
+            <label>
+                <span style="font-size: 13px; color: var(--muted); font-weight: 600;">Логин</span>
+                <input id="c_username" required style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; margin-top: 6px;">
+            </label>
+            <label>
+                <span style="font-size: 13px; color: var(--muted); font-weight: 600;">Email</span>
+                <input id="c_email" type="email" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; margin-top: 6px;">
+            </label>
+            <label>
+                <span style="font-size: 13px; color: var(--muted); font-weight: 600;">Пароль</span>
+                <input id="c_password" type="password" required style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; margin-top: 6px;">
+            </label>
+            <label>
+                <span style="font-size: 13px; color: var(--muted); font-weight: 600;">Роль</span>
+                <select id="c_role" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; margin-top: 6px;">
+                    <option value="ADMIN">Администратор</option>
+                    <option value="MANAGER">Менеджер</option>
+                    <option value="STOREKEEPER">Кладовщик</option>
+                    <option value="PICKER">Комплектовщик</option>
+                    <option value="GUEST">Гость</option>
+                </select>
+            </label>
+            <label>
+                <span style="font-size: 13px; color: var(--muted); font-weight: 600;">Склад</span>
+                <select id="c_warehouse" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; margin-top: 6px;">
+                    <option value="">Без склада</option>
+                </select>
+            </label>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px;">
+                <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">Отмена</button>
+                <button type="submit" class="btn btn-primary">Создать</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- USER DETAIL MODAL -->
+<div class="modal-overlay" id="userDetailModal">
+    <div class="modal-box modal-box--wide">
+        <div class="modal-header">
+            <h3 id="detailTitle">Профиль пользователя</h3>
+            <button class="modal-close" onclick="closeDetailModal()">✕</button>
+        </div>
+        <div id="detailContent" style="max-height: 70vh; overflow-y: auto;">
+            <!-- Заполняется динамически -->
+        </div>
+    </div>
+</div>
+
+<style>
+/* ── STAT CARDS ── */
+.stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 36px rgba(35, 30, 80, 0.16);
+}
+.stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+}
+.stat-icon--total  { background: #eef0ff; }
+.stat-icon--online { background: #e6f9ed; }
+.stat-icon--active { background: #e6f6ed; }
+.stat-icon--blocked { background: #ffe8e6; }
+.stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1;
+}
+.stat-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+}
+
+/* ── SECTION HEADERS ── */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-weight: 700;
+    font-size: 15px;
+}
+.section-header__title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.section-header--online {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    color: #155724;
+}
+.section-header--offline {
+    background: linear-gradient(135deg, #e9ecef, #dee2e6);
+    color: #495057;
+}
+.section-header--blocked {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    color: #721c24;
+}
+.board-count {
+    background: rgba(255,255,255,0.6);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+/* ── PULSE DOT ── */
+.pulse-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #2ecc71;
+    display: inline-block;
+    animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(46,204,113,0.6); }
+    70%  { box-shadow: 0 0 0 8px rgba(46,204,113,0); }
+    100% { box-shadow: 0 0 0 0 rgba(46,204,113,0); }
+}
+
+/* ── USERS GRID ── */
+.users-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+/* ── USER CARD ── */
+.user-card-v2 {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+.user-card-v2:hover {
+    border-color: var(--primary);
+    box-shadow: 0 8px 24px rgba(108,92,231,0.15);
+    transform: translateY(-2px);
+}
+.user-card-v2.online {
+    border-left: 4px solid #2ecc71;
+}
+.user-card-v2.blocked {
+    border-left: 4px solid #e74c3c;
+    opacity: 0.75;
+}
+.user-card-v2.blocked:hover {
+    opacity: 1;
+}
+
+.user-card__avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+.avatar-ADMIN     { background: #dc3545; }
+.avatar-MANAGER   { background: #0d6efd; }
+.avatar-STOREKEEPER { background: #198754; }
+.avatar-PICKER    { background: #ff9800; }
+.avatar-GUEST     { background: #6c757d; }
+
+.user-card__top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+.user-card__info { flex: 1; min-width: 0; }
+.user-card__name {
+    font-weight: 700;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.user-card__email {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.user-card__online-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #2ecc71;
+    box-shadow: 0 0 0 3px rgba(46,204,113,0.3);
+}
+
+.user-card__meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 8px 0;
+    border-top: 1px solid #f0f0f0;
+}
+.user-card__role {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+}
+.role-ADMIN       { background: #dc3545; }
+.role-MANAGER     { background: #0d6efd; }
+.role-STOREKEEPER { background: #198754; }
+.role-PICKER      { background: #ff9800; }
+.role-GUEST       { background: #6c757d; }
+
+.user-card__warehouse {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ── ORDER STATS (для кладовщиков и комплектовщиков) ── */
+.user-card__stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+    padding: 10px 0 0;
+    border-top: 1px solid #f0f0f0;
+}
+.stat-mini {
+    text-align: center;
+    padding: 6px 4px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+.stat-mini__value {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1.1;
+}
+.stat-mini__label {
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.user-card__actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+}
+.user-card__actions .btn {
+    flex: 1;
+    padding: 7px 8px;
+    font-size: 12px;
+    border-radius: 8px;
+}
+
+/* ── MODAL ── */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+.modal-overlay.active { display: flex; }
+.modal-box {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px 32px;
+    width: 460px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    animation: fadeInUp 0.25s ease-out;
+}
+.modal-box--wide { width: 700px; }
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.modal-header h3 { margin: 0; font-size: 18px; }
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--muted);
+    padding: 4px 8px;
+    border-radius: 8px;
+}
+.modal-close:hover { background: #f0f0f0; color: var(--text); }
+
+/* ── DETAIL MODAL CONTENT ── */
+.detail-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+.detail-field__label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.detail-field__value {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.detail-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.detail-stat-card {
+    text-align: center;
+    padding: 16px;
+    background: linear-gradient(135deg, #f6f7fb, #eef0ff);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+.detail-stat-card__value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--primary);
+}
+.detail-stat-card__label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ── AUDIT TABLE ── */
+.audit-row {
+    display: grid;
+    grid-template-columns: 140px 100px 1fr;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+    align-items: center;
+}
+.audit-row:last-child { border-bottom: none; }
+.audit-action {
+    padding: 3px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-block;
+}
+.audit-CREATE { background: #e6f6ed; color: #1e8a4f; }
+.audit-UPDATE { background: #eef0ff; color: #3d2c8d; }
+.audit-DELETE { background: #ffe8e6; color: #b12a1d; }
+.audit-COMMIT { background: #fff8e6; color: #b8860b; }
+
+.empty-state {
+    text-align: center;
+    padding: 32px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+    .stat-card { padding: 12px; }
+    .stat-value { font-size: 22px; }
+    section:first-of-type { grid-template-columns: repeat(2, 1fr) !important; }
+    .users-grid { grid-template-columns: 1fr; }
+    .detail-stats { grid-template-columns: 1fr; }
+    .detail-info-grid { grid-template-columns: 1fr; }
+    .audit-row { grid-template-columns: 1fr; gap: 4px; }
+}
+</style>
+
+</body>
+</html>

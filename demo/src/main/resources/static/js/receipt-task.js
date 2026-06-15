@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const taskId = params.get('id');
     if (!taskId) {
         alert('Нет ID задачи');
-        window.location.href = 'tasks.html';
+        window.location.href = '/pages/worker/index.html';
         return;
     }
     loadTask(taskId);
@@ -44,7 +44,7 @@ async function loadTask(taskId) {
         renderTask();
     } catch (e) {
         alert(e.message);
-        window.location.href = 'tasks.html';
+        window.location.href = '/pages/worker/index.html';
     }
 }
 
@@ -81,9 +81,14 @@ function renderTask() {
                </div>`;
         
         div.innerHTML = `
-            <div class="item-name">${item.productName}</div>
-            <div class="item-meta">Артикул: ${item.productSku || '—'}</div>
-            <div class="item-qty">Кол-во: ${item.qtyPlanned}</div>
+            <div style="display:flex; gap:12px; align-items:flex-start;">
+                ${item.productImageUrl ? `<img src="${item.productImageUrl}" style="width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid var(--border); flex-shrink:0;" onerror="this.style.display='none'">` : ''}
+                <div style="flex:1;">
+                    <div class="item-name">${item.productName}</div>
+                    <div class="item-meta">Артикул: ${item.productSku || '—'}</div>
+                    <div class="item-qty">Кол-во: ${item.qtyPlanned}</div>
+                </div>
+            </div>
             ${locationHtml}
             
             <div class="scan-steps">
@@ -254,7 +259,7 @@ async function completeTask() {
     try {
         await api('POST', `/api/tasks/${currentTask.id}/complete`);
         showToast('Приёмка завершена!');
-        setTimeout(() => window.location.href = 'tasks.html', 1500);
+        setTimeout(() => window.location.href = '/pages/worker/index.html', 1500);
     } catch (e) {
         showToast(e.message, 'error');
     }

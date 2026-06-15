@@ -16,8 +16,8 @@
 
     <!-- Tabs -->
     <div style="display: flex; padding: 0 16px; gap: 10px;">
-        <button class="btn-worker btn-primary" style="padding: 10px; font-size: 14px;" onclick="loadTasks('assigned')">Мои</button>
-        <button class="btn-worker btn-outline" style="padding: 10px; font-size: 14px;" onclick="loadTasks('available')">Доступные</button>
+        <button class="btn-worker btn-primary tab-btn" data-filter="assigned" style="padding: 10px; font-size: 14px;" onclick="loadTasks('assigned')">Мои</button>
+        <button class="btn-worker btn-outline tab-btn" data-filter="available" style="padding: 10px; font-size: 14px;" onclick="loadTasks('available')">Доступные</button>
     </div>
 
     <!-- List -->
@@ -25,6 +25,6 @@
         <!-- JS renders items here -->
     </div>
 
-    <script src="/js/worker.js?v=3"></script>
+    <script src="/js/worker.js?v=5"></script>
 </body>
 </html>

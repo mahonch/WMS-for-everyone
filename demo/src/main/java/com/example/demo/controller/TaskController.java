@@ -66,6 +66,16 @@ public class TaskController {
     }
 
     /**
+     * Взять случайную доступную задачу.
+     */
+    @PostMapping("/take-random")
+    public ResponseEntity<TaskDtos.View> takeRandom(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        return ResponseEntity.ok(taskService.takeRandomTask(userDetails.getId()));
+    }
+
+    /**
      * Начать выполнение.
      */
     @PostMapping("/{id}/start")

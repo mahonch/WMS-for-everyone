@@ -107,7 +107,9 @@ function renderProfile(data) {
         
         // Stats
         if (stats) {
-            document.getElementById('statTasks').textContent = stats.completedTasks;
+            document.getElementById('statShift').textContent = stats.shiftCompleted || 0;
+            document.getElementById('statMonth').textContent = stats.monthCompleted || 0;
+            document.getElementById('statTotal').textContent = stats.completedTasks || 0;
             const mins = stats.shiftDurationMinutes || 0;
             const hours = Math.floor(mins / 60);
             const remMins = mins % 60;
@@ -120,7 +122,9 @@ function renderProfile(data) {
         btn.className = 'btn btn-primary';
         btn.onclick = startShift;
         
-        document.getElementById('statTasks').textContent = '—';
+        document.getElementById('statShift').textContent = '—';
+        document.getElementById('statMonth').textContent = '—';
+        document.getElementById('statTotal').textContent = '—';
         document.getElementById('statTime').textContent = '—';
     }
 }
@@ -150,11 +154,7 @@ async function generateTestOrder() {
     if (!confirm('Создать тестовый заказ?')) return;
     try {
         const task = await api('POST', '/api/orders/generate');
-        showToast('Заказ создан! ID задачи: ' + task.id);
-        // Refresh tasks if we are on tasks page
-        if (window.location.pathname.includes('tasks.html')) {
-            loadTasks('available');
-        }
+        showToast('Заказ создан! Задача: ' + task.number);
     } catch (e) {
         showToast(e.message, 'error');
     }
@@ -165,6 +165,17 @@ async function generateTestOrder() {
 async function loadTasks(filter = 'assigned') {
     const container = document.getElementById('tasksContainer');
     container.innerHTML = '<p style="text-align:center; padding:20px;">Загрузка...</p>';
+
+    // Обновляем активную вкладку
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-outline');
+    });
+    const activeTab = document.querySelector(`.tab-btn[data-filter="${filter}"]`);
+    if (activeTab) {
+        activeTab.classList.remove('btn-outline');
+        activeTab.classList.add('btn-primary');
+    }
 
     try {
         let tasks = [];
@@ -180,21 +191,34 @@ async function loadTasks(filter = 'assigned') {
             tasks = [...(receipts.content || []), ...(picking.content || [])];
         }
 
+        // Очищаем контейнер
+        container.innerHTML = '';
+
+        // Кнопка "Взять случайный заказ" — всегда показываем
+        const btnWrap = document.createElement('div');
+        btnWrap.style.cssText = 'padding: 0 16px 12px;';
+        btnWrap.innerHTML = `<button class="btn-worker btn-success" style="width: 100%; padding: 16px; font-size: 17px; font-weight: 700; border-radius: 12px; background: #22c55e; color: #fff; border: none; box-shadow: 0 4px 12px rgba(34,197,94,0.3);" onclick="takeRandomTask()">🎲 Взять случайный заказ</button>`;
+        container.appendChild(btnWrap);
+
         if (tasks.length === 0) {
-            container.innerHTML = '<p style="text-align:center; padding:40px; color:#999;">Задач нет</p>';
+            const empty = document.createElement('p');
+            empty.style.cssText = 'text-align:center; padding:40px; color:#999;';
+            empty.textContent = 'Задач нет';
+            container.appendChild(empty);
             return;
         }
 
-        container.innerHTML = '';
         tasks.forEach(t => {
             const taskPage = resolveTaskPage(t.type);
             const el = document.createElement('div');
             el.className = `task-item type-${(t.type||'').toLowerCase()}`;
             el.onclick = () => window.location.href = `${taskPage}?id=${t.id}`;
 
+            const typeIcon = t.type === 'RECEIPT' ? '📦' : '🛒';
+
             el.innerHTML = `
                 <div class="task-header">
-                    <span class="task-number">${t.number}</span>
+                    <span class="task-number">${typeIcon} ${t.number}</span>
                     <span class="task-status">${formatType(t.type)}</span>
                 </div>
                 <div class="task-meta">
@@ -207,6 +231,19 @@ async function loadTasks(filter = 'assigned') {
 
     } catch (e) {
         container.innerHTML = `<p style="color:red; text-align:center;">Ошибка: ${e.message}</p>`;
+    }
+}
+
+async function takeRandomTask() {
+    try {
+        const task = await api('POST', '/api/tasks/take-random');
+        showToast(`Задача ${task.number} назначена!`);
+        setTimeout(() => {
+            const page = resolveTaskPage(task.type);
+            window.location.href = `${page}?id=${task.id}`;
+        }, 500);
+    } catch (e) {
+        showToast(e.message, 'error');
     }
 }
 
@@ -371,7 +408,7 @@ async function completeTask() {
     try {
         await api('POST', `/api/tasks/${currentTask.id}/complete`);
         showToast('Задача завершена!');
-        setTimeout(() => window.location.href = 'tasks.html', 1500);
+        setTimeout(() => window.location.href = '/pages/worker/index.html', 1500);
     } catch (e) {
         showToast(e.message, 'error');
     }
@@ -385,14 +422,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Simple router based on page
     if (path.endsWith('index.html') || path === '/pages/worker/' || path === '/pages/worker') {
         loadProfile();
-    } else if (path.endsWith('tasks.html')) {
-        loadTasks('assigned');
-        // Setup tab switcher logic if needed
-    } else if (path.endsWith('task.html')) {
+    } else if (path.endsWith('task-picking.html') || path.endsWith('task-receipt.html')) {
         loadTaskDetail();
         
-        document.getElementById('scannerCloseBtn').onclick = closeScanner;
-        document.getElementById('completeTaskBtn').onclick = completeTask;
-        document.getElementById('backBtn').onclick = () => window.history.back();
+        const closeBtn = document.getElementById('scannerCloseBtn');
+        if (closeBtn) closeBtn.onclick = closeScanner;
+        const completeBtn = document.getElementById('completeTaskBtn');
+        if (completeBtn) completeBtn.onclick = completeTask;
+        const backBtn = document.getElementById('backBtn');
+        if (backBtn) backBtn.onclick = () => window.history.back();
     }
 });

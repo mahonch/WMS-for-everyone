@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Заказы — WMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="/css/app-v2.css" rel="stylesheet">
+    <link href="/css/mobile.css" rel="stylesheet">
+    <script src="/js/auth-service.js"></script>
+    <style>
+        .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
+        .stat-box { background: #fff; border-radius: 12px; padding: 16px; border: 1px solid var(--border); text-align: center; }
+        .stat-box__value { font-size: 24px; font-weight: 700; }
+        .stat-box__label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+        .filter-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .filter-bar .input { flex: 1; min-width: 200px; }
+        .filter-bar select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #fff; }
+
+        .status-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .status-PENDING { background: #fff3cd; color: #856404; }
+        .status-ASSIGNED { background: #cce5ff; color: #004085; }
+        .status-IN_PROGRESS { background: #d4edda; color: #155724; }
+        .status-COMPLETED { background: #e2e3e5; color: #383d41; }
+        .status-CANCELLED { background: #f8d7da; color: #721c24; }
+
+        .type-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; color: #fff; }
+        .type-PICKING { background: #ff9800; }
+        .type-RECEIPT { background: #198754; }
+        .type-TRANSFER { background: #0d6efd; }
+        .type-INVENTORY { background: #6c757d; }
+
+        .progress-bar { height: 6px; background: #e9ecef; border-radius: 3px; overflow: hidden; margin-top: 6px; }
+        .progress-bar__fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width 0.3s; }
+
+        .table-wrapper { overflow-x: auto; }
+        .table th { white-space: nowrap; }
+        .table td { vertical-align: middle; }
+        .clickable-row { cursor: pointer; }
+        .clickable-row:hover { background: #f0f4ff; }
+
+        .detail-panel { position: fixed; top: 0; right: -500px; width: 480px; height: 100vh; background: #fff; box-shadow: -4px 0 20px rgba(0,0,0,0.15); z-index: 1000; transition: right 0.3s; overflow-y: auto; padding: 24px; }
+        .detail-panel.open { right: 0; }
+        .detail-panel__overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 999; display: none; }
+        .detail-panel__overlay.open { display: block; }
+        .detail-panel__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .detail-panel__close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted); }
+
+        .detail-section { margin-bottom: 20px; }
+        .detail-section__title { font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .detail-field { }
+        .detail-field__label { font-size: 12px; color: var(--muted); }
+        .detail-field__value { font-size: 14px; font-weight: 500; margin-top: 2px; }
+
+        .items-list { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+        .items-list__item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        .items-list__item:last-child { border-bottom: none; }
+        .items-list__item--confirmed { background: #f8fff8; }
+
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 16px; }
+        .pagination button { padding: 6px 14px; border: 1px solid var(--border); background: #fff; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .pagination button:hover:not(:disabled) { background: #e3f2fd; }
+        .pagination button:disabled { opacity: 0.4; cursor: default; }
+        .pagination button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .pagination .page-info { color: #666; font-size: 13px; }
+
+        @media (max-width: 768px) {
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .detail-panel { width: 100%; right: -100%; }
+            .filter-bar { flex-direction: column; }
+        }
+    </style>
+</head>
+<body class="layout">
+
+<nav class="bottom-nav">
+    <a href="/dashboard.html"><span class="nav-icon"></span><span>Главная</span></a>
+    <a href="/pages/receipts.html"><span class="nav-icon"></span><span>Приёмка</span></a>
+    <a href="/pages/issues.html"><span class="nav-icon"></span><span>Списание</span></a>
+    <a href="/pages/orders.html" class="active"><span class="nav-icon"></span><span>Заказы</span></a>
+    <a href="/pages/products.html"><span class="nav-icon"></span><span>Товары</span></a>
+    <a href="/users.html"><span class="nav-icon"></span><span>Люди</span></a>
+</nav>
+
+<aside class="sidebar">
+    <div class="logo">WMS</div>
+    <nav>
+        <a href="/dashboard.html">Главная</a>
+        <a href="/pages/receipts.html">Приёмки</a>
+        <a href="/pages/issues.html">Списание</a>
+        <a href="/pages/transfers.html">Перемещения</a>
+        <a href="/pages/products.html">Товары</a>
+        <a href="/pages/suppliers.html">Поставщики</a>
+        <a href="/pages/warehouses.html">Склады</a>
+        <a href="/pages/orders.html" class="active">Заказы</a>
+        <a href="/users.html">Пользователи</a>
+        <a href="/pages/profile.html">Профиль</a>
+        <a href="/scan.html">Скан QR</a>
+    </nav>
+    <div class="user-chip">
+        <span id="usernameLabel">—</span>
+        <button id="logoutBtn" class="btn btn-secondary">Выйти</button>
+    </div>
+</aside>
+
+<main class="content">
+    <header class="topbar">
+        <div>
+            <div class="tag-muted">Управление</div>
+            <strong>Заказы и задачи</strong>
+        </div>
+        <button class="btn btn-primary" id="btnGenerate">+ Тестовый заказ</button>
+    </header>
+
+    <div id="alerts"></div>
+
+    <!-- STATS -->
+    <div class="stats-row">
+        <div class="stat-box">
+            <div class="stat-box__value" id="statPending" style="color: #856404;">—</div>
+            <div class="stat-box__label">Ожидают</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-box__value" id="statAssigned" style="color: #004085;">—</div>
+            <div class="stat-box__label">Назначены</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-box__value" id="statInProgress" style="color: #198754;">—</div>
+            <div class="stat-box__label">В работе</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-box__value" id="statCompleted" style="color: #383d41;">—</div>
+            <div class="stat-box__label">Завершены</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-box__value" id="statCancelled" style="color: #dc3545;">—</div>
+            <div class="stat-box__label">Отменены</div>
+        </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filter-bar">
+        <input id="searchInput" class="input" placeholder="Поиск по номеру, исполнителю...">
+        <select id="filterType">
+            <option value="">Все типы</option>
+            <option value="PICKING">Комплектация (PICKING)</option>
+            <option value="RECEIPT">Приёмка (RECEIPT)</option>
+            <option value="TRANSFER">Перемещение (TRANSFER)</option>
+            <option value="INVENTORY">Инвентаризация (INVENTORY)</option>
+        </select>
+        <select id="filterStatus">
+            <option value="">Все статусы</option>
+            <option value="PENDING">Ожидает</option>
+            <option value="ASSIGNED">Назначена</option>
+            <option value="IN_PROGRESS">В работе</option>
+            <option value="COMPLETED">Завершена</option>
+            <option value="CANCELLED">Отменена</option>
+        </select>
+    </div>
+
+    <!-- TABLE -->
+    <section class="card">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow">Журнал</p>
+                <h3>Все задачи</h3>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>№</th>
+                        <th>Тип</th>
+                        <th>Статус</th>
+                        <th>Исполнитель</th>
+                        <th>Склад</th>
+                        <th>Прогресс</th>
+                        <th>Создана</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tasksBody"></tbody>
+            </table>
+        </div>
+
+        <div id="noTasks" style="text-align: center; padding: 40px; color: var(--muted); display: none;">
+            Задач не найдено
+        </div>
+
+        <div class="pagination" id="pagination"></div>
+    </section>
+</main>
+
+<!-- DETAIL PANEL -->
+<div class="detail-panel__overlay" id="detailOverlay"></div>
+<div class="detail-panel" id="detailPanel">
+    <div class="detail-panel__header">
+        <h3 id="detailTitle">Задача</h3>
+        <button class="detail-panel__close" onclick="closeDetail()">&times;</button>
+    </div>
+
+    <div class="detail-section">
+        <div class="detail-section__title">Информация</div>
+        <div class="detail-grid">
+            <div class="detail-field">
+                <div class="detail-field__label">Номер</div>
+                <div class="detail-field__value" id="dNumber">—</div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field__label">Тип</div>
+                <div class="detail-field__value" id="dType">—</div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field__label">Статус</div>
+                <div class="detail-field__value" id="dStatus">—</div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field__label">Склад</div>
+                <div class="detail-field__value" id="dWarehouse">—</div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field__label">Исполнитель</div>
+                <div class="detail-field__value" id="dAssignee">—</div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field__label">Создал</div>
+                <div class="detail-field__value" id="dCreator">—</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-section">
+        <div class="detail-section__title">Время</div>
+        <div class="detail-grid">
+            <div class="detail-field">
+                <div class="detail-field__label">Создана</div>
+                <div class="detail-field__value" id="dCreatedAt">—</div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field__label">Назначена</div>
+                <div class="detail-field__value" id="dAssignedAt">—</div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field__label">Начата</div>
+                <div class="detail-field__value" id="dStartedAt">—</div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field__label">Завершена</div>
+                <div class="detail-field__value" id="dCompletedAt">—</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-section">
+        <div class="detail-section__title">Товары</div>
+        <div class="items-list" id="dItems"></div>
+    </div>
+
+    <div class="detail-section" id="assignSection" style="display: none;">
+        <div class="detail-section__title">Назначить исполнителя</div>
+        <div style="display: flex; gap: 8px;">
+            <select id="assignUser" style="flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;">
+                <option value="">Выберите исполнителя</option>
+            </select>
+            <button class="btn btn-primary" onclick="assignTask()">Назначить</button>
+        </div>
+    </div>
+
+    <div class="detail-section" id="cancelSection" style="display: none;">
+        <button class="btn btn-danger" onclick="cancelTask()">Отменить задачу</button>
+    </div>
+</div>
+
+<script src="/js/orders.js?v=1"></script>
+</body>
+</html>

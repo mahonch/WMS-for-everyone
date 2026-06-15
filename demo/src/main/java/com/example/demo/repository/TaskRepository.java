@@ -38,4 +38,23 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
                                         Pageable pageable);
 
     long countByAssigneeIdAndStatus(Long assigneeId, TaskStatus status);
+
+    Page<Task> findByTypeOrderByCreatedAtDesc(TaskType type, Pageable pageable);
+
+    Page<Task> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    long countByStatus(TaskStatus status);
+
+    long countByType(TaskType type);
+
+    // Количество выполненных задач для пользователя
+    long countByAssigneeIdAndStatusAndType(Long assigneeId, TaskStatus status, TaskType type);
+
+    // Количество выполненных задач за период
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.assignee.id = :uid AND t.status = 'COMPLETED' AND t.completedAt >= :since")
+    long countCompletedSince(@Param("uid") Long assigneeId, @Param("since") java.time.LocalDateTime since);
+
+    // Количество выполненных задач по типу за период
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.assignee.id = :uid AND t.status = 'COMPLETED' AND t.type = :type AND t.completedAt >= :since")
+    long countCompletedSinceByType(@Param("uid") Long assigneeId, @Param("type") TaskType type, @Param("since") java.time.LocalDateTime since);
 }

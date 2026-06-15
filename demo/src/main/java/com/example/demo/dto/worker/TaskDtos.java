@@ -41,6 +41,7 @@ public class TaskDtos {
             Long productId,
             String productName,
             String productSku,
+            String productImageUrl,
             Long locationId,
             String locationCode,
             String locationName,

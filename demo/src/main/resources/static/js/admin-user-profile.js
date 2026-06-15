@@ -92,6 +92,7 @@ async function loadUserProfile() {
         currentUser = await api('GET', `/api/admin/users/${currentUserId}`);
         renderUserProfile();
         loadAuditLog();
+        loadStats();
     } catch (err) {
         showAlert('error', 'Не удалось загрузить профиль: ' + err.message);
         document.getElementById('loading').style.display = 'none';
@@ -244,5 +245,25 @@ async function changeWarehouse() {
         await loadUserProfile();
     } catch (err) {
         showAlert('error', err.message);
+    }
+}
+
+// Загрузка статистики (для STOREKEEPER / PICKER)
+async function loadStats() {
+    if (!currentUser) return;
+    const role = currentUser.role;
+    if (role !== 'STOREKEEPER' && role !== 'PICKER') return;
+
+    try {
+        const stats = await api('GET', '/api/admin/users/stats');
+        const userStats = stats.find(s => s.userId == currentUserId);
+        if (userStats) {
+            document.getElementById('statsCard').style.display = 'block';
+            document.getElementById('statShift').textContent = userStats.shiftCompleted || 0;
+            document.getElementById('statMonth').textContent = userStats.monthCompleted || 0;
+            document.getElementById('statTotal').textContent = userStats.totalCompleted || 0;
+        }
+    } catch (err) {
+        console.error('[PROFILE] Failed to load stats:', err);
     }
 }

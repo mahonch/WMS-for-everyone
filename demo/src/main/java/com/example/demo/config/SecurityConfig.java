@@ -50,7 +50,8 @@ public class SecurityConfig {
                                 "/pages/location-detail.html",
                                 "/pages/suppliers.html", "/pages/profile.html",
                                 "/pages/worker/**", "/worker/**",
-                                "/components/**","/dashboard-vue.html").permitAll()
+                                "/components/**","/dashboard-vue.html","/users.html", "pages/workflow.html",
+                                "/pages/orders.html").permitAll()
 
                         // swagger
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()

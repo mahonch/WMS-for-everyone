@@ -1,0 +1,25 @@
+{
+  "$schema": "https://github.com/KoinaAI/MiMo-CLI/raw/main/schema/mimo-code.schema.json",
+  "model": "mimo-v2.5-pro",
+  "baseUrl": "https://api.xiaomimimo.com",
+  "mcpServers": [],
+  "skills": [],
+  "hooks": [],
+  "workflow": {
+    "defaultMode": "yolo",
+    "maxIterations": 15,
+    "recommendedChecks": []
+  },
+  "limits": {
+    "maxReadFiles": 5,
+    "maxListFilesDepth": 1,
+    "disableAutoAnalyze": true,
+    "preventContextRebuild": true
+  },
+  "behavior": {
+    "noGreeting": true,
+    "noThinking": true,
+    "noUnrequestedAnalysis": true,
+    "singleShotMode": true
+  }
+}

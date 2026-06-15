@@ -11,8 +11,8 @@ public class WebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // Кэширование статики (CSS, JS, изображения)
         registry.addResourceHandler("/css/**", "/js/**", "/images/**", "/assets/**")
-                .addResourceLocations("classpath:/static/css/", 
-                                     "classpath:/static/js/", 
+                .addResourceLocations("classpath:/static/css/",
+                                     "classpath:/static/js/",
                                      "classpath:/static/images/",
                                      "classpath:/static/assets/")
                 .setCachePeriod(2592000); // 30 дней

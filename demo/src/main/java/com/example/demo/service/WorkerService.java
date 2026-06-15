@@ -79,10 +79,20 @@ public class WorkerService {
         LocalDateTime shiftStart = activeShift != null ? activeShift.getStartedAt() : null;
         long shiftDurationMinutes = shiftStart != null ? java.time.Duration.between(shiftStart, LocalDateTime.now()).toMinutes() : 0;
 
-        return new WorkerStats(completedTasks, shiftDurationMinutes, activeShift != null);
+        // Выполнено за текущую смену
+        long shiftCompleted = 0;
+        if (shiftStart != null) {
+            shiftCompleted = taskRepository.countCompletedSince(userId, shiftStart);
+        }
+
+        // Выполнено за текущий месяц
+        LocalDateTime monthStart = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        long monthCompleted = taskRepository.countCompletedSince(userId, monthStart);
+
+        return new WorkerStats(completedTasks, shiftCompleted, monthCompleted, shiftDurationMinutes, activeShift != null);
     }
 
-    public record WorkerStats(long completedTasks, long shiftDurationMinutes, boolean onShift) {}
+    public record WorkerStats(long completedTasks, long shiftCompleted, long monthCompleted, long shiftDurationMinutes, boolean onShift) {}
 
     private WorkerShiftDtos.View toView(WorkerShift s) {
         return new WorkerShiftDtos.View(

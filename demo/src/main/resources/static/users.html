@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Пользователи — WMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="/css/app-v2.css" rel="stylesheet">
+    <link href="/css/mobile.css" rel="stylesheet">
+    <script src="/js/auth-service.js"></script>
+    <style>
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        .stat-box { background: #fff; border-radius: 12px; padding: 20px; border: 1px solid var(--border); }
+        .stat-box__value { font-size: 28px; font-weight: 700; }
+        .stat-box__label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+        .filter-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .filter-bar .input { flex: 1; min-width: 200px; }
+        .filter-bar select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #fff; }
+
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .section-header h3 { font-size: 18px; }
+        .section-header .count { background: var(--primary); color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+
+        .users-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-bottom: 32px; }
+
+        .user-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 20px; transition: all 0.2s; cursor: pointer; display: flex; flex-direction: column; }
+        .user-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.1); transform: translateY(-2px); border-color: var(--primary); }
+
+        .user-card__top { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; }
+        .user-card__name { font-size: 16px; font-weight: 600; }
+        .user-card__email { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+        .user-card__role { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; color: #fff; white-space: nowrap; }
+        .role-ADMIN { background: #dc3545; }
+        .role-MANAGER { background: #0d6efd; }
+        .role-STOREKEEPER { background: #198754; }
+        .role-PICKER { background: #ff9800; }
+        .role-GUEST { background: #6c757d; }
+
+        .user-card__meta { display: flex; gap: 16px; margin-bottom: 12px; padding: 10px 0; border-top: 1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0; }
+        .user-card__meta-item { font-size: 12px; color: var(--muted); }
+        .user-card__meta-item span { display: block; font-size: 14px; color: #333; font-weight: 500; margin-top: 2px; }
+
+        .user-card__stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; }
+        .user-card__stat { text-align: center; }
+        .user-card__stat-value { font-size: 18px; font-weight: 700; color: var(--primary); }
+        .user-card__stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .user-card__status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
+        .user-card__status--active { color: #198754; }
+        .user-card__status--inactive { color: #dc3545; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-dot--active { background: #198754; }
+        .status-dot--inactive { background: #dc3545; }
+
+        .user-card__footer { margin-top: auto; display: flex; gap: 8px; }
+        .user-card__footer .btn { flex: 1; }
+
+        .no-stats { font-size: 12px; color: var(--muted); text-align: center; padding: 8px; font-style: italic; }
+
+        .tabs { display: flex; gap: 4px; margin-bottom: 20px; background: #f0f0f0; border-radius: 10px; padding: 4px; }
+        .tabs button { flex: 1; padding: 10px 16px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; background: transparent; color: var(--muted); transition: all 0.2s; }
+        .tabs button.active { background: #fff; color: #333; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+        @media (max-width: 768px) {
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .users-grid { grid-template-columns: 1fr; }
+            .filter-bar { flex-direction: column; }
+        }
+    </style>
+</head>
+<body class="layout">
+
+<nav class="bottom-nav">
+    <a href="/dashboard.html"><span class="nav-icon"></span><span>Главная</span></a>
+    <a href="/pages/receipts.html"><span class="nav-icon"></span><span>Приёмка</span></a>
+    <a href="/pages/issues.html"><span class="nav-icon"></span><span>Списание</span></a>
+    <a href="/pages/transfers.html"><span class="nav-icon"></span><span>Перемещ.</span></a>
+    <a href="/pages/products.html"><span class="nav-icon"></span><span>Товары</span></a>
+    <a href="/users.html" class="active"><span class="nav-icon"></span><span>Люди</span></a>
+</nav>
+
+<aside class="sidebar">
+    <div class="logo">WMS</div>
+    <nav>
+        <a href="/dashboard.html">Главная</a>
+        <a href="/pages/receipts.html">Приёмки</a>
+        <a href="/pages/issues.html">Списание</a>
+        <a href="/pages/transfers.html">Перемещения</a>
+        <a href="/pages/products.html">Товары</a>
+        <a href="/pages/orders.html">Заказы</a>
+        <a href="/pages/suppliers.html">Поставщики</a>
+        <a href="/pages/warehouses.html">Склады</a>
+        <a href="/users.html" class="active">Пользователи</a>
+        <a href="/pages/profile.html">Профиль</a>
+        <a href="/scan.html">Скан QR</a>
+    </nav>
+    <div class="user-chip">
+        <span id="usernameLabel">—</span>
+        <button id="logoutBtn" class="btn btn-secondary">Выйти</button>
+    </div>
+</aside>
+
+<main class="content">
+    <header class="topbar">
+        <div>
+            <div class="tag-muted">Управление</div>
+            <strong>Пользователи</strong>
+        </div>
+    </header>
+
+    <div id="alerts"></div>
+
+    <!-- STATS -->
+    <div class="stats-row">
+        <div class="stat-box">
+            <div class="stat-box__value" id="statTotal">—</div>
+            <div class="stat-box__label">Всего</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-box__value" id="statActive" style="color: #198754;">—</div>
+            <div class="stat-box__label">Активных</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-box__value" id="statInactive" style="color: #dc3545;">—</div>
+            <div class="stat-box__label">Заблокировано</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-box__value" id="statOnline" style="color: #0d6efd;">—</div>
+            <div class="stat-box__label">Онлайн</div>
+        </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filter-bar">
+        <input id="searchInput" class="input" placeholder="Поиск по имени или email...">
+        <select id="filterRole">
+            <option value="">Все роли</option>
+            <option value="ADMIN">Администратор</option>
+            <option value="MANAGER">Менеджер</option>
+            <option value="STOREKEEPER">Кладовщик</option>
+            <option value="PICKER">Комплектовщик</option>
+            <option value="GUEST">Гость</option>
+        </select>
+        <select id="filterStatus">
+            <option value="">Все статусы</option>
+            <option value="active">Активные</option>
+            <option value="inactive">Заблокированные</option>
+        </select>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+        <button class="active" onclick="switchTab('all')">Все</button>
+        <button onclick="switchTab('workers')">Кладовщики и комплектовщики</button>
+        <button onclick="switchTab('inactive')">Заблокированные</button>
+    </div>
+
+    <!-- ACTIVE USERS -->
+    <div class="section-header">
+        <h3>Активные пользователи</h3>
+        <span class="count" id="activeCount">0</span>
+    </div>
+    <div id="activeUsers" class="users-grid"></div>
+
+    <!-- INACTIVE USERS -->
+    <div class="section-header" id="inactiveHeader" style="display: none;">
+        <h3>Заблокированные</h3>
+        <span class="count" id="inactiveCount" style="background: #dc3545;">0</span>
+    </div>
+    <div id="inactiveUsers" class="users-grid"></div>
+
+    <div id="noUsers" style="text-align: center; padding: 60px; color: var(--muted); display: none;">
+        Пользователи не найдены
+    </div>
+</main>
+
+<script src="/js/users.js?v=1"></script>
+</body>
+</html>

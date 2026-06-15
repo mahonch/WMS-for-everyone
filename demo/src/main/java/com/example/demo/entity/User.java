@@ -32,6 +32,9 @@ public class User {
     @Column(name = "warehouse_id")
     private Long warehouseId;
 
+    @Column(name = "last_seen_at")
+    private Instant lastSeenAt;
+
     @Column(name = "created_at", updatable = false, insertable = false)
     private Instant createdAt;
 
