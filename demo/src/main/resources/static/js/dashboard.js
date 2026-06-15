@@ -42,7 +42,7 @@ async function apiGet(url) {
 // Форматирование денег
 const fmtMoney = (n) => new Intl.NumberFormat('ru-RU', { 
     style: 'currency', 
-    currency: 'RUB',
+    currency: 'BYN',
     maximumFractionDigits: 0
 }).format(n || 0);
 
@@ -123,7 +123,7 @@ async function loadStats() {
             document.getElementById('metricValue').textContent = fmtMoney(totalValue);
         } catch (e) {
             console.error('[DASHBOARD] stocks error:', e);
-            document.getElementById('metricValue').textContent = '0 ₽';
+            document.getElementById('metricValue').textContent = '0 BYN';
         }
 
     } catch (e) {

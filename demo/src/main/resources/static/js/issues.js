@@ -84,7 +84,7 @@ function alertBox(type, text) {
 /* ==================== HELPERS ==================== */
 
 const fmtDate = (d) => d ? new Date(d).toLocaleString("ru-RU") : "—";
-const fmtMoney = (n) => new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB" }).format(n || 0);
+const fmtMoney = (n) => new Intl.NumberFormat("ru-RU", { style: "currency", currency: "BYN" }).format(n || 0);
 
 const statusPill = (s) => {
     const cls = s === "COMMITTED" ? "pill-committed" : "pill-draft";

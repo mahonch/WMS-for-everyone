@@ -102,7 +102,7 @@ function fmtDate(d) {
 
 function fmtMoney(n) {
     if (n == null) return '—';
-    return new Intl.NumberFormat('ru-RU', { style:'currency', currency:'RUB', minimumFractionDigits:0 }).format(n);
+    return new Intl.NumberFormat('ru-RU', { style:'currency', currency:'BYN', minimumFractionDigits:0 }).format(n);
 }
 
 function calcTotal() {

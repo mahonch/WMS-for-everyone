@@ -14,6 +14,310 @@
     --radius: 12px;
 }
 
+/* Login Form Styles */
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px;
+}
+
+.login-card {
+    background: var(--card);
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    max-width: 420px;
+    padding: 40px 32px;
+    transition: transform 0.3s ease;
+}
+
+.login-card:hover {
+    transform: translateY(-5px);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.login-header .logo {
+    font-size: 32px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 12px;
+    display: inline-block;
+}
+
+.login-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    color: var(--text);
+}
+
+.login-header .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0;
+}
+
+form#loginForm {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+form#loginForm label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+}
+
+form#loginForm input {
+    padding: 14px 16px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    background: #fff;
+    font-family: inherit;
+}
+
+form#loginForm input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.15);
+}
+
+form#loginForm input:hover {
+    border-color: var(--accent);
+}
+
+form#loginForm button {
+    margin-top: 8px;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+form#loginForm button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+form#loginForm button:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+form#loginForm button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(108, 92, 231, 0.4);
+}
+
+form#loginForm button:active {
+    transform: translateY(0);
+}
+
+/* Error state for inputs */
+form#loginForm input.error {
+    border-color: var(--danger);
+    background: #fff5f5;
+}
+
+.error-message {
+    color: var(--danger);
+    font-size: 12px;
+    margin-top: -16px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.error-message::before {
+    content: "⚠️";
+    font-size: 12px;
+}
+
+/* Loading state */
+form#loginForm button.loading {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+form#loginForm button.loading::after {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    top: 50%;
+    left: 50%;
+    margin-left: -9px;
+    margin-top: -9px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Input with icon */
+.input-wrapper {
+    position: relative;
+}
+
+.input-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    color: var(--muted);
+    pointer-events: none;
+}
+
+.input-wrapper input {
+    padding-left: 44px !important;
+}
+
+/* Demo credentials hint */
+.demo-hint {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+}
+
+.demo-hint p {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0 0 8px 0;
+}
+
+.demo-credentials {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.demo-cred {
+    background: #f0f1f7;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: monospace;
+    color: var(--primary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.demo-cred:hover {
+    background: var(--primary);
+    color: white;
+}
+
+/* Remember me checkbox */
+.remember-me {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: -8px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    margin: 0;
+}
+
+.forgot-link {
+    font-size: 13px;
+    color: var(--primary);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.forgot-link:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .login-card {
+        padding: 32px 24px;
+        margin: 16px;
+    }
+    
+    .login-header h1 {
+        font-size: 24px;
+    }
+    
+    form#loginForm input,
+    form#loginForm button {
+        padding: 12px 14px;
+    }
+}
+
+/* Animation for form appearance */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.login-card {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+
+
+
 * { box-sizing: border-box; }
 body {
     margin: 0;
@@ -1339,4 +1643,550 @@ thead{
 .login-card h1 {
     margin: 0 0 1.5rem;
     text-align: center;
+}
+
+/* ========================================
+   МОБИЛЬНАЯ ВЕРСИЯ - ПОЛНАЯ АДАПТАЦИЯ
+   ======================================== */
+
+/* Базовые мобильные стили */
+@media (max-width: 768px) {
+    /* Общие настройки */
+    body {
+        font-size: 14px;
+    }
+    
+    /* Скрываем обычную боковую панель, показываем мобильную */
+    .layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .sidebar {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 280px;
+        height: 100vh;
+        z-index: 2000;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        padding-top: 60px;
+    }
+    
+    .sidebar.open {
+        display: flex;
+        transform: translateX(0);
+    }
+    
+    /* Мобильная шапка */
+    .mobile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+    
+    .mobile-menu-btn {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        padding: 8px;
+        color: var(--primary);
+    }
+    
+    .mobile-logo {
+        font-weight: 700;
+        font-size: 18px;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    
+    .mobile-user {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #f0f1f7;
+        padding: 6px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+    }
+    
+    /* Оверлей для мобильного меню */
+    .mobile-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1999;
+    }
+    
+    .mobile-overlay.open {
+        display: block;
+    }
+    
+    /* Скрываем обычный topbar на мобильных */
+    .topbar {
+        display: none;
+    }
+    
+    /* Контент */
+    .content {
+        padding: 12px;
+        gap: 12px;
+    }
+    
+    /* Карточки */
+    .card {
+        padding: 12px;
+        border-radius: 10px;
+    }
+    
+    .card h3 {
+        font-size: 16px;
+        margin-bottom: 10px;
+    }
+    
+    /* Таблицы - горизонтальная прокрутка */
+    .table-wrapper {
+        overflow-x: auto;
+        margin: 0 -12px;
+        padding: 0 12px;
+    }
+    
+    .table {
+        font-size: 12px;
+        min-width: 600px;
+    }
+    
+    .table th, .table td {
+        padding: 8px;
+    }
+    
+    /* Кнопки */
+    .btn {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+    
+    .toolbar {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    /* Сетки */
+    .grid2, .grid3, .grid4 {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    /* Статистика */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    
+    .stat-card {
+        padding: 12px;
+        gap: 10px;
+    }
+    
+    .stat-icon {
+        font-size: 24px;
+    }
+    
+    .stat-value {
+        font-size: 20px;
+    }
+    
+    .stat-label {
+        font-size: 11px;
+    }
+    
+    /* Actions grid */
+    .actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    
+    .action-btn {
+        padding: 12px;
+    }
+    
+    .action-icon {
+        font-size: 24px;
+    }
+    
+    .action-btn span:last-child {
+        font-size: 11px;
+    }
+    
+    /* Модальные окна */
+    .modal {
+        width: 95%;
+        max-width: 95%;
+        padding: 15px;
+        margin: 10px;
+        border-radius: 12px;
+    }
+    
+    .modal-lg, .modal-xl {
+        max-width: 95%;
+        width: 95%;
+    }
+    
+    .modal-overlay {
+        padding: 10px;
+        align-items: flex-start;
+        padding-top: 20px;
+    }
+    
+    /* Explorer (проводник локаций) */
+    .location-explorer-modal {
+        width: 100%;
+        height: 95vh;
+        border-radius: 12px;
+    }
+    
+    .explorer-body {
+        grid-template-columns: 1fr;
+        flex-direction: column;
+    }
+    
+    .explorer-tree-panel {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        max-height: 40vh;
+    }
+    
+    .explorer-content-panel {
+        max-height: 50vh;
+    }
+    
+    .panel-header {
+        padding: 8px 12px;
+        font-size: 11px;
+    }
+    
+    .explorer-search {
+        flex-direction: column;
+    }
+    
+    .explorer-search .input {
+        width: 100%;
+    }
+    
+    .explorer-search .btn {
+        width: 100%;
+    }
+    
+    .tree-node {
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+    
+    .tree-code {
+        font-size: 13px;
+    }
+    
+    .tree-name {
+        font-size: 11px;
+    }
+    
+    /* Контентные элементы */
+    .content-item {
+        padding: 10px;
+        gap: 8px;
+    }
+    
+    .item-icon {
+        font-size: 18px;
+    }
+    
+    .item-code {
+        font-size: 13px;
+    }
+    
+    /* Toast уведомления */
+    .toast-container {
+        bottom: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+    
+    .toast {
+        min-width: auto;
+        max-width: none;
+        padding: 10px 12px;
+    }
+    
+    /* Формы */
+    .input-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .input-row .btn {
+        width: 100%;
+    }
+    
+    /* Tabs */
+    .tabs {
+        flex-wrap: wrap;
+    }
+    
+    .tab {
+        padding: 8px 16px;
+        font-size: 13px;
+        flex: 1;
+        text-align: center;
+    }
+    
+    /* Radio cards */
+    .radio-card {
+        padding: 12px;
+    }
+    
+    .radio-icon {
+        font-size: 22px;
+    }
+    
+    .radio-content strong {
+        font-size: 13px;
+    }
+    
+    /* Total row */
+    .total-row {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+    }
+    
+    /* Login card */
+    .login-card {
+        margin: 16px;
+        padding: 24px 20px;
+    }
+    
+    .login-header h1 {
+        font-size: 24px;
+    }
+    
+    .demo-credentials {
+        flex-direction: column;
+        gap: 6px;
+    }
+    
+    .demo-cred {
+        text-align: center;
+    }
+    
+    /* Помощь при скролле */
+    .explorer-tree {
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Убираем hover эффекты на тач-устройствах */
+    .btn:active, 
+    .action-btn:active,
+    .content-item:active,
+    .tree-node:active {
+        transform: scale(0.98);
+        background: #eef0f6;
+    }
+    
+    .btn:hover, 
+    .action-btn:hover,
+    .content-item:hover {
+        transform: none;
+    }
+    
+    /* Селекты на мобильных */
+    select.input {
+        font-size: 16px; /* Предотвращает зум на iOS */
+    }
+    
+    /* Увеличиваем зону клика для кнопок закрытия */
+    .toast-close {
+        padding: 8px;
+        margin: -8px;
+    }
+    
+    .btn-link {
+        padding: 8px;
+    }
+}
+
+/* Очень маленькие экраны (до 480px) */
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .actions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .content {
+        padding: 8px;
+    }
+    
+    .card {
+        padding: 10px;
+    }
+    
+    .section-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .section-title .toolbar {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    .modal {
+        padding: 12px;
+    }
+    
+    .modal .section-title {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    .explorer-title h3 {
+        font-size: 16px;
+    }
+    
+    .explorer-footer {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .explorer-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+    
+    .explorer-actions .btn {
+        flex: 1;
+        text-align: center;
+    }
+    
+    .selected-info {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+/* Планшеты (от 481px до 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .actions-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .grid2 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ========================================
+   ДОБАВЛЯЕМ МОБИЛЬНУЮ ШАПКУ В HTML
+   ======================================== */
+/* 
+   Добавьте в ваш HTML (после opening body тега):
+   
+   <div class="mobile-header" style="display: none;">
+       <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+       <div class="mobile-logo">WMS</div>
+       <div class="mobile-user">
+           <span id="mobileUsername"></span>
+           <button class="btn-link" onclick="logout()">🚪</button>
+       </div>
+   </div>
+   <div class="mobile-overlay" onclick="closeMobileMenu()"></div>
+   
+   И добавьте JavaScript:
+   
+   <script>
+   function toggleMobileMenu() {
+       document.querySelector('.sidebar')?.classList.toggle('open');
+       document.querySelector('.mobile-overlay')?.classList.toggle('open');
+   }
+   function closeMobileMenu() {
+       document.querySelector('.sidebar')?.classList.remove('open');
+       document.querySelector('.mobile-overlay')?.classList.remove('open');
+   }
+   // Показываем мобильную шапку на экранах до 768px
+   if (window.innerWidth <= 768) {
+       document.querySelector('.mobile-header').style.display = 'flex';
+   }
+   window.addEventListener('resize', function() {
+       if (window.innerWidth <= 768) {
+           document.querySelector('.mobile-header').style.display = 'flex';
+       } else {
+           document.querySelector('.mobile-header').style.display = 'none';
+           closeMobileMenu();
+       }
+   });
+   </script>
+*/
+
+/* ========================================
+   ПОДДЕРЖКА Touch устройств
+   ======================================== */
+@media (hover: none) and (pointer: coarse) {
+    /* Убираем hover эффекты */
+    .btn:hover::before,
+    .action-btn:hover,
+    .content-item:hover,
+    .tree-node:hover {
+        transform: none;
+    }
+    
+    /* Добавляем active эффекты */
+    .btn:active,
+    .action-btn:active,
+    .content-item:active,
+    .tree-node:active {
+        opacity: 0.7;
+        transition: opacity 0.1s;
+    }
+    
+    /* Увеличиваем минимальный размер кликабельных элементов */
+    button, 
+    .btn, 
+    .action-btn,
+    .tree-node,
+    .content-item,
+    .tab,
+    [onclick] {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Исправляем зум на инпутах */
+    input, select, textarea {
+        font-size: 16px !important;
+    }
 }

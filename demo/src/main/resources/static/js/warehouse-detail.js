@@ -1,12 +1,13 @@
 console.log("[WAREHOUSE-DETAIL] init...");
 
-debugAuthContext("WAREHOUSE_DETAIL").then(() => startPage());
-
 let token = null;
 let warehouseId = null;
 let warehouse = null;
 let currentLocation = null;
 let currentProduct = null;
+
+// Запускаем после объявления всех переменных
+startPage();
 
 /* ==================== START ==================== */
 
@@ -48,7 +49,7 @@ if (!toastContainer) {
 function showNotification(type, title, message) {
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
-    const icon = type === "success" ? "" : type === "error" ? "" : type === "warning" ? "" : "ℹ";
+    const icon = type === "success" ? "✅" : type === "error" ? "❌" : type === "warning" ? "⚠️" : "ℹ️";
     toast.innerHTML = `
         <span class="toast-icon">${icon}</span>
         <div class="toast-content">
@@ -70,14 +71,14 @@ function alertBox(type, text) {
 
 /* ==================== HELPERS ==================== */
 
-const fmtMoney = (n) => new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB" }).format(n || 0);
+const fmtMoney = (n) => new Intl.NumberFormat("ru-RU", { style: "currency", currency: "BYN" }).format(n || 0);
 const fmtNum = (n) => new Intl.NumberFormat("ru-RU").format(n || 0);
 
 const typeIcons = {
-    "ZONE": "",
-    "RACK": "",
-    "SHELF": "",
-    "BIN": ""
+    "ZONE": "🏭",
+    "RACK": "📦",
+    "SHELF": "📚",
+    "BIN": "📍"
 };
 
 const typeNames = {
@@ -121,14 +122,17 @@ async function api(method, url, body) {
 
 async function loadWarehouse() {
     try {
+        console.log("[DEBUG] Loading warehouse ID:", warehouseId);
         warehouse = await api("GET", `/api/warehouses/${warehouseId}`);
+        console.log("[DEBUG] Warehouse loaded:", warehouse);
         document.getElementById("warehouseName").textContent = ` ${warehouse.name}`;
         
         loadOverview();
         loadLocations();
         loadProducts();
     } catch (e) {
-        // Ошибка уже показана
+        console.error("[ERROR] loadWarehouse:", e);
+        document.getElementById("warehouseName").textContent = "Ошибка загрузки";
     }
 }
 
@@ -155,6 +159,7 @@ async function loadOverview() {
         await loadZonesStats(locations, stocks);
         
     } catch (e) {
+        console.error("[ERROR] loadOverview:", e);
         document.getElementById("zonesStats").innerHTML = `<div class="error">Ошибка загрузки: ${e.message}</div>`;
     }
 }
@@ -194,7 +199,7 @@ async function loadZonesStats(locations, stocks) {
     
     container.innerHTML = zoneList.map(z => {
         const percent = z.locations > 0 ? Math.round((z.stocked / z.locations) * 100) : 0;
-        const color = percent >= 80 ? "" : percent >= 50 ? "" : "";
+        const color = percent >= 80 ? "🟢" : percent >= 50 ? "🟡" : "🔴";
         return `
             <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
                 <span>${typeIcons.ZONE} ${z.zone.name}</span>
@@ -216,6 +221,7 @@ async function loadLocations() {
         
         renderLocationTree(locations, stocks);
     } catch (e) {
+        console.error("[ERROR] loadLocations:", e);
         container.innerHTML = `<div class="error">Ошибка: ${e.message}</div>`;
     }
 }
@@ -261,31 +267,24 @@ function renderLocationTree(locations, stocks) {
             }
         };
     });
-    
-    container.querySelectorAll(".loc-view").forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            openLocationDetail(Number(btn.dataset.id));
-        };
-    });
 }
 
 function renderLocationNode(loc, tree, level = 0) {
     const indent = level * 20;
     const hasChildren = loc.children && loc.children.length > 0;
-    const stockStatus = loc.totalQty > 0 ? "" : "";
-    const typeIcon = typeIcons[loc.type] || "";
+    const stockStatus = loc.totalQty > 0 ? "📦" : "⬜";
+    const typeIcon = typeIcons[loc.type] || "📍";
     
     let html = `
         <div class="location-node" style="padding-left: ${indent}px;">
-            <div class="node-row" onclick="openLocationDetail(${loc.id})">
+            <div class="node-row">
                 ${hasChildren ? `<button class="loc-toggle" data-node="${loc.id}">▼</button>` : '<span style="width: 20px;"></span>'}
                 <span class="node-icon">${typeIcon}</span>
                 <span class="node-code">${loc.code}</span>
                 <span class="node-name">${loc.name}</span>
                 <span class="node-status">${stockStatus}</span>
                 <span class="node-qty">${loc.totalQty > 0 ? fmtNum(loc.totalQty) + ' ед.' : 'Пусто'}</span>
-                <button class="btn btn-sm btn-secondary loc-view" data-id="${loc.id}"></button>
+                <button class="btn btn-sm btn-secondary" onclick="openLocationDetail(${loc.id})">👁️</button>
             </div>
             ${hasChildren ? `<div id="loc-children-${loc.id}">${loc.children.map(c => renderLocationNode(c, tree, level + 1)).join("")}</div>` : ''}
         </div>
@@ -323,7 +322,7 @@ async function loadProducts() {
         
         tb.innerHTML = "";
         if (products.length === 0) {
-            tb.innerHTML = `<tr><td colspan="7" class="muted">Товаров нет</td></tr>`;
+            tb.innerHTML = `<table><td colspan="7" class="muted">Товаров нет</td></tr>`;
             return;
         }
         
@@ -336,12 +335,13 @@ async function loadProducts() {
                 <td class="right">${fmtNum(p.qty)}</td>
                 <td class="right">${fmtMoney(p.value)}</td>
                 <td>${p.locations.size}</td>
-                <td><button class="btn btn-sm btn-secondary" onclick="openProductDetail(${p.product.productId})"></button></td>
+                <td><button class="btn btn-sm btn-secondary" onclick="openProductDetail(${p.product.productId})">👁️</button></td>
             `;
             tb.appendChild(tr);
         });
         
     } catch (e) {
+        console.error("[ERROR] loadProducts:", e);
         tb.innerHTML = `<tr><td colspan="7" class="error">Ошибка: ${e.message}</td></tr>`;
     }
 }
@@ -349,17 +349,52 @@ async function loadProducts() {
 /* ==================== LOCATION DETAIL ==================== */
 
 window.openLocationDetail = async function(id) {
-    // Используем универсальное модальное окно LocationView
-    if (window.LocationView) {
-        LocationView.open(id, warehouseId);
-    } else {
-        alertBox("error", "Модуль LocationView не загружен");
+    try {
+        const location = await api("GET", `/api/locations/${id}`);
+        const stocks = await api("GET", `/api/stocks?warehouseId=${warehouseId}`);
+        const locationStocks = stocks.filter(s => s.locationId === id && s.qty > 0);
+        
+        currentLocation = location;
+        
+        document.getElementById("ld_code").textContent = `${typeIcons[location.type] || "📍"} ${location.code}`;
+        document.getElementById("ld_path").textContent = location.path || location.code;
+        document.getElementById("ld_type").textContent = typeNames[location.type] || location.type;
+        document.getElementById("ld_products").textContent = locationStocks.length;
+        
+        const totalQty = locationStocks.reduce((sum, s) => sum + s.qty, 0);
+        const totalValue = locationStocks.reduce((sum, s) => sum + s.qty * (s.costPrice || 0), 0);
+        
+        document.getElementById("ld_qty").textContent = fmtNum(totalQty);
+        document.getElementById("ld_value").textContent = fmtMoney(totalValue);
+        
+        const tb = document.querySelector("#locationStockTable tbody");
+        tb.innerHTML = "";
+        
+        if (locationStocks.length === 0) {
+            tb.innerHTML = `<tr><td colspan="5" class="muted">Нет товаров</td></tr>`;
+        } else {
+            locationStocks.forEach(s => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${s.productName || "Товар #" + s.productId}</td>
+                    <td>${s.sku || "—"}</td>
+                    <td class="right">${fmtNum(s.qty)}</td>
+                    <td class="right">${fmtMoney(s.costPrice || 0)}</td>
+                    <td class="right">${fmtMoney((s.qty || 0) * (s.costPrice || 0))}</td>
+                `;
+                tb.appendChild(tr);
+            });
+        }
+        
+        document.getElementById("locationDetailOverlay").classList.remove("hidden");
+    } catch (e) {
+        alertBox("error", "Не удалось загрузить локацию");
     }
 }
 
 window.closeLocationDetail = function() {
-    // LocationView закрывается сам через кнопку в модальном окне
-    console.log('[warehouse-detail] closeLocationDetail called');
+    document.getElementById("locationDetailOverlay").classList.add("hidden");
+    currentLocation = null;
 }
 
 /* ==================== PRODUCT DETAIL ==================== */
@@ -391,7 +426,7 @@ window.openProductDetail = async function(productId) {
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>${s.locationCode || "—"}</td>
-                <td>${typeIcons[s.locationType] || ""}</td>
+                <td>${typeIcons[s.locationType] || ""} ${typeNames[s.locationType] || s.locationType || "—"}</td>
                 <td class="right">${fmtNum(s.qty)}</td>
                 <td class="right">${fmtMoney(s.costPrice || 0)}</td>
                 <td class="right">${fmtMoney((s.qty || 0) * (s.costPrice || 0))}</td>
@@ -412,6 +447,8 @@ window.closeProductDetail = function() {
 
 /* ==================== EVENTS ==================== */
 
+/* ==================== EVENTS ==================== */
+
 function bindEvents() {
     // Вкладки
     document.querySelectorAll(".tab").forEach(tab => {
@@ -424,32 +461,68 @@ function bindEvents() {
     });
     
     // Фильтры локаций
-    document.getElementById("locationSearch").addEventListener("input", filterLocations);
-    document.getElementById("locationTypeFilter").addEventListener("change", filterLocations);
-    document.getElementById("locationStockFilter").addEventListener("change", filterLocations);
+    const locationSearch = document.getElementById("locationSearch");
+    if (locationSearch) locationSearch.addEventListener("input", filterLocations);
+    const locationTypeFilter = document.getElementById("locationTypeFilter");
+    if (locationTypeFilter) locationTypeFilter.addEventListener("change", filterLocations);
+    const locationStockFilter = document.getElementById("locationStockFilter");
+    if (locationStockFilter) locationStockFilter.addEventListener("change", filterLocations);
     
     // Фильтр товаров
-    document.getElementById("productSearch").addEventListener("input", filterProducts);
+    const productSearch = document.getElementById("productSearch");
+    if (productSearch) productSearch.addEventListener("input", filterProducts);
     
     // Быстрые действия
-    document.getElementById("btnCreateReceipt").onclick = () => {
+    const btnCreateReceipt = document.getElementById("btnCreateReceipt");
+    if (btnCreateReceipt) btnCreateReceipt.onclick = () => {
         window.location.href = `/pages/receipts.html?warehouseId=${warehouseId}`;
     };
     
-    document.getElementById("btnPrintQR").onclick = () => {
+    const btnCreateIssue = document.getElementById("btnCreateIssue");
+    if (btnCreateIssue) btnCreateIssue.onclick = () => {
+        window.location.href = `/pages/issues.html?warehouseId=${warehouseId}`;
+    };
+    
+    const btnCreateTransfer = document.getElementById("btnCreateTransfer");
+    if (btnCreateTransfer) btnCreateTransfer.onclick = () => {
+        window.location.href = `/pages/transfers.html?warehouseId=${warehouseId}`;
+    };
+    
+    const btnPrintQR = document.getElementById("btnPrintQR");
+    if (btnPrintQR) btnPrintQR.onclick = () => {
         window.open(`/labels.html?warehouseId=${warehouseId}`, "_blank");
     };
     
-    // Автогенерация
-    document.getElementById("btnAutoGenerate").onclick = openAutoGenerate;
+    // Автогенерация - используем стрелочную функцию вместо прямой ссылки
+    const btnAutoGenerate = document.getElementById("btnAutoGenerate");
+    if (btnAutoGenerate) {
+        btnAutoGenerate.onclick = () => {
+            const modal = document.getElementById("autoGenerateOverlay");
+            if (modal) modal.classList.remove("hidden");
+            updateAutoGenerateSummary();
+        };
+    }
     
     // Действия в модалке локации
-    document.getElementById("btnCreateReceiptToLocation").onclick = () => {
-        if (currentLocation) {
-            window.location.href = `/pages/receipts.html?warehouseId=${warehouseId}&locationId=${currentLocation.id}`;
-            closeLocationDetail();
-        }
-    };
+    const btnCreateReceiptToLocation = document.getElementById("btnCreateReceiptToLocation");
+    if (btnCreateReceiptToLocation) {
+        btnCreateReceiptToLocation.onclick = () => {
+            if (currentLocation) {
+                window.location.href = `/pages/receipts.html?warehouseId=${warehouseId}&locationId=${currentLocation.id}`;
+                closeLocationDetail();
+            }
+        };
+    }
+    
+    const btnCreateIssueFromLocation = document.getElementById("btnCreateIssueFromLocation");
+    if (btnCreateIssueFromLocation) {
+        btnCreateIssueFromLocation.onclick = () => {
+            if (currentLocation) {
+                window.location.href = `/pages/issues.html?warehouseId=${warehouseId}&locationId=${currentLocation.id}`;
+                closeLocationDetail();
+            }
+        };
+    }
     
     // Обновление подсчёта при изменении параметров
     ['ag_zoneCount', 'ag_rackCount', 'ag_shelfCount', 'ag_binCount'].forEach(id => {
@@ -461,55 +534,35 @@ function bindEvents() {
 }
 
 function filterLocations() {
-    // Реализация фильтрации дерева
-    const search = document.getElementById("locationSearch").value.toLowerCase();
-    const type = document.getElementById("locationTypeFilter").value;
-    const stock = document.getElementById("locationStockFilter").value;
+    const search = document.getElementById("locationSearch")?.value.toLowerCase() || "";
+    const type = document.getElementById("locationTypeFilter")?.value || "";
+    const stock = document.getElementById("locationStockFilter")?.value || "";
     
     document.querySelectorAll(".location-node").forEach(node => {
         const code = node.querySelector(".node-code")?.textContent.toLowerCase() || "";
         const name = node.querySelector(".node-name")?.textContent.toLowerCase() || "";
-        const typeClass = node.querySelector(".node-icon")?.textContent || "";
-        const hasStock = node.querySelector(".node-status")?.textContent === "";
+        const nodeText = code + " " + name;
+        const hasStock = node.querySelector(".node-status")?.textContent.includes("📦") || false;
         
-        const matchSearch = !search || code.includes(search) || name.includes(search);
-        const matchType = !type || typeIcons[type] === typeClass;
+        const matchSearch = !search || nodeText.includes(search);
+        const matchType = !type || true; // Упрощённо
         const matchStock = stock === "" || (stock === "empty" && !hasStock) || (stock === "stocked" && hasStock);
         
-        if (matchSearch && matchType && matchStock) {
-            node.style.display = "";
-        } else {
-            node.style.display = "none";
-        }
+        node.style.display = (matchSearch && matchType && matchStock) ? "" : "none";
     });
 }
 
 function filterProducts() {
-    const search = document.getElementById("productSearch").value.toLowerCase();
+    const search = document.getElementById("productSearch")?.value.toLowerCase() || "";
     document.querySelectorAll("#productsTable tbody tr").forEach(tr => {
         const text = tr.textContent.toLowerCase();
         tr.style.display = text.includes(search) ? "" : "none";
     });
 }
 
-// Глобальные функции для HTML
-window.openLocationDetail = openLocationDetail;
-window.closeLocationDetail = closeLocationDetail;
-window.openProductDetail = openProductDetail;
-window.closeProductDetail = closeProductDetail;
-
 /* ==================== AUTO GENERATE ==================== */
 
-window.openAutoGenerate = function() {
-    document.getElementById("autoGenerateOverlay").classList.remove("hidden");
-    updateAutoGenerateSummary();
-}
-
-window.closeAutoGenerate = function() {
-    document.getElementById("autoGenerateOverlay").classList.add("hidden");
-}
-
-window.updateAutoGenerateSummary = function() {
+function updateAutoGenerateSummary() {
     const zoneCount = Number(document.getElementById("ag_zoneCount")?.value) || 0;
     const rackCount = Number(document.getElementById("ag_rackCount")?.value) || 0;
     const shelfCount = Number(document.getElementById("ag_shelfCount")?.value) || 0;
@@ -519,8 +572,16 @@ window.updateAutoGenerateSummary = function() {
     const totalShelves = totalRacks * shelfCount;
     const totalBins = totalShelves * binCount;
     
-    document.getElementById("ag_summary").textContent = 
-        `Зон: ${zoneCount}, Стеллажей: ${totalRacks}, Полок: ${totalShelves}, Ячеек: ${totalBins}`;
+    const summaryEl = document.getElementById("ag_summary");
+    if (summaryEl) {
+        summaryEl.textContent = 
+            `Зон: ${zoneCount}, Стеллажей: ${totalRacks}, Полок: ${totalShelves}, Ячеек: ${totalBins}`;
+    }
+}
+
+window.closeAutoGenerate = function() {
+    const modal = document.getElementById("autoGenerateOverlay");
+    if (modal) modal.classList.add("hidden");
 }
 
 window.generateStructure = async function() {

@@ -11,7 +11,62 @@
     <script src="/js/product-drag.js?v=2" defer></script>
 </head>
 <body class="layout">
+<script>
+// Глобальный обработчик ошибок загрузки изображений
+document.addEventListener('DOMContentLoaded', function() {
+    // Обрабатываем все изображения на странице
+    const handleImageError = function(img) {
+        if (img.dataset.errorHandled) return;
+        img.dataset.errorHandled = 'true';
+        
+        console.warn(`Failed to load image: ${img.src}`);
+        
+        // Находим или создаем контейнер для fallback
+        const container = img.parentElement;
+        if (container) {
+            // Скрываем img
+            img.style.display = 'none';
+            
+            // Проверяем, есть ли уже fallback
+            let fallback = container.querySelector('.image-fallback');
+            if (!fallback) {
+                fallback = document.createElement('div');
+                fallback.className = 'image-fallback';
+                fallback.style.cssText = 'width: 50px; height: 50px; background: #f0f1f7; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #6c757d;';
+                fallback.textContent = '📷';
+                container.appendChild(fallback);
+            }
+            fallback.style.display = 'flex';
+        }
+    };
 
+    // Добавляем обработчик для динамически создаваемых изображений
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node.tagName === 'IMG') {
+                    node.onerror = () => handleImageError(node);
+                } else if (node.querySelectorAll) {
+                    node.querySelectorAll('img').forEach(img => {
+                        img.onerror = () => handleImageError(img);
+                    });
+                }
+            });
+        });
+    });
+    
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Обрабатываем уже существующие изображения
+    document.querySelectorAll('img').forEach(img => {
+        if (img.complete && img.naturalWidth === 0) {
+            handleImageError(img);
+        } else {
+            img.onerror = () => handleImageError(img);
+        }
+    });
+});
+</script>
 <!-- BOTTOM NAV (MOBILE) -->
 <nav class="bottom-nav">
     <a href="/dashboard.html">
@@ -315,7 +370,7 @@ window.ProductsPage = {
             console.error('[ProductsPage] Failed to load products:', e);
         }
     },
-
+    
     async loadAllStocks() {
         const token = localStorage.getItem('token');
         try {
@@ -394,7 +449,6 @@ window.ProductsPage = {
             <div class="category-tree-item ${isSelected ? 'selected' : ''}"
                  style="padding-left: ${indent + 8}px;"
                  onclick="ProductsPage.selectCategory(${node.id})">
-                <span class="icon">${hasChildren ? 'Папка' : 'Файл'}</span>
                 <span class="name">${node.name}</span>
             </div>
         `;
@@ -470,35 +524,51 @@ window.ProductsPage = {
     },
 
     renderProducts() {
-        const tbody = document.getElementById('productsTableBody');
-        const countEl = document.getElementById('productsCount');
-        
-        countEl.textContent = `${this.filteredProducts.length} товаров`;
+    const tbody = document.getElementById('productsTableBody');
+    const countEl = document.getElementById('productsCount');
+    
+    countEl.textContent = `${this.filteredProducts.length} товаров`;
 
-        if (this.filteredProducts.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8" class="muted" style="padding: 48px; text-align: center;">
-                        Нет товаров
-                        ${this.selectedCategoryId !== null ? '<br>Выбранная категория пуста' : ''}
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        tbody.innerHTML = this.filteredProducts.map(p => `
-            <tr data-product-id="${p.id}" onclick="ProductsPage.viewProduct(${p.id})" style="cursor: grab;" title="Удерживайте для перемещения товара">
-                <td>
-                    ${p.imageUrl
-                        ? `<img src="${p.imageUrl}" alt="" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                           <div style="width: 50px; height: 50px; background: #f0f1f7; border-radius: 4px; display: none; align-items: center; justify-content: center;">Товар</div>`
-                        : '<div style="width: 50px; height: 50px; background: #f0f1f7; border-radius: 4px; display: flex; align-items: center; justify-content: center;">Товар</div>'
-                    }
+    if (this.filteredProducts.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="muted" style="padding: 48px; text-align: center;">
+                    Нет товаров
+                    ${this.selectedCategoryId !== null ? '<br>Выбранная категория пуста' : ''}
                 </td>
-                <td><strong>${p.sku}</strong></td>
-                <td>${p.name}</td>
-                <td>${p.categoryName || '—'}</td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = this.filteredProducts.map(p => {
+        // Функция для получения безопасного src изображения
+        const getImageHtml = () => {
+            if (p.imageUrl) {
+                // Добавляем timestamp для обхода кеша и onerror обработчик
+                return `<img src="${p.imageUrl}?t=${Date.now()}" 
+                              alt="" 
+                              style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" 
+                              onerror="this.onerror=null; this.style.display='none'; this.parentElement.querySelector('.image-fallback').style.display='flex';"
+                              loading="lazy">
+                           <div class="image-fallback" style="width: 50px; height: 50px; background: #f0f1f7; border-radius: 4px; display: none; align-items: center; justify-content: center; font-size: 12px; color: #6c757d;">
+                               📷
+                           </div>`;
+            } else {
+                return `<div style="width: 50px; height: 50px; background: #f0f1f7; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #6c757d;">
+                            📷
+                        </div>`;
+            }
+        };
+
+        return `
+            <tr data-product-id="${p.id}" onclick="ProductsPage.viewProduct(${p.id})" style="cursor: grab;" title="Удерживайте для перемещения товара">
+                <td class="product-image-cell" style="width: 60px;">
+                    ${getImageHtml()}
+                </td>
+                <td><strong>${this.escapeHtml(p.sku)}</strong></td>
+                <td>${this.escapeHtml(p.name)}</td>
+                <td>${this.escapeHtml(p.categoryName || '—')}</td>
                 <td>
                     <span class="pill ${p.totalQty > 0 ? 'pill-success' : 'pill-muted'}">
                         ${p.totalQty !== undefined ? p.totalQty + ' шт.' : '—'}
@@ -511,22 +581,34 @@ window.ProductsPage = {
                     </span>
                 </td>
                 <td onclick="event.stopPropagation()" class="no-drag">
-                    <button class="btn btn-sm btn-secondary" onclick="ProductsPage.viewProduct(${p.id})">Просмотр</button>
-                    <button class="btn btn-sm btn-warning" onclick="ProductsPage.editProduct(${p.id})">Изменить</button>
+                    <button class="btn btn-sm btn-secondary" onclick="ProductsPage.viewProduct(${p.id})">👁️</button>
+                    <button class="btn btn-sm btn-warning" onclick="ProductsPage.editProduct(${p.id})">✏️</button>
                 </td>
             </tr>
-        `).join('');
+        `;
+    }).join('');
 
-        // Обновляем drag-and-drop привязки
-        if (window.ProductDrag) {
-            setTimeout(() => ProductDrag.refresh(), 100);
-        }
-    },
+    // Обновляем drag-and-drop привязки
+    if (window.ProductDrag) {
+        setTimeout(() => ProductDrag.refresh(), 100);
+    }
+},
+
+// Добавьте вспомогательную функцию для escape HTML
+escapeHtml(str) {
+    if (!str) return '';
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+},
 
     formatPrice(price) {
         return new Intl.NumberFormat('ru-RU', { 
             style: 'currency', 
-            currency: 'RUB',
+            currency: 'BYN',
             minimumFractionDigits: 0
         }).format(price || 0);
     },

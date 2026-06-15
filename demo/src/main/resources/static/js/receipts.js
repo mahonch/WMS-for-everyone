@@ -50,7 +50,7 @@ function alertBox(type, text) {
 
 /* ==================== HELPERS ==================== */
 const fmtDate = (d) => d ? new Date(d).toLocaleString("ru-RU") : "—";
-const fmtMoney = (n) => new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", minimumFractionDigits: 0 }).format(n || 0);
+const fmtMoney = (n) => new Intl.NumberFormat("ru-RU", { style: "currency", currency: "BYN", minimumFractionDigits: 0 }).format(n || 0);
 const statusPill = (s) => `<span class="pill ${s === 'COMMITTED' ? 'pill-committed' : 'pill-draft'}">${s === 'COMMITTED' ? ' Подписана' : ' Черновик'}</span>`;
 
 /* ==================== API ==================== */
